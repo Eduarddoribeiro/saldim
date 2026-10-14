@@ -1,0 +1,144 @@
+# Saldo — guia do projeto
+
+## Objetivo
+
+**Saldo** é uma aplicação web pessoal de finanças, responsiva (telemóvel e desktop) e com sincronização entre dispositivos (dados no Supabase com login). Permite registar receitas e despesas, acompanhar o saldo, definir orçamentos mensais e ver gastos por categoria.
+
+> Nome: a interface usa **Saldo** (`AppLogo.tsx`, `<title>`). O pacote npm e a pasta continuam `financas`, e a chave do tema em `localStorage` continua `financas-theme` (mudar apagaria a preferência guardada).
+
+## Tecnologias instaladas (versões reais, `npm ls --depth=0`)
+
+Ambiente: Node 22.22, npm 10.9, Windows. Supabase CLI 2.121 disponível via `npx supabase`; Docker 29 instalado (necessário a partir da Etapa 3).
+
+| Área         | Pacote                                                       | Versão            |
+| ------------ | ------------------------------------------------------------ | ----------------- |
+| UI           | react / react-dom                                            | 19.3              |
+| Build        | vite / @vitejs/plugin-react                                  | 8.3 / 6.1         |
+| Linguagem    | typescript                                                   | 6.0               |
+| Rotas        | react-router                                                 | 8.4               |
+| Estilos      | tailwindcss + @tailwindcss/vite                              | 4.3               |
+| Componentes  | shadcn (CLI, devDependency) estilo `base-nova`               | 4.21              |
+|              | @base-ui/react (primitivas — **não** Radix)                  | 1.9               |
+|              | class-variance-authority / cn / tw-animate-css               | 0.7 / 0.4 / 1.4   |
+| Ícones/fonte | lucide-react / @fontsource-variable/geist                    | 1.57 / 5.3        |
+| Testes       | vitest / jsdom                                               | 5.0 / 29.1        |
+|              | @testing-library/react / user-event / jest-dom               | 16.3 / 14.6 / 7.0 |
+| Qualidade    | oxlint (não ESLint) / prettier + prettier-plugin-tailwindcss | 1.88 / 3.9 / 0.8  |
+
+**Ainda não instalados** (previstos no plano, entram na etapa em que forem precisos): `@supabase/supabase-js`, `@tanstack/react-query`, `react-hook-form`, `zod`, `recharts`, `date-fns`.
+
+Notas:
+
+- Tailwind v4 não tem `tailwind.config`: tema e cores (variáveis oklch, claro/escuro) estão em `src/index.css`.
+- `cn` é o pacote oficial do shadcn (substitui clsx + tailwind-merge); `src/lib/utils.ts` reexporta-o.
+- `shadcn` está em devDependencies de propósito: só é usado pela CLI e pelo import de CSS resolvido na build. As vulnerabilidades do `npm audit` vêm dessa CLI; `npm audit --omit=dev` deve dar 0. **Não** correr `npm audit fix --force` (faz downgrade para shadcn 1.0.0).
+
+## Arquitetura atual
+
+```
+financas/                     # raiz do repositório Git
+  index.html                  # script inline aplica o tema antes do React (evita flash)
+  src/
+    main.tsx                  # ThemeProvider > RouterProvider (createBrowserRouter)
+    routes.tsx                # array de rotas (reutilizado nos testes com createMemoryRouter)
+    index.css                 # Tailwind + tokens de tema shadcn
+    components/
+      ui/                     # gerado pelo shadcn (button.tsx) — editável, lint relaxado
+      layout/                 # AppShell, Sidebar, BottomNav, AppLogo, PageHeader, EmptyState, NotFoundPage, nav-items.ts
+      theme/                  # ThemeProvider, theme-context (useTheme), ThemeToggle
+    features/<área>/          # páginas e lógica por funcionalidade (dashboard, transactions, settings)
+    lib/                      # funções puras (utils.ts, theme.ts) + testes ao lado
+    test/setup.ts             # jest-dom + cleanup após cada teste
+```
+
+**Rotas** (`src/routes.tsx`, todas dentro de `AppShell`):
+
+| Caminho          | Página             | Estado                       |
+| ---------------- | ------------------ | ---------------------------- |
+| `/`              | `DashboardPage`    | placeholder (Etapa 11)       |
+| `/transacoes`    | `TransactionsPage` | placeholder (Etapa 9)        |
+| `/configuracoes` | `SettingsPage`     | só a secção Aparência (tema) |
+| `*`              | `NotFoundPage`     | —                            |
+
+**Navegação:** `nav-items.ts` é a fonte única de links. `Sidebar` (visível a partir de `md`, 768px) e `BottomNav` (fixa em baixo, `md:hidden`, respeita `safe-area-inset-bottom`) usam `NavLink`, que marca o ativo com `aria-current="page"`. No telemóvel há um cabeçalho com logo + botão de tema; o `<main>` tem `pb-24` para não ficar por baixo da barra inferior.
+
+**Tema:** valores `light | dark | system`, guardados em `localStorage` na chave `financas-theme`. Regras puras em `src/lib/theme.ts`; `ThemeProvider` aplica a classe `dark` no `<html>` e segue mudanças do sistema. A mesma chave e lógica estão duplicadas no script de `index.html` — se mudar uma, mudar a outra. Acessos a `localStorage` sempre em `try/catch`.
+
+**Testes existentes** (10, Vitest): `lib/utils.test.ts`, `lib/theme.test.ts` (ambiente node) e `components/layout/AppShell.test.tsx` (jsdom: navegação, link ativo, 404, troca e persistência de tema).
+
+## Comandos (dentro de `financas/`)
+
+| Comando                              | O que faz                                              |
+| ------------------------------------ | ------------------------------------------------------ |
+| `npm run dev`                        | Servidor de desenvolvimento (localhost:5173)           |
+| `npm run build`                      | `tsc -b` + build Vite (verifica tipos)                 |
+| `npm run preview`                    | Serve a build                                          |
+| `npm run lint`                       | oxlint                                                 |
+| `npm test`                           | Vitest uma vez (`npm run test:watch` em modo contínuo) |
+| `npm run format`                     | Prettier (escreve)                                     |
+| `npm run format:check`               | Prettier (só verifica)                                 |
+| `npx shadcn@latest add <componente>` | Acrescenta um componente shadcn a `components/ui/`     |
+
+**Verificação no fim de cada etapa:** `npm run build && npm run lint && npm test && npm run format:check` — todos com saída 0.
+
+## Convenções de código
+
+- **TypeScript** estrito como configurado (`noUnusedLocals`, `verbatimModuleSyntax` → usar `import type`). Nada de `any` ou `@ts-ignore` para calar erros.
+- **Imports** com o alias `@/` (ex.: `@/lib/theme`); imports relativos só dentro da mesma pasta.
+- **Estilo:** Prettier (sem ponto e vírgula, aspas simples, 100 colunas, classes Tailwind ordenadas automaticamente). Nomes de código em inglês; textos da interface e comentários em **português de Portugal**.
+- **React:** componentes de função com exports nomeados; um componente por ficheiro em `PascalCase.tsx`. Contextos/hooks em ficheiros `.ts` à parte (regra `only-export-components`). Lógica de negócio em funções puras em `src/lib` ou na pasta da feature, testadas sem React.
+- **Organização:** código de uma funcionalidade em `src/features/<área>/`; peças partilhadas em `src/components/`; `components/ui/` só para componentes shadcn.
+- **Estilos:** só classes Tailwind com os tokens do tema (`bg-background`, `text-muted-foreground`…), nunca cores fixas — garante claro/escuro.
+- **Responsividade:** mobile-first; estilos base para telemóvel, `md:` para desktop. Confirmar a 360–390px e ~1280px, sem scroll horizontal.
+- **Acessibilidade:** elementos semânticos (`nav`, `main`, `h1` por página), `aria-label` em botões só com ícone, ícones decorativos com `aria-hidden`, foco visível, áreas de toque ≥ 44px, contraste dos tokens do tema.
+- **Testes:** ficheiro `*.test.ts(x)` ao lado do código. Testes com DOM começam com `// @vitest-environment jsdom`. Testing Library a interagir como o utilizador (papéis e nomes acessíveis, `userEvent`), não detalhes internos.
+- **Dinheiro (a partir da Etapa 6):** valores sempre em centavos inteiros, nunca `float`; conversão só ao mostrar ou ao ler input.
+
+## Segurança
+
+- Nunca colocar chaves secretas no frontend. No browser só a chave pública `anon` do Supabase; a `service_role` nunca entra em `src/`, no Git nem em variáveis `VITE_*` (tudo o que começa por `VITE_` vai para o bundle público).
+- Configuração por variáveis de ambiente em `.env` (ignorado pelo Git); versionar apenas `.env.example` sem valores reais.
+- RLS ativado em **todas** as tabelas com dados privados, com políticas `USING` e `WITH CHECK` por `auth.uid()`; cada tabela nova vem acompanhada de testes de isolamento entre dois utilizadores.
+- Nunca desativar verificações para "resolver" um problema: não desligar RLS, não usar `--no-verify`, não silenciar lint/tipos/testes, não usar `npm audit fix --force` às cegas. Encontrar a causa.
+- Antes de cada commit, rever `git status` e o conteúdo preparado: sem `.env`, segredos ou ficheiros desnecessários.
+
+## Plano de desenvolvimento
+
+Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etapa: **`docs/plano.md`**. Aqui fica só o estado.
+
+**Fase A — Fundação**
+
+- [x] 1. Projeto base (Vite, TS, Tailwind, shadcn, oxlint, Prettier, Vitest) — commit `cb47291`
+- [x] 2. Layout responsivo (sidebar/barra inferior, rotas, tema) — verificado com testes e capturas a 360/390/1280px, claro e escuro
+- [ ] 3. **Supabase local — etapa atual.** CLI + Docker, cliente `src/lib/supabase.ts`, `.env`
+
+**Fase B — Núcleo do MVP**
+
+- [ ] 4. Autenticação e-mail + senha, rotas protegidas, `profiles` + RLS
+- [ ] 5. Base de testes de isolamento entre utilizadores (`npm run test:rls`)
+- [ ] 6. Utilitários monetários (`money.ts`, centavos) + testes
+- [ ] 7. Categorias (+ RLS + testes)
+- [ ] 8. Contas (+ RLS + testes)
+- [ ] 9. Receitas e despesas (+ RLS, FKs compostas, testes)
+- [ ] 10. Cálculos financeiros (`finance.ts`) + testes
+- [ ] 11. Dashboard básico → **MVP**
+
+**Fase C — Depois do MVP:** 12. Orçamentos · 13. Filtros e relatórios · 14. Deploy · 15. Google login, PWA, importar/exportar CSV, atualizações otimistas, recorrentes, metas.
+
+## Forma de trabalho
+
+- Uma etapa de cada vez; dentro da etapa, agrupar tarefas relacionadas e não antecipar trabalho de etapas futuras.
+- No fim da etapa, correr todas as verificações (secção Comandos) e, quando há UI, confirmar visualmente em largura de telemóvel e de desktop.
+- Explicar as decisões técnicas importantes em linguagem acessível — o utilizador está a aprender. Responder em português.
+- **Aguardar aprovação explícita** antes de cada commit e antes de avançar para a etapa seguinte. Mensagens de commit no formato `Etapa N: descrição`.
+- Não marcar etapas como concluídas sem verificar o código e as verificações.
+
+## Git e GitHub
+
+- Repositório remoto **privado**: `origin` → https://github.com/Eduarddoribeiro/saldo (ramo `main`). O `gh` está instalado em `C:\Program Files\GitHub CLI\gh.exe` e autenticado.
+- **Nunca fazer `git push` sem autorização explícita do utilizador.** Commits locais são permitidos quando todas as verificações passam e o conteúdo preparado foi revisto.
+- `.githooks/post-commit` (versionado) só mostra o commit criado e quantos commits faltam enviar — sem operações de rede. Está **inativo**; ativar só com aprovação: `git config core.hooksPath .githooks`.
+
+## Gestão deste documento
+
+Atualizar o `CLAUDE.md` quando mudarem decisões de arquitetura, dependências relevantes, comandos, convenções ou o estado das etapas. Manter curto e factual: é um guia do estado atual, não um histórico das conversas — detalhes passados ficam no Git.

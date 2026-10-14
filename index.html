@@ -3,8 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Finanças</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Saldo</title>
+    <script>
+      // Aplica o tema antes do React arrancar, para não piscar em claro quando o tema é escuro.
+      // A chave tem de ser igual a THEME_STORAGE_KEY em src/lib/theme.ts.
+      try {
+        var t = localStorage.getItem('financas-theme')
+        var dark =
+          t === 'dark' ||
+          (t !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.classList.toggle('dark', dark)
+        document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

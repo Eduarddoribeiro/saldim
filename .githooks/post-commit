@@ -1,0 +1,15 @@
+#!/bin/sh
+# Depois de cada commit: confirma que ficou guardado localmente e lembra como sincronizar com o GitHub.
+# Só lê informação local do Git — não faz nenhuma operação de rede nem altera ficheiros.
+# Ativado com: git config core.hooksPath .githooks
+
+commit=$(git log -1 --format='%h %s')
+echo "post-commit: commit criado localmente — $commit"
+
+# Compara com a última cópia conhecida do GitHub (origin/<ramo>), guardada localmente pelo último push/fetch.
+if upstream=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null); then
+  ahead=$(git rev-list --count "$upstream..HEAD")
+  echo "post-commit: $ahead commit(s) por enviar para $upstream. Para sincronizar com o GitHub: git push"
+else
+  echo "post-commit: este ramo não está ligado ao GitHub. Para sincronizar: git push -u origin HEAD"
+fi

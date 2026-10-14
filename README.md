@@ -1,4 +1,4 @@
-# Finanças
+# Saldo
 
 App web de controlo financeiro pessoal: receitas, despesas, saldo, orçamentos mensais e gastos por categoria.
 
