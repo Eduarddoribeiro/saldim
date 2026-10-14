@@ -22,11 +22,13 @@ Ambiente: Node 22.22, npm 10.9, Windows, Docker Desktop 29 (necessário para o S
 |              | class-variance-authority / cn / tw-animate-css               | 0.7 / 0.4 / 1.4   |
 | Ícones/fonte | lucide-react / @fontsource-variable/geist                    | 1.57 / 5.3        |
 | Backend      | @supabase/supabase-js / supabase (CLI, devDependency)        | 2.117 / 2.121     |
+| Formulários  | react-hook-form / zod / @hookform/resolvers                  | 7.90 / 4.6 / 5.9  |
 | Testes       | vitest / jsdom                                               | 5.0 / 29.1        |
 |              | @testing-library/react / user-event / jest-dom               | 16.3 / 14.6 / 7.0 |
+|              | @playwright/test (E2E com o Edge do sistema, sem downloads)  | 1.64              |
 | Qualidade    | oxlint (não ESLint) / prettier + prettier-plugin-tailwindcss | 1.88 / 3.9 / 0.8  |
 
-**Ainda não instalados** (previstos no plano, entram na etapa em que forem precisos): `@tanstack/react-query`, `react-hook-form`, `zod`, `recharts`, `date-fns`.
+**Ainda não instalados** (previstos no plano, entram na etapa em que forem precisos): `@tanstack/react-query`, `recharts`, `date-fns`.
 
 Notas:
 
@@ -45,32 +47,43 @@ financas/                     # raiz do repositório Git
     config.toml               # Supabase local (project_id "saldo"; storage/realtime/edge/analytics desligados)
     migrations/               # SQL versionado: tabelas, RLS, triggers
   tests/rls/                  # integração contra o Supabase local (helpers.ts: createTestUser, anonClient)
+  e2e/                        # Playwright: fluxos reais no browser (helpers.ts: signUp, logIn, logOut, lastEmailLink)
+  playwright.config.ts        # projetos "desktop" (1280×800) e "telemovel" (Pixel 7); arranca o Vite sozinho
   src/
-    main.tsx                  # providers + RouterProvider (createBrowserRouter)
+    main.tsx                  # ThemeProvider > AuthProvider > RouterProvider
     routes.tsx                # array de rotas (reutilizado nos testes com createMemoryRouter)
     index.css                 # Tailwind + tokens de tema shadcn
     vite-env.d.ts             # tipos das variáveis VITE_*
     components/
-      ui/                     # gerado pelo shadcn — editável, lint relaxado
-      layout/                 # AppShell, Sidebar, BottomNav, AppLogo, PageHeader, EmptyState, NotFoundPage, nav-items.ts
+      ui/                     # gerado pelo shadcn (button, input, label, card) — editável, lint relaxado
+      form/                   # TextField (label + erro acessível, compatível com register()), FormAlert
+      layout/                 # AppShell, Sidebar, BottomNav, AppLogo, PageHeader, EmptyState, FullScreenLoader, NotFoundPage, nav-items.ts
       theme/                  # ThemeProvider, theme-context (useTheme), ThemeToggle
     features/<área>/          # páginas e lógica por funcionalidade
+      auth/                   # AuthProvider, auth-context (useAuth), route-guards, schemas (Zod), auth-errors, páginas
     lib/
       supabase.ts             # cliente único (createClient<Database>)
       supabase-config.ts      # valida VITE_SUPABASE_*; recusa chaves secretas
       database.types.ts       # GERADO por `npm run db:types` — não editar à mão
       theme.ts, utils.ts      # funções puras + testes ao lado
     test/setup.ts             # jest-dom + cleanup após cada teste
+    test/render-app.tsx       # renderApp(path, fakeAuth(...)): app completa com autenticação falsa
 ```
 
-**Rotas** (`src/routes.tsx`, todas dentro de `AppShell`):
+**Rotas** (`src/routes.tsx`):
 
-| Caminho          | Página             | Estado                       |
-| ---------------- | ------------------ | ---------------------------- |
-| `/`              | `DashboardPage`    | placeholder (Etapa 11)       |
-| `/transacoes`    | `TransactionsPage` | placeholder (Etapa 9)        |
-| `/configuracoes` | `SettingsPage`     | só a secção Aparência (tema) |
-| `*`              | `NotFoundPage`     | —                            |
+| Caminho            | Página               | Acesso                                   | Estado                    |
+| ------------------ | -------------------- | ---------------------------------------- | ------------------------- |
+| `/entrar`          | `LoginPage`          | `PublicOnly` (com sessão → app)          | feito                     |
+| `/registar`        | `SignUpPage`         | `PublicOnly`                             | feito                     |
+| `/recuperar-senha` | `ForgotPasswordPage` | `PublicOnly`                             | feito                     |
+| `/nova-senha`      | `ResetPasswordPage`  | sessão temporária do link de recuperação | feito                     |
+| `/`                | `DashboardPage`      | `RequireAuth` (sem sessão → `/entrar`)   | placeholder (Etapa 11)    |
+| `/transacoes`      | `TransactionsPage`   | `RequireAuth`                            | placeholder (Etapa 9)     |
+| `/configuracoes`   | `SettingsPage`       | `RequireAuth`                            | secções Aparência e Conta |
+| `*`                | `NotFoundPage`       | `RequireAuth`                            | —                         |
+
+**Autenticação:** só o `AuthProvider` chama `supabase.auth`; páginas e componentes usam `useAuth()` (ações devolvem `{ error }` já traduzido por `auth-errors.ts`, pelo `code` do erro). `RequireAuth` guarda a página pedida em `location.state.from` e o login volta lá — exceto quando a sessão termina dentro da app (botão Sair), para o próximo login começar no Início. Recuperação de senha: e-mail com link → `/nova-senha` (o supabase-js lê o token do URL). Nos testes de componentes usa-se `renderApp(path, fakeAuth({...}))`, sem rede.
 
 **Navegação:** `nav-items.ts` é a fonte única de links. `Sidebar` (visível a partir de `md`, 768px) e `BottomNav` (fixa em baixo, `md:hidden`, respeita `safe-area-inset-bottom`) usam `NavLink`, que marca o ativo com `aria-current="page"`. No telemóvel há um cabeçalho com logo + botão de tema; o `<main>` tem `pb-24` para não ficar por baixo da barra inferior.
 
@@ -78,7 +91,13 @@ financas/                     # raiz do repositório Git
 
 **Supabase local:** API `http://127.0.0.1:54321`, Studio (painel) `http://127.0.0.1:54323`, Mailpit (e-mails de teste) `http://127.0.0.1:54324`, Postgres na porta 54322. Confirmação de e-mail desligada localmente; senha mínima 8 caracteres. As chaves locais são as de demonstração do Supabase, mas mesmo assim só a pública vai para o `.env`.
 
-**Testes:** `npm test` (unitários + componentes, `src/**/*.test.ts(x)`, sem rede) e `npm run test:rls` (integração em `tests/rls/`, config `vitest.rls.config.ts`, ficheiros em série, recusa correr contra URLs que não sejam locais). Os tipos de `tests/` são verificados por `tsconfig.tests.json`.
+**Testes:** três níveis.
+
+- `npm test` — unitários + componentes (`src/**/*.test.ts(x)`, sem rede).
+- `npm run test:rls` — integração em `tests/rls/` contra o Supabase local (config `vitest.rls.config.ts`, ficheiros em série, recusa URLs não locais).
+- `npm run test:e2e` — Playwright em `e2e/`, desktop e telemóvel, contra o Supabase local; lê os e-mails do Mailpit. Relatórios em `test-results/` (ignorado).
+
+Os tipos de `tests/` e `e2e/` são verificados por `tsconfig.tests.json`.
 
 ## Comandos (dentro de `financas/`)
 
@@ -90,6 +109,7 @@ financas/                     # raiz do repositório Git
 | `npm run lint`                       | oxlint                                                                |
 | `npm test`                           | Vitest uma vez (`npm run test:watch` em modo contínuo)                |
 | `npm run test:rls`                   | Testes de integração/RLS contra o Supabase local                      |
+| `npm run test:e2e`                   | Testes E2E (Playwright + Edge) contra o Supabase local                |
 | `npm run format`                     | Prettier (escreve)                                                    |
 | `npm run format:check`               | Prettier (só verifica)                                                |
 | `npm run db:start` / `db:stop`       | Liga / desliga o Supabase local (Docker)                              |
@@ -102,7 +122,7 @@ financas/                     # raiz do repositório Git
 
 **Primeira vez / outro computador:** `npm install` → `npm run db:start` → `npm run env:local` → `npm run dev`.
 
-**Verificação no fim de cada etapa:** `npm run build && npm run lint && npm test && npm run format:check && npm run test:rls` — todos com saída 0 (o último precisa do Supabase local a correr).
+**Verificação no fim de cada etapa:** `npm run build && npm run lint && npm test && npm run format:check && npm run test:rls && npm run test:e2e` — todos com saída 0 e lint sem avisos (os dois últimos precisam do Supabase local a correr).
 
 ## Convenções de código
 
@@ -137,8 +157,8 @@ Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etap
 
 **Fase B — Núcleo do MVP**
 
-- [ ] 4. **Etapa atual —** Autenticação e-mail + senha, rotas protegidas, `profiles` + RLS
-- [ ] 5. Base de testes de isolamento entre utilizadores (`npm run test:rls`)
+- [x] 4. Autenticação e-mail + senha (registo, login, sair, recuperar senha, rotas protegidas), `profiles` + RLS + trigger — testes unitários, componentes, integração e E2E
+- [ ] 5. **Etapa atual —** Base de testes de isolamento entre utilizadores (`npm run test:rls`)
 - [ ] 6. Utilitários monetários (`money.ts`, centavos) + testes
 - [ ] 7. Categorias (+ RLS + testes)
 - [ ] 8. Contas (+ RLS + testes)

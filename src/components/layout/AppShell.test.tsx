@@ -1,21 +1,8 @@
 // @vitest-environment jsdom
-import { render, screen, within } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { createMemoryRouter } from 'react-router'
-import { RouterProvider } from 'react-router/dom'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { ThemeProvider } from '@/components/theme/ThemeProvider'
-import { routes } from '@/routes'
-
-function renderApp(path = '/') {
-  const router = createMemoryRouter(routes, { initialEntries: [path] })
-  render(
-    <ThemeProvider>
-      <RouterProvider router={router} />
-    </ThemeProvider>,
-  )
-  return router
-}
+import { renderApp } from '@/test/render-app'
 
 beforeEach(() => {
   localStorage.clear()
@@ -39,7 +26,7 @@ describe('AppShell', () => {
   })
 
   it('navega entre páginas e marca o link ativo', async () => {
-    const router = renderApp()
+    const { router } = renderApp()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Início')
 
     const [sidebarNav] = screen.getAllByRole('navigation', { name: 'Navegação principal' })

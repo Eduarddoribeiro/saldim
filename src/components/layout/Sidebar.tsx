@@ -1,11 +1,15 @@
 import { NavLink } from 'react-router'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
+import { useAuth } from '@/features/auth/auth-context'
+import { SignOutButton } from '@/features/auth/SignOutButton'
 import { cn } from '@/lib/utils'
 import { AppLogo } from './AppLogo'
 import { NAV_ITEMS } from './nav-items'
 
 /** Navegação lateral — só visível a partir de 768px (md). */
 export function Sidebar() {
+  const { user } = useAuth()
+
   return (
     <aside className="sticky top-0 hidden h-svh w-60 shrink-0 flex-col border-r bg-sidebar p-4 text-sidebar-foreground md:flex">
       <AppLogo className="px-2 py-1" />
@@ -33,7 +37,15 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <ThemeToggle showLabel />
+      <div className="grid gap-1 border-t pt-3">
+        {user?.email && (
+          <p className="truncate px-2.5 pb-1 text-xs text-muted-foreground" title={user.email}>
+            {user.email}
+          </p>
+        )}
+        <ThemeToggle showLabel />
+        <SignOutButton className="w-full justify-start" />
+      </div>
     </aside>
   )
 }
