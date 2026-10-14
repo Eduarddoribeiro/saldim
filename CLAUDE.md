@@ -8,7 +8,7 @@
 
 ## Tecnologias instaladas (versões reais, `npm ls --depth=0`)
 
-Ambiente: Node 22.22, npm 10.9, Windows. Supabase CLI 2.121 disponível via `npx supabase`; Docker 29 instalado (necessário a partir da Etapa 3).
+Ambiente: Node 22.22, npm 10.9, Windows, Docker Desktop 29 (necessário para o Supabase local).
 
 | Área         | Pacote                                                       | Versão            |
 | ------------ | ------------------------------------------------------------ | ----------------- |
@@ -21,11 +21,12 @@ Ambiente: Node 22.22, npm 10.9, Windows. Supabase CLI 2.121 disponível via `npx
 |              | @base-ui/react (primitivas — **não** Radix)                  | 1.9               |
 |              | class-variance-authority / cn / tw-animate-css               | 0.7 / 0.4 / 1.4   |
 | Ícones/fonte | lucide-react / @fontsource-variable/geist                    | 1.57 / 5.3        |
+| Backend      | @supabase/supabase-js / supabase (CLI, devDependency)        | 2.117 / 2.121     |
 | Testes       | vitest / jsdom                                               | 5.0 / 29.1        |
 |              | @testing-library/react / user-event / jest-dom               | 16.3 / 14.6 / 7.0 |
 | Qualidade    | oxlint (não ESLint) / prettier + prettier-plugin-tailwindcss | 1.88 / 3.9 / 0.8  |
 
-**Ainda não instalados** (previstos no plano, entram na etapa em que forem precisos): `@supabase/supabase-js`, `@tanstack/react-query`, `react-hook-form`, `zod`, `recharts`, `date-fns`.
+**Ainda não instalados** (previstos no plano, entram na etapa em que forem precisos): `@tanstack/react-query`, `react-hook-form`, `zod`, `recharts`, `date-fns`.
 
 Notas:
 
@@ -38,16 +39,27 @@ Notas:
 ```
 financas/                     # raiz do repositório Git
   index.html                  # script inline aplica o tema antes do React (evita flash)
+  docs/plano.md               # regras financeiras, modelo de dados, critérios por etapa
+  scripts/write-local-env.mjs # gera .env a partir do Supabase local (só URL + chave pública)
+  supabase/
+    config.toml               # Supabase local (project_id "saldo"; storage/realtime/edge/analytics desligados)
+    migrations/               # SQL versionado: tabelas, RLS, triggers
+  tests/rls/                  # integração contra o Supabase local (helpers.ts: createTestUser, anonClient)
   src/
-    main.tsx                  # ThemeProvider > RouterProvider (createBrowserRouter)
+    main.tsx                  # providers + RouterProvider (createBrowserRouter)
     routes.tsx                # array de rotas (reutilizado nos testes com createMemoryRouter)
     index.css                 # Tailwind + tokens de tema shadcn
+    vite-env.d.ts             # tipos das variáveis VITE_*
     components/
-      ui/                     # gerado pelo shadcn (button.tsx) — editável, lint relaxado
+      ui/                     # gerado pelo shadcn — editável, lint relaxado
       layout/                 # AppShell, Sidebar, BottomNav, AppLogo, PageHeader, EmptyState, NotFoundPage, nav-items.ts
       theme/                  # ThemeProvider, theme-context (useTheme), ThemeToggle
-    features/<área>/          # páginas e lógica por funcionalidade (dashboard, transactions, settings)
-    lib/                      # funções puras (utils.ts, theme.ts) + testes ao lado
+    features/<área>/          # páginas e lógica por funcionalidade
+    lib/
+      supabase.ts             # cliente único (createClient<Database>)
+      supabase-config.ts      # valida VITE_SUPABASE_*; recusa chaves secretas
+      database.types.ts       # GERADO por `npm run db:types` — não editar à mão
+      theme.ts, utils.ts      # funções puras + testes ao lado
     test/setup.ts             # jest-dom + cleanup após cada teste
 ```
 
@@ -64,22 +76,33 @@ financas/                     # raiz do repositório Git
 
 **Tema:** valores `light | dark | system`, guardados em `localStorage` na chave `financas-theme`. Regras puras em `src/lib/theme.ts`; `ThemeProvider` aplica a classe `dark` no `<html>` e segue mudanças do sistema. A mesma chave e lógica estão duplicadas no script de `index.html` — se mudar uma, mudar a outra. Acessos a `localStorage` sempre em `try/catch`.
 
-**Testes existentes** (10, Vitest): `lib/utils.test.ts`, `lib/theme.test.ts` (ambiente node) e `components/layout/AppShell.test.tsx` (jsdom: navegação, link ativo, 404, troca e persistência de tema).
+**Supabase local:** API `http://127.0.0.1:54321`, Studio (painel) `http://127.0.0.1:54323`, Mailpit (e-mails de teste) `http://127.0.0.1:54324`, Postgres na porta 54322. Confirmação de e-mail desligada localmente; senha mínima 8 caracteres. As chaves locais são as de demonstração do Supabase, mas mesmo assim só a pública vai para o `.env`.
+
+**Testes:** `npm test` (unitários + componentes, `src/**/*.test.ts(x)`, sem rede) e `npm run test:rls` (integração em `tests/rls/`, config `vitest.rls.config.ts`, ficheiros em série, recusa correr contra URLs que não sejam locais). Os tipos de `tests/` são verificados por `tsconfig.tests.json`.
 
 ## Comandos (dentro de `financas/`)
 
-| Comando                              | O que faz                                              |
-| ------------------------------------ | ------------------------------------------------------ |
-| `npm run dev`                        | Servidor de desenvolvimento (localhost:5173)           |
-| `npm run build`                      | `tsc -b` + build Vite (verifica tipos)                 |
-| `npm run preview`                    | Serve a build                                          |
-| `npm run lint`                       | oxlint                                                 |
-| `npm test`                           | Vitest uma vez (`npm run test:watch` em modo contínuo) |
-| `npm run format`                     | Prettier (escreve)                                     |
-| `npm run format:check`               | Prettier (só verifica)                                 |
-| `npx shadcn@latest add <componente>` | Acrescenta um componente shadcn a `components/ui/`     |
+| Comando                              | O que faz                                                             |
+| ------------------------------------ | --------------------------------------------------------------------- |
+| `npm run dev`                        | Servidor de desenvolvimento (localhost:5173)                          |
+| `npm run build`                      | `tsc -b` + build Vite (verifica tipos de src, tests e configs)        |
+| `npm run preview`                    | Serve a build                                                         |
+| `npm run lint`                       | oxlint                                                                |
+| `npm test`                           | Vitest uma vez (`npm run test:watch` em modo contínuo)                |
+| `npm run test:rls`                   | Testes de integração/RLS contra o Supabase local                      |
+| `npm run format`                     | Prettier (escreve)                                                    |
+| `npm run format:check`               | Prettier (só verifica)                                                |
+| `npm run db:start` / `db:stop`       | Liga / desliga o Supabase local (Docker)                              |
+| `npm run db:status`                  | Mostra URLs e chaves locais                                           |
+| `npm run db:reset`                   | Recria a base local e aplica todas as migrations (apaga dados locais) |
+| `npm run db:types`                   | Regenera `src/lib/database.types.ts` a partir da base local           |
+| `npm run env:local`                  | Escreve `.env` com o URL e a chave pública locais                     |
+| `npx supabase migration new <nome>`  | Cria uma migration vazia em `supabase/migrations/`                    |
+| `npx shadcn@latest add <componente>` | Acrescenta um componente shadcn a `components/ui/`                    |
 
-**Verificação no fim de cada etapa:** `npm run build && npm run lint && npm test && npm run format:check` — todos com saída 0.
+**Primeira vez / outro computador:** `npm install` → `npm run db:start` → `npm run env:local` → `npm run dev`.
+
+**Verificação no fim de cada etapa:** `npm run build && npm run lint && npm test && npm run format:check && npm run test:rls` — todos com saída 0 (o último precisa do Supabase local a correr).
 
 ## Convenções de código
 
@@ -110,11 +133,11 @@ Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etap
 
 - [x] 1. Projeto base (Vite, TS, Tailwind, shadcn, oxlint, Prettier, Vitest) — commit `cb47291`
 - [x] 2. Layout responsivo (sidebar/barra inferior, rotas, tema) — verificado com testes e capturas a 360/390/1280px, claro e escuro
-- [ ] 3. **Supabase local — etapa atual.** CLI + Docker, cliente `src/lib/supabase.ts`, `.env`
+- [x] 3. Supabase local (CLI + Docker, cliente validado, `.env` gerado, teste de ligação)
 
 **Fase B — Núcleo do MVP**
 
-- [ ] 4. Autenticação e-mail + senha, rotas protegidas, `profiles` + RLS
+- [ ] 4. **Etapa atual —** Autenticação e-mail + senha, rotas protegidas, `profiles` + RLS
 - [ ] 5. Base de testes de isolamento entre utilizadores (`npm run test:rls`)
 - [ ] 6. Utilitários monetários (`money.ts`, centavos) + testes
 - [ ] 7. Categorias (+ RLS + testes)
