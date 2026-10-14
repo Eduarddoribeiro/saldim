@@ -34,6 +34,42 @@ export type Database = {
         }
         Relationships: []
       }
+      budgets: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          limite_centavos: number
+          mes: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          limite_centavos: number
+          mes: string
+          user_id?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          limite_centavos?: number
+          mes?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'budgets_category_fk'
+            columns: ['category_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'categories'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
+      }
       categories: {
         Row: {
           arquivada: boolean

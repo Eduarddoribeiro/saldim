@@ -134,11 +134,11 @@ function CategoryList({
           <button
             type="button"
             onClick={() => onSelect(category)}
+            aria-label={`Editar ${category.nome}`}
             className="flex min-h-14 w-full items-center gap-3 px-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none"
           >
             <CategoryBadge cor={category.cor} icone={category.icone} />
             <span className="flex-1 truncate font-medium">{category.nome}</span>
-            <span className="sr-only">Editar</span>
             <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
           </button>
         </li>

@@ -58,10 +58,11 @@ export function TransactionRow({
     <button
       type="button"
       onClick={onSelect}
+      // Nome explícito e bem pontuado para leitores de ecrã (texto sr-only solto fica colado ao resto)
+      aria-label={`${title}: ${isIncome ? 'receita' : 'despesa'} de ${formatMoney(transaction.valor_centavos, currency)}${subtitle ? `, ${subtitle}` : ''}. Editar`}
       className="flex min-h-16 w-full items-center gap-3 px-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none"
     >
       {content}
-      <span className="sr-only">Editar</span>
       <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
     </button>
   )

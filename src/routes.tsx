@@ -8,6 +8,7 @@ import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage'
 import { PublicOnly, RequireAuth } from '@/features/auth/route-guards'
 import { AccountsPage } from '@/features/accounts/AccountsPage'
 import { SignUpPage } from '@/features/auth/SignUpPage'
+import { BudgetsPage } from '@/features/budgets/BudgetsPage'
 import { CategoriesPage } from '@/features/categories/CategoriesPage'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
@@ -43,6 +44,7 @@ export const routes: RouteObject[] = [
         children: [
           { index: true, element: <DashboardPage /> },
           { path: 'transacoes', element: <TransactionsPage /> },
+          { path: 'orcamentos', element: <BudgetsPage /> },
           { path: 'configuracoes', element: <SettingsPage /> },
           { path: 'configuracoes/categorias', element: <CategoriesPage /> },
           { path: 'configuracoes/contas', element: <AccountsPage /> },

@@ -115,6 +115,7 @@ function AccountList({
             <button
               type="button"
               onClick={() => onSelect(account)}
+              aria-label={`Editar ${account.nome}: ${label}, saldo inicial ${formatMoney(account.saldo_inicial_centavos, currency)}`}
               className="flex min-h-16 w-full items-center gap-3 px-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none"
             >
               <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
@@ -130,7 +131,6 @@ function AccountList({
                   {formatMoney(account.saldo_inicial_centavos, currency)}
                 </span>
               </span>
-              <span className="sr-only">Editar</span>
               <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             </button>
           </li>

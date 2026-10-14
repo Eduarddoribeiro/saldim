@@ -137,6 +137,11 @@ describe('página de transações', () => {
     const supermercado = within(dia14).getByRole('button', { name: /Supermercado/ })
     expect(plain(supermercado.textContent)).toContain('-R$ 123,45')
     expect(supermercado).toHaveTextContent('Alimentação · Conta principal')
+    // Nome acessível completo e pontuado (o que um leitor de ecrã anuncia)
+    expect(supermercado).toHaveAccessibleName(
+      // \s aceita o espaço não separável que o Intl põe depois de "R$"
+      /^Supermercado: despesa de R\$\s123,45, Alimentação · Conta principal\. Editar$/,
+    )
 
     const dia5 = screen.getByRole('region', { name: /5 de outubro/ })
     // Sem descrição, o título é o nome da categoria; receitas levam "+"

@@ -68,6 +68,7 @@ financas/                     # raiz do repositório Git
       profile/                # profile-api, hooks (useProfile, useCurrency)
       transactions/           # transactions-api (paginado), hooks (useTransactions, useBalanceMovements), schemas, TransactionsPage, TransactionRow, TransactionFormDialog
       dashboard/              # DashboardPage, StatTile, CategorySpendingList, category-ranking (top 5 + "Outras")
+      budgets/                # budgets-api (inclui copyBudgets), hooks, budget-status (cor+ícone+texto), BudgetsPage, BudgetFormDialog
     lib/
       supabase.ts             # cliente único (createClient<Database>)
       supabase-config.ts      # valida VITE_SUPABASE_*; recusa chaves secretas
@@ -94,6 +95,7 @@ financas/                     # raiz do repositório Git
 | `/nova-senha`               | `ResetPasswordPage`  | sessão temporária do link de recuperação | feito                                                    |
 | `/`                         | `DashboardPage`      | `RequireAuth` (sem sessão → `/entrar`)   | feito (`?mes=YYYY-MM`)                                   |
 | `/transacoes`               | `TransactionsPage`   | `RequireAuth`                            | feito (`?mes=YYYY-MM`)                                   |
+| `/orcamentos`               | `BudgetsPage`        | `RequireAuth`                            | feito (`?mes=YYYY-MM`)                                   |
 | `/configuracoes`            | `SettingsPage`       | `RequireAuth`                            | Aparência, Organização, Conta                            |
 | `/configuracoes/categorias` | `CategoriesPage`     | `RequireAuth`                            | feito                                                    |
 | `/configuracoes/contas`     | `AccountsPage`       | `RequireAuth`                            | feito (mostra saldo inicial; saldo atual na Etapa 10/11) |
@@ -101,7 +103,7 @@ financas/                     # raiz do repositório Git
 
 **Autenticação:** só o `AuthProvider` chama `supabase.auth`; páginas e componentes usam `useAuth()` (ações devolvem `{ error }` já traduzido por `auth-errors.ts`, pelo `code` do erro). `RequireAuth` guarda a página pedida em `location.state.from` e o login volta lá — exceto quando a sessão termina dentro da app (botão Sair), para o próximo login começar no Início. Recuperação de senha: e-mail com link → `/nova-senha` (o supabase-js lê o token do URL). Nos testes de componentes usa-se `renderApp(path, fakeAuth({...}))`, sem rede.
 
-**Navegação:** `nav-items.ts` é a fonte única de links. `Sidebar` (visível a partir de `md`, 768px) e `BottomNav` (fixa em baixo, `md:hidden`, respeita `safe-area-inset-bottom`) usam `NavLink`, que marca o ativo com `aria-current="page"`. No telemóvel há um cabeçalho com logo + botão de tema; o `<main>` tem `pb-24` para não ficar por baixo da barra inferior.
+**Navegação:** `nav-items.ts` é a fonte única de links (Início, Transações, Orçamentos, Configurações; a barra inferior tem 4 colunas — rever se crescer). `Sidebar` (visível a partir de `md`, 768px) e `BottomNav` (fixa em baixo, `md:hidden`, respeita `safe-area-inset-bottom`) usam `NavLink`, que marca o ativo com `aria-current="page"`. No telemóvel há um cabeçalho com logo + botão de tema; o `<main>` tem `pb-24` para não ficar por baixo da barra inferior.
 
 **Tema:** valores `light | dark | system`, guardados em `localStorage` na chave `financas-theme`. Regras puras em `src/lib/theme.ts`; `ThemeProvider` aplica a classe `dark` no `<html>` e segue mudanças do sistema. A mesma chave e lógica estão duplicadas no script de `index.html` — se mudar uma, mudar a outra. Acessos a `localStorage` sempre em `try/catch`.
 
@@ -151,7 +153,7 @@ Os tipos de `tests/` e `e2e/` são verificados por `tsconfig.tests.json`.
 - **Organização:** código de uma funcionalidade em `src/features/<área>/`; peças partilhadas em `src/components/`; `components/ui/` só para componentes shadcn.
 - **Estilos:** só classes Tailwind com os tokens do tema (`bg-background`, `text-muted-foreground`…), nunca cores fixas — garante claro/escuro.
 - **Responsividade:** mobile-first; estilos base para telemóvel, `md:` para desktop. Confirmar a 360–390px e ~1280px, sem scroll horizontal. Itens de grelha/flex com texto longo precisam de `min-w-0` (+ `truncate`), senão alargam a página.
-- **Acessibilidade:** elementos semânticos (`nav`, `main`, `h1` por página), `aria-label` em botões só com ícone, ícones decorativos com `aria-hidden`, foco visível, áreas de toque ≥ 44px, contraste dos tokens do tema.
+- **Acessibilidade:** botões cujo texto visível não chega (linhas de lista, "Definir") levam `aria-label` explícito que começa pelo texto visível — texto `sr-only` com espaços nas pontas perde os espaços no nome acessível. Elementos semânticos (`nav`, `main`, `h1` por página), `aria-label` em botões só com ícone, ícones decorativos com `aria-hidden`, foco visível, áreas de toque ≥ 44px, contraste dos tokens do tema.
 - **Testes:** ficheiro `*.test.ts(x)` ao lado do código. Testes com DOM começam com `// @vitest-environment jsdom`. Testing Library a interagir como o utilizador (papéis e nomes acessíveis, `userEvent`), não detalhes internos.
 - **Dinheiro (a partir da Etapa 6):** valores sempre em centavos inteiros, nunca `float`; conversão só ao mostrar ou ao ler input.
 
@@ -185,9 +187,13 @@ Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etap
 - [x] 10. Cálculos financeiros (`src/lib/finance.ts`: monthSummary, accountBalance/balancesByAccount/totalBalance, spendingByCategory, budgetStatus) + 24 testes
 - [x] 11. Dashboard básico (saldo atual/previsto, resumo do mês, gastos por categoria em barras, últimas transações, saldo por conta) → **MVP concluído**
 
-**Fase C — Depois do MVP:** 12. Orçamentos · 13. Filtros e relatórios · 14. Deploy · 15. Google login, PWA, importar/exportar CSV, atualizações otimistas, recorrentes, metas.
+**Fase C — Depois do MVP**
 
-**Próxima etapa:** 12 (Orçamentos) — só depois de o utilizador rever o MVP.
+- [x] 12. Orçamentos (tabela `budgets` com FK composta e trigger só-despesa, um por categoria/mês, página com estado cor+ícone+texto, copiar do mês anterior sem substituir limites; RLS + isolamento + E2E)
+
+**Seguintes:** 13. Filtros e relatórios · 14. Deploy · 15. Google login, PWA, importar/exportar CSV, atualizações otimistas, recorrentes, metas.
+
+**Próxima etapa:** 13 (filtros, pesquisa e relatórios). A 14 (deploy) precisa de autorização e credenciais.
 
 ### Decisões em aberto (precisam do utilizador)
 

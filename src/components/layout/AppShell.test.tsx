@@ -10,7 +10,7 @@ beforeEach(() => {
 })
 
 describe('AppShell', () => {
-  it('mostra a navegação com as três secções', () => {
+  it('mostra a navegação com as quatro secções', () => {
     renderApp()
     // Há duas navegações (sidebar e barra inferior); o CSS decide qual se vê
     const navs = screen.getAllByRole('navigation', { name: 'Navegação principal' })
@@ -20,6 +20,7 @@ describe('AppShell', () => {
       expect(links.map((link) => link.textContent)).toEqual([
         'Início',
         'Transações',
+        'Orçamentos',
         'Configurações',
       ])
     }
