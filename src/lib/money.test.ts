@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { assertCents, centsToInput, formatMoney, MAX_CENTS, parseMoney } from './money'
 
 // Intl usa espaços não separáveis entre o símbolo e o número; normalizamos para comparar.
-const plain = (text: string) => text.replace(/[  ]/g, ' ')
+const plain = (text: string) => text.replace(/[\u00a0\u202f]/g, ' ')
 
 describe('parseMoney', () => {
   it.each([
@@ -18,7 +18,7 @@ describe('parseMoney', () => {
     ['12.5', 1250], // ponto + 1–2 dígitos = decimal (teclados em inglês)
     ['12.50', 1250],
     ['R$ 1.234,56', 123456],
-    ['R$ 12,00', 1200],
+    ['R$\u00a012,00', 1200],
     ['€ 7,5', 750],
     ['  42,00  ', 4200],
     ['007,10', 710],

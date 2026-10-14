@@ -25,8 +25,12 @@ const INTEGER = /^\d+$/ // 1234
  * parseMoney('1.234,56') → 123456 · parseMoney('R$ 12,5') → 1250 · parseMoney('12.50') → 1250
  * parseMoney('1.234') → 123400 · parseMoney('-10', { allowNegative: true }) → -1000
  */
-export function parseMoney(input: string, options: { allowNegative?: boolean } = {}): number | null {
-  let text = input.replace(/R\$|€/g, '').replace(/[\s  ]/g, '')
+export function parseMoney(
+  input: string,
+  options: { allowNegative?: boolean } = {},
+): number | null {
+  // s também apanha os espaços não separáveis (U+00A0, U+202F) que o Intl e alguns teclados usam
+  let text = input.replace(/R\$|€/g, '').replace(/\s/g, '')
 
   let negative = false
   if (text.startsWith('-') || text.startsWith('−')) {

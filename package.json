@@ -19,7 +19,8 @@
     "env:local": "node scripts/write-local-env.mjs",
     "db:types": "supabase gen types typescript --local --schema public > src/lib/database.types.ts && prettier --write --log-level warn src/lib/database.types.ts",
     "test:rls": "vitest run --config vitest.rls.config.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "verify": "npm run build && npm run lint && npm test && npm run format:check && npm run test:rls && npm run test:e2e"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
