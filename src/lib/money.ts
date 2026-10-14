@@ -29,7 +29,7 @@ export function parseMoney(
   input: string,
   options: { allowNegative?: boolean } = {},
 ): number | null {
-  // s também apanha os espaços não separáveis (U+00A0, U+202F) que o Intl e alguns teclados usam
+  // O padrão \s também apanha os espaços não separáveis (U+00A0, U+202F) que o Intl e alguns teclados usam
   let text = input.replace(/R\$|€/g, '').replace(/\s/g, '')
 
   let negative = false
