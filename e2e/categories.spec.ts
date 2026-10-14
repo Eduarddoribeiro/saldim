@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { signUp, uniqueEmail } from './helpers'
+import { expectNoHorizontalScroll, signUp, uniqueEmail } from './helpers'
 
 test('categorias: iniciais, criar, editar, arquivar', async ({ page }) => {
   await signUp(page, uniqueEmail('categorias'))
@@ -12,6 +12,7 @@ test('categorias: iniciais, criar, editar, arquivar', async ({ page }) => {
   const lista = page.getByRole('region', { name: 'Categorias de despesas' })
   await expect(lista.getByRole('button', { name: /Alimentação/ })).toBeVisible()
   await expect(lista.getByRole('listitem')).toHaveCount(9)
+  await expectNoHorizontalScroll(page)
 
   // Criar
   await page.getByRole('button', { name: 'Nova categoria' }).click()

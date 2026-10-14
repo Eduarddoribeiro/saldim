@@ -50,3 +50,11 @@ export async function lastEmailLink(email: string): Promise<string> {
   }
   throw new Error(`Nenhum e-mail com link para ${email}`)
 }
+
+/** Falha se a página tiver scroll horizontal (algo mais largo do que o ecrã). */
+export async function expectNoHorizontalScroll(page: Page) {
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  )
+  expect(overflow, 'a página não deve ter scroll horizontal').toBeLessThanOrEqual(0)
+}

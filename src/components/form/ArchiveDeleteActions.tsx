@@ -25,21 +25,24 @@ export function ArchiveDeleteActions({
   onDelete,
 }: {
   itemName: string
-  archived: boolean
+  archived?: boolean
   disabled?: boolean
   /** Explicação extra no diálogo de confirmação (ex.: "Se já tiver transações, arquiva-a."). */
   deleteHint?: string
-  onToggleArchive: () => void
+  /** Sem esta função não há botão de arquivar (ex.: transações só se apagam). */
+  onToggleArchive?: () => void
   onDelete: () => void
 }) {
   const [confirming, setConfirming] = useState(false)
 
   return (
     <div className="flex flex-wrap gap-2 border-t pt-3">
-      <Button type="button" variant="outline" disabled={disabled} onClick={onToggleArchive}>
-        {archived ? <ArchiveRestore aria-hidden /> : <Archive aria-hidden />}
-        {archived ? 'Reativar' : 'Arquivar'}
-      </Button>
+      {onToggleArchive && (
+        <Button type="button" variant="outline" disabled={disabled} onClick={onToggleArchive}>
+          {archived ? <ArchiveRestore aria-hidden /> : <Archive aria-hidden />}
+          {archived ? 'Reativar' : 'Arquivar'}
+        </Button>
+      )}
       <Button
         type="button"
         variant="destructive"

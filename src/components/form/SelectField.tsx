@@ -8,6 +8,8 @@ type SelectFieldProps = ComponentProps<'select'> & {
   label: string
   error?: string
   options: { value: string; label: string }[]
+  /** Primeira opção vazia (ex.: "Escolhe uma categoria"): obriga a uma escolha consciente. */
+  placeholder?: string
 }
 
 /**
@@ -19,6 +21,7 @@ export function SelectField({
   label,
   error,
   options,
+  placeholder,
   className,
   ...selectProps
 }: SelectFieldProps) {
@@ -39,6 +42,11 @@ export function SelectField({
           )}
           {...selectProps}
         >
+          {placeholder !== undefined && (
+            <option value="" disabled>
+              {placeholder}
+            </option>
+          )}
           {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}

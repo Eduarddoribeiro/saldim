@@ -90,6 +90,58 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          account_id: string
+          category_id: string
+          created_at: string
+          data: string
+          descricao: string
+          id: string
+          tipo: Database['public']['Enums']['tipo_movimento']
+          user_id: string
+          valor_centavos: number
+        }
+        ComputedFields: never
+        Insert: {
+          account_id: string
+          category_id: string
+          created_at?: string
+          data?: string
+          descricao?: string
+          id?: string
+          tipo: Database['public']['Enums']['tipo_movimento']
+          user_id?: string
+          valor_centavos: number
+        }
+        Update: {
+          account_id?: string
+          category_id?: string
+          created_at?: string
+          data?: string
+          descricao?: string
+          id?: string
+          tipo?: Database['public']['Enums']['tipo_movimento']
+          user_id?: string
+          valor_centavos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'transactions_account_fk'
+            columns: ['account_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id', 'user_id']
+          },
+          {
+            foreignKeyName: 'transactions_category_fk'
+            columns: ['category_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'categories'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

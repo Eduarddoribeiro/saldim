@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { signUp, uniqueEmail } from './helpers'
+import { expectNoHorizontalScroll, signUp, uniqueEmail } from './helpers'
 
 // Intl usa espaços não separáveis entre "R$" e o número
 const money = (text: string) => new RegExp(text.replace(/[.$]/g, '\\$&').replace(' ', '\\s'))
@@ -25,6 +25,7 @@ test('contas: conta inicial, criar com saldo, editar, arquivar', async ({ page }
   await expect(dialogo).toBeHidden()
   const poupanca = lista.getByRole('button', { name: /Poupança/ })
   await expect(poupanca).toContainText(money('R$ 1.234,56'))
+  await expectNoHorizontalScroll(page)
 
   // Editar: o campo vem preenchido sem separador de milhares
   await poupanca.click()
