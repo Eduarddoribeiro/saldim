@@ -1,5 +1,7 @@
+import { Suspense } from 'react'
 import { Outlet } from 'react-router'
 import { AppLogo } from '@/components/layout/AppLogo'
+import { PageLoader } from '@/components/layout/PageLoader'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
 
 /** Moldura das páginas de autenticação: cartão centrado, sem navegação da app. */
@@ -12,7 +14,9 @@ export function AuthLayout() {
       </header>
       <main className="flex flex-1 items-start justify-center px-4 pt-6 pb-12 sm:items-center sm:pt-0">
         <div className="w-full max-w-sm">
-          <Outlet />
+          <Suspense fallback={<PageLoader />}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
     </div>

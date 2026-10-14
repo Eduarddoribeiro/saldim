@@ -1,7 +1,7 @@
 import { monthRange, type MonthKey } from '@/lib/dates'
 import { dbErrorMessage, UserFacingError } from '@/lib/db-errors'
 import type { Tables } from '@/lib/database.types'
-import type { AccountMovement } from '@/lib/finance'
+import type { AccountMovement, CategoryMovement } from '@/lib/finance'
 import { fetchAllPages } from '@/lib/pagination'
 import { supabase } from '@/lib/supabase'
 import type { TransactionFormValues } from './schemas'
@@ -51,15 +51,19 @@ export async function listTransactions(month: MonthKey): Promise<Transaction[]> 
   return data
 }
 
+/** Movimento sem texto nem datas de registo: só o necessário para os cálculos de src/lib/finance.ts. */
+export type LedgerMovement = AccountMovement & CategoryMovement
+
 /**
- * TODAS as transações (só as colunas necessárias) para calcular saldos com src/lib/finance.ts.
- * Decisão do MVP (docs/plano.md): cálculo em TypeScript; se o volume crescer, passa para uma view SQL.
+ * TODAS as transações (só as colunas necessárias) para os saldos, as séries mensais e as comparações
+ * do Início. Decisão do MVP (docs/plano.md): cálculo em TypeScript; se o volume crescer, passa para
+ * uma view SQL.
  */
-export async function listBalanceMovements(): Promise<AccountMovement[]> {
+export async function listBalanceMovements(): Promise<LedgerMovement[]> {
   const { data, error } = await fetchAllPages((start, end) =>
     supabase
       .from('transactions')
-      .select('account_id, tipo, valor_centavos, data')
+      .select('account_id, category_id, tipo, valor_centavos, data')
       .order('data')
       .order('id')
       .range(start, end),

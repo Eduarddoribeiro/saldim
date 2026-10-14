@@ -4,10 +4,13 @@ import {
   currentMonth,
   formatDay,
   formatMonth,
+  formatMonthShort,
   isIsoDate,
   isMonthKey,
+  lastDayOfMonth,
   monthOf,
   monthRange,
+  monthsEndingAt,
   todayIso,
 } from './dates'
 
@@ -48,6 +51,26 @@ describe('meses', () => {
     expect(isMonthKey('2026-13')).toBe(false)
     expect(isMonthKey('2026-1')).toBe(false)
     expect(isMonthKey(null)).toBe(false)
+  })
+})
+
+describe('janelas de meses', () => {
+  it('lastDayOfMonth: meses de 30 e 31 dias, fevereiro normal e bissexto', () => {
+    expect(lastDayOfMonth('2026-10')).toBe('2026-10-31')
+    expect(lastDayOfMonth('2026-09')).toBe('2026-09-30')
+    expect(lastDayOfMonth('2026-02')).toBe('2026-02-28')
+    expect(lastDayOfMonth('2028-02')).toBe('2028-02-29')
+    expect(lastDayOfMonth('2026-12')).toBe('2026-12-31')
+  })
+
+  it('monthsEndingAt: do mais antigo ao mês indicado, atravessando o ano', () => {
+    expect(monthsEndingAt('2026-02', 4)).toEqual(['2025-11', '2025-12', '2026-01', '2026-02'])
+    expect(monthsEndingAt('2026-10', 1)).toEqual(['2026-10'])
+  })
+
+  it('formatMonthShort: rótulo curto, com ano opcional', () => {
+    expect(formatMonthShort('2026-10')).toBe('out')
+    expect(formatMonthShort('2027-01', true)).toBe('jan 27')
   })
 })
 

@@ -1,7 +1,14 @@
 // Cálculos financeiros do Saldo — implementação EXATA das regras de docs/plano.md → "Cálculos".
 // Funções puras: recebem dados, devolvem números. Tudo em centavos inteiros (sem vírgula flutuante).
 
-import { monthRange, type IsoDate, type MonthKey } from './dates'
+import {
+  addMonths,
+  lastDayOfMonth,
+  monthOf,
+  monthRange,
+  type IsoDate,
+  type MonthKey,
+} from './dates'
 
 export type Movement = {
   tipo: 'receita' | 'despesa'
@@ -123,6 +130,115 @@ export function spendingByCategory(
   return [...totals]
     .map(([categoryId, total]) => ({ categoryId, total, percent: Math.round((total * 100) / all) }))
     .sort((a, b) => b.total - a.total || a.categoryId.localeCompare(b.categoryId))
+}
+
+export type Comparison = {
+  atual: number
+  anterior: number
+  /** atual − anterior, em centavos */
+  diferenca: number
+  /**
+   * Variação inteira em % face ao anterior (sobre o valor absoluto, para um resultado negativo que
+   * melhora dar uma variação positiva). null quando o anterior é 0: não há base para comparar.
+   */
+  percent: number | null
+}
+
+/** Compara um valor deste período com o do período anterior. */
+export function compareAmounts(atual: number, anterior: number): Comparison {
+  const diferenca = atual - anterior
+  return {
+    atual,
+    anterior,
+    diferenca,
+    percent: anterior === 0 ? null : Math.round((diferenca * 100) / Math.abs(anterior)),
+  }
+}
+
+export type MonthlyTotals = MonthSummary & { month: MonthKey }
+
+/**
+ * Receitas, despesas e resultado de cada mês pedido, pela ordem pedida (mesmas regras de
+ * monthSummary). Meses sem movimentos aparecem com zeros: um mês vazio é informação, não um buraco.
+ */
+export function monthlySeries(movements: Movement[], months: MonthKey[]): MonthlyTotals[] {
+  const totals = new Map<MonthKey, MonthlyTotals>(
+    months.map((month) => [month, { month, receitas: 0, despesas: 0, resultado: 0 }]),
+  )
+  for (const movement of movements) {
+    const row = totals.get(monthOf(movement.data))
+    if (!row) continue
+    if (movement.tipo === 'receita') row.receitas += movement.valor_centavos
+    else row.despesas += movement.valor_centavos
+    row.resultado += signedAmount(movement)
+  }
+  return months.map((month) => totals.get(month)!)
+}
+
+export type BalancePoint = {
+  month: MonthKey
+  /** Data de corte do saldo: último dia do mês, ou hoje no mês atual */
+  ate: IsoDate
+  saldo: number
+  /** true = mês que ainda não começou: o saldo inclui transações agendadas (é uma previsão) */
+  previsto: boolean
+}
+
+/**
+ * Saldo total (todas as contas, incluindo arquivadas, como em totalBalance) no fim de cada mês:
+ * Σ saldos iniciais + Σ movimentos com data <= data de corte.
+ * - mês passado: corte no último dia do mês;
+ * - mês atual: corte em hoje, para o último ponto bater com o "Saldo atual";
+ * - mês futuro: corte no último dia do mês, marcado como previsto.
+ * As contas não têm data de abertura, por isso o saldo inicial conta em todos os meses.
+ */
+export function balanceSeries(
+  accounts: { id: string; saldo_inicial_centavos: number }[],
+  movements: AccountMovement[],
+  months: MonthKey[],
+  today: IsoDate,
+): BalancePoint[] {
+  const accountIds = new Set(accounts.map((account) => account.id))
+  const inicial = accounts.reduce((sum, account) => sum + account.saldo_inicial_centavos, 0)
+  return months.map((month) => {
+    const end = lastDayOfMonth(month)
+    const previsto = monthRange(month).from > today
+    const ate = previsto || end <= today ? end : today
+    let saldo = inicial
+    for (const movement of movements) {
+      // Igual a balancesByAccount: movimentos de contas desconhecidas não contam
+      if (movement.data <= ate && accountIds.has(movement.account_id)) {
+        saldo += signedAmount(movement)
+      }
+    }
+    return { month, ate, saldo, previsto }
+  })
+}
+
+export type CategoryComparison = Comparison & { categoryId: string }
+
+/**
+ * Gasto de cada categoria no mês e no mês anterior (regras de spendingByCategory). Inclui as
+ * categorias que só tiveram gastos num dos dois meses. Ordem: maior gasto atual, depois maior gasto
+ * anterior, depois id (estável).
+ */
+export function categoryComparison(
+  movements: CategoryMovement[],
+  month: MonthKey,
+): CategoryComparison[] {
+  const totals = (target: MonthKey) =>
+    new Map(spendingByCategory(movements, target).map((row) => [row.categoryId, row.total]))
+  const atual = totals(month)
+  const anterior = totals(addMonths(month, -1))
+  return [...new Set([...atual.keys(), ...anterior.keys()])]
+    .map((categoryId) => ({
+      categoryId,
+      ...compareAmounts(atual.get(categoryId) ?? 0, anterior.get(categoryId) ?? 0),
+    }))
+    .sort(
+      (a, b) =>
+        b.atual - a.atual || b.anterior - a.anterior || a.categoryId.localeCompare(b.categoryId),
+    )
 }
 
 export type BudgetState = 'ok' | 'alerta' | 'excedido'

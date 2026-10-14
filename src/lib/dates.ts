@@ -46,6 +46,27 @@ export function monthRange(month: MonthKey): { from: IsoDate; to: IsoDate } {
   return { from: `${month}-01`, to: `${addMonths(month, 1)}-01` }
 }
 
+/** Último dia do mês ('2026-02' → '2026-02-28'). */
+export function lastDayOfMonth(month: MonthKey): IsoDate {
+  const [year, monthIndex] = month.split('-').map(Number)
+  // Dia 0 do mês seguinte = último dia deste mês
+  return `${month}-${pad(new Date(year, monthIndex, 0).getDate())}`
+}
+
+/** Os `count` meses que terminam em `end`, do mais antigo para o mais recente. */
+export function monthsEndingAt(end: MonthKey, count: number): MonthKey[] {
+  return Array.from({ length: count }, (_, index) => addMonths(end, index - count + 1))
+}
+
+/** Rótulo curto para eixos: 'out' ou, com ano, 'out 26'. */
+export function formatMonthShort(month: MonthKey, withYear = false): string {
+  const [year, monthIndex] = month.split('-').map(Number)
+  const name = new Intl.DateTimeFormat('pt-PT', { month: 'short' })
+    .format(new Date(year, monthIndex - 1, 1))
+    .replace('.', '')
+  return withYear ? `${name} ${String(year).slice(2)}` : name
+}
+
 /** 'outubro de 2026' */
 export function formatMonth(month: MonthKey): string {
   const [year, monthIndex] = month.split('-').map(Number)

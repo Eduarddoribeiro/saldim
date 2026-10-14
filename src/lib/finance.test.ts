@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
   accountBalance,
+  balanceSeries,
   balancesByAccount,
   budgetStatus,
+  categoryComparison,
+  compareAmounts,
   isInMonth,
+  monthlySeries,
   monthSummary,
   signedAmount,
   spendingByCategory,
@@ -182,5 +186,194 @@ describe('budgetStatus', () => {
     expect(() => budgetStatus(0, 10)).toThrow(RangeError)
     expect(() => budgetStatus(-5, 10)).toThrow(RangeError)
     expect(() => budgetStatus(10.5, 10)).toThrow(RangeError)
+  })
+})
+
+describe('compareAmounts (comparação com o período anterior)', () => {
+  it('diferença em centavos e percentagem inteira', () => {
+    expect(compareAmounts(12000, 10000)).toEqual({
+      atual: 12000,
+      anterior: 10000,
+      diferenca: 2000,
+      percent: 20,
+    })
+    expect(compareAmounts(7500, 10000)).toMatchObject({ diferenca: -2500, percent: -25 })
+    expect(compareAmounts(10000, 10000)).toMatchObject({ diferenca: 0, percent: 0 })
+  })
+
+  it('sem base de comparação (anterior = 0) não inventa percentagem', () => {
+    expect(compareAmounts(5000, 0)).toMatchObject({ diferenca: 5000, percent: null })
+    expect(compareAmounts(0, 0)).toMatchObject({ diferenca: 0, percent: null })
+  })
+
+  it('resultado negativo que melhora dá variação positiva (divide pelo valor absoluto)', () => {
+    // −100,00 → −50,00: melhorou 50 %
+    expect(compareAmounts(-5000, -10000)).toMatchObject({ diferenca: 5000, percent: 50 })
+    // +100,00 → −100,00: piorou 200 %
+    expect(compareAmounts(-10000, 10000)).toMatchObject({ diferenca: -20000, percent: -200 })
+  })
+
+  it('arredonda a percentagem ao inteiro mais próximo', () => {
+    expect(compareAmounts(1, 3).percent).toBe(-67) // −66,67 %
+    expect(compareAmounts(4, 3).percent).toBe(33) // +33,33 %
+  })
+})
+
+describe('monthlySeries (receitas × despesas por mês)', () => {
+  const meses = ['2026-08', '2026-09', '2026-10']
+
+  it('um ponto por mês pedido, pela ordem pedida; meses vazios com zeros', () => {
+    const serie = monthlySeries(
+      [
+        tx({ tipo: 'receita', valor_centavos: 300000, data: '2026-08-05' }),
+        tx({ tipo: 'despesa', valor_centavos: 120050, data: '2026-08-31' }),
+        tx({ tipo: 'despesa', valor_centavos: 999, data: '2026-10-01' }),
+      ],
+      meses,
+    )
+    expect(serie).toEqual([
+      { month: '2026-08', receitas: 300000, despesas: 120050, resultado: 179950 },
+      { month: '2026-09', receitas: 0, despesas: 0, resultado: 0 },
+      { month: '2026-10', receitas: 0, despesas: 999, resultado: -999 },
+    ])
+  })
+
+  it('ignora movimentos fora dos meses pedidos (limites de mês)', () => {
+    const serie = monthlySeries(
+      [
+        tx({ data: '2026-07-31', valor_centavos: 1 }),
+        tx({ data: '2026-11-01', valor_centavos: 2 }),
+        tx({ data: '2026-10-31', valor_centavos: 4 }),
+      ],
+      meses,
+    )
+    expect(serie.map((row) => row.despesas)).toEqual([0, 0, 4])
+  })
+
+  it('cada mês dá exatamente o mesmo que monthSummary', () => {
+    const movimentos = [
+      tx({ tipo: 'receita', valor_centavos: 500000, data: '2026-09-01' }),
+      tx({ valor_centavos: 12345, data: '2026-09-30' }),
+      tx({ valor_centavos: 777, data: '2026-10-15' }),
+    ]
+    for (const row of monthlySeries(movimentos, meses)) {
+      expect(row).toEqual({ month: row.month, ...monthSummary(movimentos, row.month) })
+    }
+  })
+
+  it('sem movimentos: só zeros', () => {
+    expect(monthlySeries([], meses).every((row) => row.receitas + row.despesas === 0)).toBe(true)
+  })
+})
+
+describe('balanceSeries (evolução do saldo)', () => {
+  const contas = [
+    { id: 'banco', saldo_inicial_centavos: 100000 },
+    { id: 'antiga', saldo_inicial_centavos: 5000 }, // arquivada: conta igual
+  ]
+  const today = '2026-10-14'
+
+  it('saldo no fim de cada mês: saldos iniciais + movimentos até ao último dia', () => {
+    const serie = balanceSeries(
+      contas,
+      [
+        tx({ tipo: 'receita', valor_centavos: 300000, data: '2026-08-31' }),
+        tx({ valor_centavos: 50000, data: '2026-09-01' }),
+        tx({ account_id: 'antiga', valor_centavos: 5000, data: '2026-09-30' }),
+      ],
+      ['2026-07', '2026-08', '2026-09'],
+      today,
+    )
+    expect(serie).toEqual([
+      { month: '2026-07', ate: '2026-07-31', saldo: 105000, previsto: false },
+      { month: '2026-08', ate: '2026-08-31', saldo: 405000, previsto: false },
+      { month: '2026-09', ate: '2026-09-30', saldo: 350000, previsto: false },
+    ])
+  })
+
+  it('no mês atual corta em hoje e bate com o saldo atual (totalBalance)', () => {
+    const movimentos = [
+      tx({ tipo: 'receita', valor_centavos: 200000, data: '2026-10-01' }),
+      tx({ valor_centavos: 30000, data: '2026-10-14' }), // hoje: conta
+      tx({ valor_centavos: 99900, data: '2026-10-20' }), // agendada: ainda não conta
+    ]
+    const [ponto] = balanceSeries(contas, movimentos, ['2026-10'], today)
+    expect(ponto).toEqual({ month: '2026-10', ate: today, saldo: 275000, previsto: false })
+    expect(ponto.saldo).toBe(totalBalance(contas, movimentos, { today }))
+  })
+
+  it('meses futuros são previsão: incluem transações agendadas até ao fim do mês', () => {
+    const movimentos = [
+      tx({ valor_centavos: 99900, data: '2026-10-20' }),
+      tx({ tipo: 'receita', valor_centavos: 1000, data: '2026-11-30' }),
+      tx({ tipo: 'receita', valor_centavos: 7, data: '2026-12-01' }),
+    ]
+    const [novembro] = balanceSeries(contas, movimentos, ['2026-11'], today)
+    expect(novembro).toEqual({ month: '2026-11', ate: '2026-11-30', saldo: 6100, previsto: true })
+  })
+
+  it('pode ficar negativo; sem contas nem movimentos é zero', () => {
+    const [ponto] = balanceSeries(
+      [{ id: 'banco', saldo_inicial_centavos: 0 }],
+      [tx({ valor_centavos: 2500, data: '2026-09-10' })],
+      ['2026-09'],
+      today,
+    )
+    expect(ponto.saldo).toBe(-2500)
+    expect(balanceSeries([], [], ['2026-09'], today)[0].saldo).toBe(0)
+  })
+
+  it('ignora movimentos de contas que não estão na lista (como balancesByAccount)', () => {
+    const [ponto] = balanceSeries(
+      [{ id: 'banco', saldo_inicial_centavos: 0 }],
+      [tx({ account_id: 'outra', valor_centavos: 2500, data: '2026-09-10' })],
+      ['2026-09'],
+      today,
+    )
+    expect(ponto.saldo).toBe(0)
+  })
+
+  it('fevereiro de ano bissexto corta no dia 29', () => {
+    const [ponto] = balanceSeries(contas, [], ['2028-02'], '2028-03-10')
+    expect(ponto.ate).toBe('2028-02-29')
+  })
+})
+
+describe('categoryComparison (gastos por categoria vs mês anterior)', () => {
+  it('compara cada categoria com o mês anterior, incluindo as que só existem num deles', () => {
+    const linhas = categoryComparison(
+      [
+        tx({ category_id: 'alim', valor_centavos: 30000, data: '2026-10-02' }),
+        tx({ category_id: 'alim', valor_centavos: 20000, data: '2026-09-30' }),
+        tx({ category_id: 'casa', valor_centavos: 100000, data: '2026-10-01' }),
+        tx({ category_id: 'lazer', valor_centavos: 8000, data: '2026-09-01' }),
+        // Fora dos dois meses e receitas: não contam
+        tx({ category_id: 'alim', valor_centavos: 1, data: '2026-08-31' }),
+        tx({ category_id: 'sal', tipo: 'receita', valor_centavos: 500000, data: '2026-10-05' }),
+      ],
+      '2026-10',
+    )
+    expect(linhas).toEqual([
+      { categoryId: 'casa', atual: 100000, anterior: 0, diferenca: 100000, percent: null },
+      { categoryId: 'alim', atual: 30000, anterior: 20000, diferenca: 10000, percent: 50 },
+      { categoryId: 'lazer', atual: 0, anterior: 8000, diferenca: -8000, percent: -100 },
+    ])
+  })
+
+  it('janeiro compara com dezembro do ano anterior', () => {
+    const linhas = categoryComparison(
+      [
+        tx({ valor_centavos: 500, data: '2025-12-31' }),
+        tx({ valor_centavos: 1000, data: '2026-01-01' }),
+      ],
+      '2026-01',
+    )
+    expect(linhas).toEqual([
+      { categoryId: 'alim', atual: 1000, anterior: 500, diferenca: 500, percent: 100 },
+    ])
+  })
+
+  it('sem despesas nos dois meses: lista vazia', () => {
+    expect(categoryComparison([], '2026-10')).toEqual([])
   })
 })

@@ -87,8 +87,30 @@ export function formatMoney(
   options: { signDisplay?: 'auto' | 'always' | 'exceptZero' } = {},
 ): string {
   assertCents(cents)
-  // Única divisão por 100 da app: acontece só aqui, na apresentação.
+  // A divisão por 100 só acontece na apresentação: aqui e em formatMoneyCompact.
   return formatter(currency, options.signDisplay ?? 'auto').format(cents / 100)
+}
+
+const compactFormatters = new Map<Currency, Intl.NumberFormat>()
+
+/**
+ * Centavos → texto curto, só para eixos de gráficos: 123456789 → "R$ 1,2 mi".
+ * Arredonda: os valores exatos ficam nas dicas e nas tabelas, que usam formatMoney.
+ */
+export function formatMoneyCompact(cents: number, currency: Currency = 'BRL'): string {
+  assertCents(cents)
+  let cached = compactFormatters.get(currency)
+  if (!cached) {
+    cached = new Intl.NumberFormat(CURRENCY_LOCALE[currency], {
+      style: 'currency',
+      currency,
+      notation: 'compact',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 1,
+    })
+    compactFormatters.set(currency, cached)
+  }
+  return cached.format(cents / 100)
 }
 
 /** Centavos → texto para preencher um campo editável: 123456 → "1234,56" (sem milhares nem símbolo). */

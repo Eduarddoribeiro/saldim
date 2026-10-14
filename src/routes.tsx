@@ -2,17 +2,31 @@ import type { RouteObject } from 'react-router'
 import { AppShell } from '@/components/layout/AppShell'
 import { NotFoundPage } from '@/components/layout/NotFoundPage'
 import { AuthLayout } from '@/features/auth/AuthLayout'
-import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage'
-import { LoginPage } from '@/features/auth/LoginPage'
-import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage'
 import { PublicOnly, RequireAuth } from '@/features/auth/route-guards'
-import { AccountsPage } from '@/features/accounts/AccountsPage'
-import { SignUpPage } from '@/features/auth/SignUpPage'
-import { BudgetsPage } from '@/features/budgets/BudgetsPage'
-import { CategoriesPage } from '@/features/categories/CategoriesPage'
-import { DashboardPage } from '@/features/dashboard/DashboardPage'
-import { SettingsPage } from '@/features/settings/SettingsPage'
-import { TransactionsPage } from '@/features/transactions/TransactionsPage'
+import { lazyPage as page } from '@/lib/lazy-page'
+
+// Cada página é um ficheiro JS à parte, descarregado só quando se abre (divisão do bundle por rotas).
+// Os layouts e as guardas ficam no ficheiro principal: aparecem logo e mostram o "A carregar…".
+// O <Suspense> que espera pelas páginas está no AppShell e no AuthLayout.
+const LoginPage = page(() => import('@/features/auth/LoginPage'), 'LoginPage')
+const SignUpPage = page(() => import('@/features/auth/SignUpPage'), 'SignUpPage')
+const ForgotPasswordPage = page(
+  () => import('@/features/auth/ForgotPasswordPage'),
+  'ForgotPasswordPage',
+)
+const ResetPasswordPage = page(
+  () => import('@/features/auth/ResetPasswordPage'),
+  'ResetPasswordPage',
+)
+const DashboardPage = page(() => import('@/features/dashboard/DashboardPage'), 'DashboardPage')
+const TransactionsPage = page(
+  () => import('@/features/transactions/TransactionsPage'),
+  'TransactionsPage',
+)
+const BudgetsPage = page(() => import('@/features/budgets/BudgetsPage'), 'BudgetsPage')
+const SettingsPage = page(() => import('@/features/settings/SettingsPage'), 'SettingsPage')
+const CategoriesPage = page(() => import('@/features/categories/CategoriesPage'), 'CategoriesPage')
+const AccountsPage = page(() => import('@/features/accounts/AccountsPage'), 'AccountsPage')
 
 // As rotas ficam separadas do router para os testes as poderem usar com um router em memória
 export const routes: RouteObject[] = [

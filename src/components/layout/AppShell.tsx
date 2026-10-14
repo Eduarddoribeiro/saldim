@@ -1,7 +1,9 @@
+import { Suspense } from 'react'
 import { Outlet } from 'react-router'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import { AppLogo } from './AppLogo'
 import { BottomNav } from './BottomNav'
+import { PageLoader } from './PageLoader'
 import { Sidebar } from './Sidebar'
 
 /**
@@ -22,7 +24,9 @@ export function AppShell() {
 
         {/* pb-24 no telemóvel para o conteúdo não ficar escondido atrás da barra inferior */}
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-6 pb-24 md:px-8 md:pt-8 md:pb-8">
-          <Outlet />
+          <Suspense fallback={<PageLoader />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
 
