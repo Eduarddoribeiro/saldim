@@ -179,8 +179,8 @@ Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etap
 - [x] 7. Categorias (enum `tipo_movimento`, 12 categorias iniciais por trigger, nome único por tipo, cores/ícones, arquivar/apagar; RLS + isolamento + E2E)
 - [x] 8. Contas (enum `tipo_conta`, "Conta principal" criada por trigger, saldo inicial em centavos podendo ser negativo, nome único; RLS + isolamento + E2E)
 - [x] 9. Receitas e despesas (FKs compostas, tipo da categoria validado por trigger, lista por mês/dia, criar/editar/apagar; RLS + isolamento + E2E)
-- [ ] 10. **Etapa atual —** Cálculos financeiros (`finance.ts`) + testes
-- [ ] 11. Dashboard básico → **MVP**
+- [x] 10. Cálculos financeiros (`src/lib/finance.ts`: monthSummary, accountBalance/balancesByAccount/totalBalance, spendingByCategory, budgetStatus) + 24 testes
+- [ ] 11. **Etapa atual —** Dashboard básico → **MVP**
 
 **Fase C — Depois do MVP:** 12. Orçamentos · 13. Filtros e relatórios · 14. Deploy · 15. Google login, PWA, importar/exportar CSV, atualizações otimistas, recorrentes, metas.
 

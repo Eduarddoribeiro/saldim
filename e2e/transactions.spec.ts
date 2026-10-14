@@ -76,7 +76,8 @@ test('transações: registar, ver por mês, editar, apagar', async ({ page }) =>
   await despesa.click()
   await editar.getByRole('button', { name: 'Apagar' }).click()
   await page.getByRole('alertdialog').getByRole('button', { name: 'Apagar' }).click()
-  await expect(page.getByText('Supermercado')).toBeHidden()
+  await expect(page.getByRole('alertdialog')).toBeHidden()
+  await expect(despesa).toHaveCount(0)
 })
 
 test('uma categoria com transações não pode ser apagada (mensagem clara)', async ({ page }) => {
