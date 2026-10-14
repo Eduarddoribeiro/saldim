@@ -3,6 +3,40 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      categories: {
+        Row: {
+          arquivada: boolean
+          cor: string
+          created_at: string
+          icone: string
+          id: string
+          nome: string
+          tipo: Database['public']['Enums']['tipo_movimento']
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          arquivada?: boolean
+          cor?: string
+          created_at?: string
+          icone?: string
+          id?: string
+          nome: string
+          tipo: Database['public']['Enums']['tipo_movimento']
+          user_id?: string
+        }
+        Update: {
+          arquivada?: boolean
+          cor?: string
+          created_at?: string
+          icone?: string
+          id?: string
+          nome?: string
+          tipo?: Database['public']['Enums']['tipo_movimento']
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -33,7 +67,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      tipo_movimento: 'receita' | 'despesa'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -144,6 +178,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      tipo_movimento: ['receita', 'despesa'],
+    },
   },
 } as const

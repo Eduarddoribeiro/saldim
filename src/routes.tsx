@@ -7,6 +7,7 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage'
 import { PublicOnly, RequireAuth } from '@/features/auth/route-guards'
 import { SignUpPage } from '@/features/auth/SignUpPage'
+import { CategoriesPage } from '@/features/categories/CategoriesPage'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 import { TransactionsPage } from '@/features/transactions/TransactionsPage'
@@ -42,6 +43,7 @@ export const routes: RouteObject[] = [
           { index: true, element: <DashboardPage /> },
           { path: 'transacoes', element: <TransactionsPage /> },
           { path: 'configuracoes', element: <SettingsPage /> },
+          { path: 'configuracoes/categorias', element: <CategoriesPage /> },
           { path: '*', element: <NotFoundPage /> },
         ],
       },

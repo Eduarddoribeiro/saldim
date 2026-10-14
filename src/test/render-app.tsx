@@ -1,4 +1,5 @@
 import type { Session } from '@supabase/supabase-js'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render } from '@testing-library/react'
 import { createMemoryRouter } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
@@ -42,15 +43,25 @@ export function fakeAuth(overrides: Partial<AuthContextValue> = {}): AuthContext
   }
 }
 
+/** QueryClient novo por teste, sem novas tentativas (um erro aparece logo). */
+export function testQueryClient(): QueryClient {
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  })
+}
+
 /** Renderiza a app completa (rotas reais) num router em memória, com autenticação falsa. */
 export function renderApp(path = '/', auth: AuthContextValue = fakeAuth()) {
   const router = createMemoryRouter(routes, { initialEntries: [path] })
+  const queryClient = testQueryClient()
   const view = render(
     <ThemeProvider>
-      <AuthContext value={auth}>
-        <RouterProvider router={router} />
-      </AuthContext>
+      <QueryClientProvider client={queryClient}>
+        <AuthContext value={auth}>
+          <RouterProvider router={router} />
+        </AuthContext>
+      </QueryClientProvider>
     </ThemeProvider>,
   )
-  return { router, auth, ...view }
+  return { router, auth, queryClient, ...view }
 }
