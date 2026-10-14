@@ -1,4 +1,4 @@
-import { ChevronRight, Tags } from 'lucide-react'
+import { ChevronRight, Landmark, Tags, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -24,6 +24,21 @@ function SettingsSection({
   )
 }
 
+function SettingsLink({ to, icon: Icon, label }: { to: string; icon: LucideIcon; label: string }) {
+  return (
+    <li>
+      <Link
+        to={to}
+        className="flex min-h-12 items-center gap-3 rounded-lg px-1 font-medium hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+      >
+        <Icon className="size-4 text-muted-foreground" aria-hidden />
+        <span className="flex-1">{label}</span>
+        <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+      </Link>
+    </li>
+  )
+}
+
 export function SettingsPage() {
   const { user } = useAuth()
 
@@ -40,18 +55,13 @@ export function SettingsPage() {
           </div>
         </SettingsSection>
 
-        <SettingsSection title="Organização" description="Como os teus movimentos são agrupados.">
+        <SettingsSection
+          title="Organização"
+          description="Onde está o teu dinheiro e como os movimentos são agrupados."
+        >
           <ul className="-mx-1 divide-y">
-            <li>
-              <Link
-                to="/configuracoes/categorias"
-                className="flex min-h-12 items-center gap-3 rounded-lg px-1 font-medium hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-              >
-                <Tags className="size-4 text-muted-foreground" aria-hidden />
-                <span className="flex-1">Categorias</span>
-                <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
-              </Link>
-            </li>
+            <SettingsLink to="/configuracoes/contas" icon={Landmark} label="Contas" />
+            <SettingsLink to="/configuracoes/categorias" icon={Tags} label="Categorias" />
           </ul>
         </SettingsSection>
 

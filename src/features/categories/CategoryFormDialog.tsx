@@ -1,20 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Archive, ArchiveRestore, Trash2 } from 'lucide-react'
-import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
+import { ArchiveDeleteActions } from '@/components/form/ArchiveDeleteActions'
 import { FormAlert } from '@/components/form/FormAlert'
 import { SegmentedControl } from '@/components/form/SegmentedControl'
 import { TextField } from '@/components/form/TextField'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+import { useServerAction } from '@/components/form/use-server-action'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -24,7 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { errorMessage } from '@/lib/db-errors'
 import { cn } from '@/lib/utils'
 import type { Category } from './categories-api'
 import { CategoryBadge } from './CategoryBadge'
@@ -59,8 +48,7 @@ export function CategoryFormDialog(props: Props) {
 
 function CategoryForm({ onOpenChange, category, defaultTipo }: Props) {
   const isEdit = Boolean(category)
-  const [serverError, setServerError] = useState<string | null>(null)
-  const [confirmDelete, setConfirmDelete] = useState(false)
+  const { serverError, run } = useServerAction(() => onOpenChange(false))
   const create = useCreateCategory()
   const update = useUpdateCategory()
   const remove = useDeleteCategory()
@@ -82,16 +70,6 @@ function CategoryForm({ onOpenChange, category, defaultTipo }: Props) {
       : { nome: '', tipo: defaultTipo, cor: 'slate', icone: 'tag' },
   })
   const [cor, icone] = useWatch({ control, name: ['cor', 'icone'] })
-
-  async function run(action: () => Promise<unknown>) {
-    setServerError(null)
-    try {
-      await action()
-      onOpenChange(false)
-    } catch (error) {
-      setServerError(errorMessage(error))
-    }
-  }
 
   const onSubmit = handleSubmit(({ nome, tipo, cor, icone }) =>
     run(() =>
@@ -184,30 +162,18 @@ function CategoryForm({ onOpenChange, category, defaultTipo }: Props) {
       </fieldset>
 
       {category && (
-        <div className="flex flex-wrap gap-2 border-t pt-3">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={busy}
-            onClick={() =>
-              run(() =>
-                update.mutateAsync({ id: category.id, patch: { arquivada: !category.arquivada } }),
-              )
-            }
-          >
-            {category.arquivada ? <ArchiveRestore aria-hidden /> : <Archive aria-hidden />}
-            {category.arquivada ? 'Reativar' : 'Arquivar'}
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            disabled={busy}
-            onClick={() => setConfirmDelete(true)}
-          >
-            <Trash2 aria-hidden />
-            Apagar
-          </Button>
-        </div>
+        <ArchiveDeleteActions
+          itemName={category.nome}
+          archived={category.arquivada}
+          disabled={busy}
+          deleteHint="Se a categoria já tiver transações, arquiva-a em vez de a apagar."
+          onToggleArchive={() =>
+            run(() =>
+              update.mutateAsync({ id: category.id, patch: { arquivada: !category.arquivada } }),
+            )
+          }
+          onDelete={() => run(() => remove.mutateAsync(category.id))}
+        />
       )}
 
       <DialogFooter>
@@ -218,33 +184,6 @@ function CategoryForm({ onOpenChange, category, defaultTipo }: Props) {
           {isSubmitting ? 'A guardar…' : isEdit ? 'Guardar' : 'Criar categoria'}
         </Button>
       </DialogFooter>
-
-      {category && (
-        <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Apagar “{category.nome}”?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta ação não pode ser desfeita. Se a categoria já tiver transações, arquiva-a em
-                vez de a apagar.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                variant="destructive"
-                disabled={remove.isPending}
-                onClick={() => {
-                  setConfirmDelete(false)
-                  void run(() => remove.mutateAsync(category.id))
-                }}
-              >
-                Apagar
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
     </form>
   )
 }
