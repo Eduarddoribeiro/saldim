@@ -141,7 +141,8 @@ Os tipos de `tests/` e `e2e/` são verificados por `tsconfig.tests.json`.
 
 - Nunca colocar chaves secretas no frontend. No browser só a chave pública `anon` do Supabase; a `service_role` nunca entra em `src/`, no Git nem em variáveis `VITE_*` (tudo o que começa por `VITE_` vai para o bundle público).
 - Configuração por variáveis de ambiente em `.env` (ignorado pelo Git); versionar apenas `.env.example` sem valores reais.
-- RLS ativado em **todas** as tabelas com dados privados, com políticas `USING` e `WITH CHECK` por `auth.uid()`; cada tabela nova vem acompanhada de testes de isolamento entre dois utilizadores.
+- RLS ativado em **todas** as tabelas com dados privados, com políticas `USING` e `WITH CHECK` por `auth.uid()`. **Receita para cada tabela nova** (migration): `enable row level security`; `revoke all ... from anon` (o Supabase concede tudo ao `anon` por omissão!); políticas separadas por operação, `to authenticated`, com `(select auth.uid())`; `grant update (colunas)` só nas colunas editáveis; funções `security definer` com `set search_path = ''` e `revoke execute`. Depois: `npm run db:reset && npm run db:types` e um `tests/rls/<tabela>-isolation.test.ts` com dois utilizadores (`twoUsers()`).
+- `tests/rls/schema-guard.test.ts` falha automaticamente se alguma tabela de `public` ficar sem RLS, sem políticas, com políticas para `anon`/`public`, com privilégios para `anon`, ou com funções `security definer` executáveis pela API. Nunca enfraquecer este teste para fazer passar uma migration.
 - Nunca desativar verificações para "resolver" um problema: não desligar RLS, não usar `--no-verify`, não silenciar lint/tipos/testes, não usar `npm audit fix --force` às cegas. Encontrar a causa.
 - Antes de cada commit, rever `git status` e o conteúdo preparado: sem `.env`, segredos ou ficheiros desnecessários.
 
@@ -158,8 +159,8 @@ Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etap
 **Fase B — Núcleo do MVP**
 
 - [x] 4. Autenticação e-mail + senha (registo, login, sair, recuperar senha, rotas protegidas), `profiles` + RLS + trigger — testes unitários, componentes, integração e E2E
-- [ ] 5. **Etapa atual —** Base de testes de isolamento entre utilizadores (`npm run test:rls`)
-- [ ] 6. Utilitários monetários (`money.ts`, centavos) + testes
+- [x] 5. Base de testes de isolamento (`twoUsers`, `withLocalDb`, guarda do esquema com prova de falha, isolamento de `profiles`)
+- [ ] 6. **Etapa atual —** Utilitários monetários (`money.ts`, centavos) + testes
 - [ ] 7. Categorias (+ RLS + testes)
 - [ ] 8. Contas (+ RLS + testes)
 - [ ] 9. Receitas e despesas (+ RLS, FKs compostas, testes)
