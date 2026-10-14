@@ -5,6 +5,7 @@ import type { TransactionFormValues } from './schemas'
 import {
   createTransaction,
   deleteTransaction,
+  listBalanceMovements,
   listTransactions,
   updateTransaction,
 } from './transactions-api'
@@ -20,6 +21,16 @@ export function useTransactions(month: MonthKey) {
   return useQuery({
     queryKey: transactionsMonthKey(user?.id, month),
     queryFn: () => listTransactions(month),
+    enabled: Boolean(user),
+  })
+}
+
+/** Movimentos de todas as datas, para saldos. Partilha o prefixo de cache: invalida-se com as mutações. */
+export function useBalanceMovements() {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: [...transactionsKey(user?.id), 'saldos'] as const,
+    queryFn: listBalanceMovements,
     enabled: Boolean(user),
   })
 }

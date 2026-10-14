@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { renderApp } from '@/test/render-app'
@@ -61,5 +61,18 @@ describe('AppShell', () => {
     await userEvent.click(toLight) // Claro → Escuro
     expect(html).toHaveClass('dark')
     expect(localStorage.getItem('financas-theme')).toBe('dark')
+  })
+})
+
+describe('guarda de rede dos testes', () => {
+  it('pedidos do Supabase sem mock são intercetados (nunca saem para a rede)', async () => {
+    const { realFetchCalls } = await import('@/test/setup')
+    renderApp('/')
+    // O cliente Supabase tenta de novo após falhas de rede; basta ver que os pedidos foram intercetados
+    await waitFor(() =>
+      expect(realFetchCalls.some((url) => url.startsWith('http://127.0.0.1:54321/rest/v1/'))).toBe(
+        true,
+      ),
+    )
   })
 })

@@ -29,7 +29,7 @@ Ambiente: Node 22.22, npm 10.9, Windows, Docker Desktop 29 (necessário para o S
 |              | @playwright/test (E2E com o Edge do sistema, sem downloads)  | 1.64              |
 | Qualidade    | oxlint (não ESLint) / prettier + prettier-plugin-tailwindcss | 1.88 / 3.9 / 0.8  |
 
-**Ainda não instalados:** `recharts` (entra no dashboard). **`date-fns` não foi instalado de propósito:** as poucas operações de datas estão em `src/lib/dates.ts` (testadas, com `Intl`); reavaliar se as necessidades crescerem.
+**Previstos no plano mas não instalados, de propósito:** `recharts` — os gastos por categoria são barras horizontais em HTML/CSS (mais legíveis que uma rosca para comparar valores próximos; acessíveis como lista); instalar só quando houver gráficos de evolução (Etapa 13). `date-fns` — as poucas operações de datas estão em `src/lib/dates.ts` (testadas, com `Intl`).
 
 Notas:
 
@@ -66,7 +66,8 @@ financas/                     # raiz do repositório Git
       categories/             # categories-api, hooks, schemas, category-options (cores/ícones), CategoriesPage, CategoryFormDialog
       accounts/               # accounts-api, hooks, schemas, account-options (tipos de conta), AccountsPage, AccountFormDialog
       profile/                # profile-api, hooks (useProfile, useCurrency)
-      transactions/           # transactions-api, hooks, schemas, group-by-day, TransactionsPage, TransactionRow, TransactionFormDialog
+      transactions/           # transactions-api (paginado), hooks (useTransactions, useBalanceMovements), schemas, TransactionsPage, TransactionRow, TransactionFormDialog
+      dashboard/              # DashboardPage, StatTile, CategorySpendingList, category-ranking (top 5 + "Outras")
     lib/
       supabase.ts             # cliente único (createClient<Database>)
       supabase-config.ts      # valida VITE_SUPABASE_*; recusa chaves secretas
@@ -75,6 +76,8 @@ financas/                     # raiz do repositório Git
       money.ts                # centavos: parseMoney, formatMoney, centsToInput
       money-schema.ts         # moneyField(): campo Zod texto → centavos (allowNegative, positive)
       dates.ts                # todayIso (data LOCAL), monthRange, addMonths, isIsoDate, formatMonth/formatDay
+      finance.ts              # regras de cálculo (docs/plano.md): monthSummary, saldos, spendingByCategory, budgetStatus
+      pagination.ts           # fetchAllPages: junta páginas de 1000 linhas (limite max_rows do Supabase)
       database.types.ts       # GERADO por `npm run db:types` — não editar à mão
       theme.ts, utils.ts      # funções puras + testes ao lado
     test/setup.ts             # jest-dom + cleanup após cada teste
@@ -89,7 +92,7 @@ financas/                     # raiz do repositório Git
 | `/registar`                 | `SignUpPage`         | `PublicOnly`                             | feito                                                    |
 | `/recuperar-senha`          | `ForgotPasswordPage` | `PublicOnly`                             | feito                                                    |
 | `/nova-senha`               | `ResetPasswordPage`  | sessão temporária do link de recuperação | feito                                                    |
-| `/`                         | `DashboardPage`      | `RequireAuth` (sem sessão → `/entrar`)   | placeholder (Etapa 11)                                   |
+| `/`                         | `DashboardPage`      | `RequireAuth` (sem sessão → `/entrar`)   | feito (`?mes=YYYY-MM`)                                   |
 | `/transacoes`               | `TransactionsPage`   | `RequireAuth`                            | feito (`?mes=YYYY-MM`)                                   |
 | `/configuracoes`            | `SettingsPage`       | `RequireAuth`                            | Aparência, Organização, Conta                            |
 | `/configuracoes/categorias` | `CategoriesPage`     | `RequireAuth`                            | feito                                                    |
@@ -104,11 +107,11 @@ financas/                     # raiz do repositório Git
 
 **Supabase local:** API `http://127.0.0.1:54321`, Studio (painel) `http://127.0.0.1:54323`, Mailpit (e-mails de teste) `http://127.0.0.1:54324`, Postgres na porta 54322. Confirmação de e-mail desligada localmente; senha mínima 8 caracteres. As chaves locais são as de demonstração do Supabase, mas mesmo assim só a pública vai para o `.env`.
 
-**Acesso a dados (padrão a repetir em cada tabela):** `features/<área>/<área>-api.ts` é o único ficheiro que chama `supabase.from('<tabela>')`; erros saem como `UserFacingError` com mensagem traduzida (`dbErrorMessage` + mensagens específicas). `hooks.ts` envolve-o em `useQuery`/`useMutation`; as chaves incluem o id do utilizador (`['categories', userId]`) e cada mutação invalida a lista. `UserCacheBoundary` limpa o cache quando o utilizador muda. `user_id` nunca é enviado: a base preenche-o com `auth.uid()`. Valores fixos (tipo receita/despesa) são enums do Postgres → uniões no TypeScript gerado. Enums gerados (`Constants.public.Enums.*`) alimentam as listas da interface, com `Record<Enum, …>` para o TypeScript obrigar a tratar valores novos. Transações: FKs compostas `(account_id, user_id)`/`(category_id, user_id)` com `ON DELETE NO ACTION` (bloqueia apagar conta/categoria em uso, mas permite a cascata ao apagar o utilizador) e trigger que exige categoria do mesmo tipo. As chaves de cache das transações são `['transactions', userId, mes]` e as mutações invalidam o prefixo `['transactions', userId]` (uma edição pode mudar a transação de mês). Datas: só dia (`date`), sempre a data local (`todayIso`), nunca `toISOString()`. Formulários com dinheiro usam `moneyField()` e `useForm<Input, unknown, Output>` (entra texto, sai centavos); ao editar, o campo é preenchido com `centsToInput`. Cores e ícones guardam-se como chaves, mapeadas para classes/ícones em `category-options.ts` (um teste confirma que as cores coincidem com o CHECK da migration).
+**Acesso a dados (padrão a repetir em cada tabela):** `features/<área>/<área>-api.ts` é o único ficheiro que chama `supabase.from('<tabela>')`; erros saem como `UserFacingError` com mensagem traduzida (`dbErrorMessage` + mensagens específicas). `hooks.ts` envolve-o em `useQuery`/`useMutation`; as chaves incluem o id do utilizador (`['categories', userId]`) e cada mutação invalida a lista. `UserCacheBoundary` limpa o cache quando o utilizador muda. `user_id` nunca é enviado: a base preenche-o com `auth.uid()`. Valores fixos (tipo receita/despesa) são enums do Postgres → uniões no TypeScript gerado. Enums gerados (`Constants.public.Enums.*`) alimentam as listas da interface, com `Record<Enum, …>` para o TypeScript obrigar a tratar valores novos. Transações: FKs compostas `(account_id, user_id)`/`(category_id, user_id)` com `ON DELETE NO ACTION` (bloqueia apagar conta/categoria em uso, mas permite a cascata ao apagar o utilizador) e trigger que exige categoria do mesmo tipo. As chaves de cache das transações são `['transactions', userId, mes]` e as mutações invalidam o prefixo `['transactions', userId]` (uma edição pode mudar a transação de mês). Datas: só dia (`date`), sempre a data local (`todayIso`), nunca `toISOString()`. **Limite de 1000 linhas:** o Supabase corta respostas em `max_rows` (1000) sem erro — consultas que podem passar disso (transações) usam `fetchAllPages` com ordem total (terminar em `.order('id')`); provado em `tests/rls/pagination.test.ts`. Cálculos financeiros só em `src/lib/finance.ts`; o dashboard pede todas as transações (só 4 colunas) para os saldos — decisão do MVP, passar para view SQL se o volume crescer. Formulários com dinheiro usam `moneyField()` e `useForm<Input, unknown, Output>` (entra texto, sai centavos); ao editar, o campo é preenchido com `centsToInput`. Cores e ícones guardam-se como chaves, mapeadas para classes/ícones em `category-options.ts` (um teste confirma que as cores coincidem com o CHECK da migration).
 
 **Testes:** três níveis.
 
-- `npm test` — unitários + componentes (`src/**/*.test.ts(x)`, sem rede; variáveis VITE_* fixas em `vite.config.ts`; acesso a dados simulado com `vi.mock('./<área>-api')`; ficheiros do projeto lidos com `import x from '...?raw'`, nunca `node:fs`). `src/test/source-hygiene.test.ts` falha se houver caracteres invisíveis (ex.: espaço não separável) no código — usar a sequência de escape.
+- `npm test` — unitários + componentes (`src/**/*.test.ts(x)`, sem rede: `src/test/setup.ts` bloqueia qualquer `fetch` real; variáveis VITE_* fixas em `vite.config.ts`; acesso a dados simulado com `vi.mock('./<área>-api')`; ficheiros do projeto lidos com `import x from '...?raw'`, nunca `node:fs`). `src/test/source-hygiene.test.ts` falha se houver caracteres invisíveis (ex.: espaço não separável) no código — usar a sequência de escape.
 - `npm run test:rls` — integração em `tests/rls/` contra o Supabase local (config `vitest.rls.config.ts`, ficheiros em série, recusa URLs não locais).
 - `npm run test:e2e` — Playwright em `e2e/`, desktop e telemóvel, contra o Supabase local; lê os e-mails do Mailpit; `expectNoHorizontalScroll(page)` apanha conteúdo mais largo do que o ecrã (usar em páginas com listas). Relatórios em `test-results/` (ignorado).
 
@@ -180,9 +183,20 @@ Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etap
 - [x] 8. Contas (enum `tipo_conta`, "Conta principal" criada por trigger, saldo inicial em centavos podendo ser negativo, nome único; RLS + isolamento + E2E)
 - [x] 9. Receitas e despesas (FKs compostas, tipo da categoria validado por trigger, lista por mês/dia, criar/editar/apagar; RLS + isolamento + E2E)
 - [x] 10. Cálculos financeiros (`src/lib/finance.ts`: monthSummary, accountBalance/balancesByAccount/totalBalance, spendingByCategory, budgetStatus) + 24 testes
-- [ ] 11. **Etapa atual —** Dashboard básico → **MVP**
+- [x] 11. Dashboard básico (saldo atual/previsto, resumo do mês, gastos por categoria em barras, últimas transações, saldo por conta) → **MVP concluído**
 
 **Fase C — Depois do MVP:** 12. Orçamentos · 13. Filtros e relatórios · 14. Deploy · 15. Google login, PWA, importar/exportar CSV, atualizações otimistas, recorrentes, metas.
+
+**Próxima etapa:** 12 (Orçamentos) — só depois de o utilizador rever o MVP.
+
+### Decisões em aberto (precisam do utilizador)
+
+- **Moeda:** o perfil guarda `BRL` por omissão (o plano aprovado mostrava "R$"); `EUR` também é suportado, mas ainda não há ecrã para mudar a moeda nem o nome do perfil.
+- **GitHub:** os commits estão só no computador (`main` à frente de `origin/main`). Enviar com `git push` só com autorização.
+- **Hook `post-commit`:** versionado e sem rede, mas inativo até aprovação (`git config core.hooksPath .githooks`).
+- **Deploy / projeto Supabase na cloud (Etapa 14):** exige conta, credenciais reais e possíveis custos; ativar confirmação de e-mail e SMTP próprio em produção.
+- **Tamanho da build:** o Vite avisa que o JavaScript passa de 500 kB; resolver com divisão por rotas (`lazy`) quando fizer sentido.
+- **Renomear** o pacote/pasta `financas` → `saldo` (opcional; só cosmético).
 
 ## Forma de trabalho
 

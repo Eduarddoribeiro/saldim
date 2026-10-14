@@ -1,6 +1,8 @@
 import { monthRange, type MonthKey } from '@/lib/dates'
 import { dbErrorMessage, UserFacingError } from '@/lib/db-errors'
 import type { Tables } from '@/lib/database.types'
+import type { AccountMovement } from '@/lib/finance'
+import { fetchAllPages } from '@/lib/pagination'
 import { supabase } from '@/lib/supabase'
 import type { TransactionFormValues } from './schemas'
 
@@ -28,16 +30,40 @@ function toRow(values: TransactionFormValues) {
   }
 }
 
-/** Transações do mês (data >= dia 1 e < dia 1 do mês seguinte), mais recentes primeiro. */
+/**
+ * Transações do mês (data >= dia 1 e < dia 1 do mês seguinte), mais recentes primeiro.
+ * Paginado: o Supabase corta em 1000 linhas por pedido. O id no fim garante uma ordem total.
+ */
 export async function listTransactions(month: MonthKey): Promise<Transaction[]> {
   const { from, to } = monthRange(month)
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('*')
-    .gte('data', from)
-    .lt('data', to)
-    .order('data', { ascending: false })
-    .order('created_at', { ascending: false })
+  const { data, error } = await fetchAllPages((start, end) =>
+    supabase
+      .from('transactions')
+      .select('*')
+      .gte('data', from)
+      .lt('data', to)
+      .order('data', { ascending: false })
+      .order('created_at', { ascending: false })
+      .order('id')
+      .range(start, end),
+  )
+  if (error) fail(error)
+  return data
+}
+
+/**
+ * TODAS as transações (só as colunas necessárias) para calcular saldos com src/lib/finance.ts.
+ * Decisão do MVP (docs/plano.md): cálculo em TypeScript; se o volume crescer, passa para uma view SQL.
+ */
+export async function listBalanceMovements(): Promise<AccountMovement[]> {
+  const { data, error } = await fetchAllPages((start, end) =>
+    supabase
+      .from('transactions')
+      .select('account_id, tipo, valor_centavos, data')
+      .order('data')
+      .order('id')
+      .range(start, end),
+  )
   if (error) fail(error)
   return data
 }
