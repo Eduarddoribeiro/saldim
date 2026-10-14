@@ -10,7 +10,7 @@ Plano aprovado pelo utilizador em 2026-10-14. O estado de cada etapa está em `C
   - _Porquê:_ `0.1 + 0.2 = 0.30000000000000004` em vírgula flutuante; inteiros somam exatamente.
 - `valor_centavos` das transações é **sempre positivo** (`CHECK (valor_centavos > 0)`); o sinal vem do `tipo` (`receita` | `despesa`).
 - Conversão só nas extremidades, em `src/lib/money.ts`:
-  - `parseMoney("1.234,56") → 123456` (vírgula decimal, ponto de milhares, máx. 2 casas; rejeita vazio e texto inválido; negativos só quando explicitamente permitidos, p.ex. saldo inicial de uma conta).
+  - `parseMoney("1.234,56") → 123456` (vírgula decimal, ponto de milhares, máx. 2 casas; rejeita vazio e texto inválido; negativos só quando explicitamente permitidos, p.ex. saldo inicial de uma conta). Sem vírgula, um ponto seguido de 3 dígitos é separador de milhares (`"1.234"` → 123400) e seguido de 1–2 dígitos é decimal (`"12.5"` → 1250); 4+ dígitos depois do ponto é recusado por ser ambíguo. Máximo 999 999 999,99 (`MAX_CENTS`). Conversão sem vírgula flutuante (só texto + inteiros).
   - `formatMoney(123456, 'BRL') → "R$ 1.234,56"` via `Intl.NumberFormat`.
 - Somas e subtrações são sempre feitas em centavos; a divisão por 100 só acontece ao mostrar.
 

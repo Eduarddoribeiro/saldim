@@ -160,8 +160,8 @@ Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etap
 
 - [x] 4. Autenticação e-mail + senha (registo, login, sair, recuperar senha, rotas protegidas), `profiles` + RLS + trigger — testes unitários, componentes, integração e E2E
 - [x] 5. Base de testes de isolamento (`twoUsers`, `withLocalDb`, guarda do esquema com prova de falha, isolamento de `profiles`)
-- [ ] 6. **Etapa atual —** Utilitários monetários (`money.ts`, centavos) + testes
-- [ ] 7. Categorias (+ RLS + testes)
+- [x] 6. Utilitários monetários (`src/lib/money.ts`: `parseMoney`, `formatMoney`, `centsToInput`, `assertCents`; BRL/pt-BR e EUR/pt-PT) + 45 testes
+- [ ] 7. **Etapa atual —** Categorias (+ RLS + testes)
 - [ ] 8. Contas (+ RLS + testes)
 - [ ] 9. Receitas e despesas (+ RLS, FKs compostas, testes)
 - [ ] 10. Cálculos financeiros (`finance.ts`) + testes
