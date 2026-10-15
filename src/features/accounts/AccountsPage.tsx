@@ -9,7 +9,7 @@ import { useCurrency } from '@/features/profile/hooks'
 import { errorMessage } from '@/lib/db-errors'
 import { formatMoney, type Currency } from '@/lib/money'
 import { cn } from '@/lib/utils'
-import { TIPO_CONTA_OPTIONS } from './account-options'
+import { isCreditCard, TIPO_CONTA_OPTIONS } from './account-options'
 import type { Account } from './accounts-api'
 import { AccountFormDialog } from './AccountFormDialog'
 import { useAccounts } from './hooks'
@@ -36,7 +36,10 @@ export function AccountsPage() {
         Configurações
       </Link>
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <PageHeader title="Contas" description="Bancos, poupanças e dinheiro que tens." />
+        <PageHeader
+          title="Contas"
+          description="Bancos, poupanças, dinheiro e cartões de crédito."
+        />
         <Button
           size="lg"
           onClick={() => setDialog({ open: true, account: null })}
@@ -110,12 +113,22 @@ function AccountList({
     <ul className={cn('divide-y rounded-xl border', className)}>
       {accounts.map((account) => {
         const { icon: Icon, label } = TIPO_CONTA_OPTIONS[account.tipo]
+        // Cartão: mostra o limite e os dias da fatura; as outras contas mostram o saldo inicial
+        const card = isCreditCard(account)
+        const amountLabel = card ? 'Limite' : 'Saldo inicial'
+        const amount = formatMoney(
+          (card ? account.limite_centavos : account.saldo_inicial_centavos) ?? 0,
+          currency,
+        )
+        const details = card
+          ? `${label} · fecha dia ${account.dia_fechamento} · vence dia ${account.dia_vencimento}`
+          : label
         return (
           <li key={account.id}>
             <button
               type="button"
               onClick={() => onSelect(account)}
-              aria-label={`Editar ${account.nome}: ${label}, saldo inicial ${formatMoney(account.saldo_inicial_centavos, currency)}`}
+              aria-label={`Editar ${account.nome}: ${details}, ${amountLabel.toLowerCase()} ${amount}`}
               className="flex min-h-16 w-full items-center gap-3 px-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none"
             >
               <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
@@ -123,13 +136,11 @@ function AccountList({
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-medium">{account.nome}</span>
-                <span className="block text-xs text-muted-foreground">{label}</span>
+                <span className="block text-xs text-muted-foreground">{details}</span>
               </span>
-              <span className="text-right">
-                <span className="block text-xs text-muted-foreground">Saldo inicial</span>
-                <span className="block text-sm font-medium tabular-nums">
-                  {formatMoney(account.saldo_inicial_centavos, currency)}
-                </span>
+              <span className="shrink-0 text-right">
+                <span className="block text-xs text-muted-foreground">{amountLabel}</span>
+                <span className="block text-sm font-medium tabular-nums">{amount}</span>
               </span>
               <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             </button>

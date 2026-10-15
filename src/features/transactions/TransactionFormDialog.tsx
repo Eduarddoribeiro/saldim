@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { isCreditCard } from '@/features/accounts/account-options'
 import type { Account } from '@/features/accounts/accounts-api'
 import type { Category } from '@/features/categories/categories-api'
 import { TIPO_LABELS, TIPOS } from '@/features/categories/schemas'
@@ -71,7 +72,9 @@ function TransactionForm({ onOpenChange, transaction, categories, accounts }: Pr
   const create = useCreateTransaction()
   const update = useUpdateTransaction()
   const remove = useDeleteTransaction()
-  const firstActiveAccount = accounts.find((account) => !account.arquivada)
+  const firstActiveAccount = accounts.find(
+    (account) => !account.arquivada && !isCreditCard(account),
+  )
 
   const {
     register,
@@ -106,7 +109,12 @@ function TransactionForm({ onOpenChange, transaction, categories, accounts }: Pr
     categories.filter((category) => category.tipo === tipo),
     transaction?.category_id,
   )
-  const accountOptions = selectable(accounts, transaction?.account_id)
+  // Cartões ficam de fora: as compras no cartão têm fatura e parcelas e um fluxo próprio (a base de
+  // dados também o recusa — trigger transactions_check_account_not_card)
+  const accountOptions = selectable(
+    accounts.filter((account) => !isCreditCard(account)),
+    transaction?.account_id,
+  )
 
   // Se o diálogo abriu antes de as contas chegarem do servidor, pré-seleciona a primeira assim que chegam.
   useEffect(() => {

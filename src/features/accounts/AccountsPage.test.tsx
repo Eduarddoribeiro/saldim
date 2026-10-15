@@ -15,19 +15,16 @@ vi.mock('./accounts-api', async (importOriginal) => {
   const original = await importOriginal<typeof import('./accounts-api')>()
   return {
     sortAccounts: original.sortAccounts,
+    accountRow: original.accountRow,
     listAccounts: vi.fn(async () => original.sortAccounts(store.accounts)),
-    createAccount: vi.fn(
-      async (values: { nome: string; tipo: Account['tipo']; saldoInicial: number }) => {
-        const created = makeAccount({
-          id: `nova-${store.accounts.length}`,
-          nome: values.nome,
-          tipo: values.tipo,
-          saldo_inicial_centavos: values.saldoInicial,
-        })
-        store.accounts.push(created)
-        return created
-      },
-    ),
+    createAccount: vi.fn(async (values: Parameters<typeof original.accountRow>[0]) => {
+      const created = makeAccount({
+        id: `nova-${store.accounts.length}`,
+        ...original.accountRow(values),
+      })
+      store.accounts.push(created)
+      return created
+    }),
     updateAccount: vi.fn(async (id: string, patch: Partial<Account>) => {
       const account = store.accounts.find((a) => a.id === id)!
       Object.assign(account, patch)
@@ -46,6 +43,10 @@ function makeAccount(overrides: Partial<Account>): Account {
     saldo_inicial_centavos: 0,
     arquivada: false,
     created_at: '2026-01-01T00:00:00Z',
+    dia_fechamento: null,
+    dia_vencimento: null,
+    limite_centavos: null,
+    conta_pagamento_id: null,
     ...overrides,
   }
 }
@@ -128,6 +129,114 @@ describe('página de contas', () => {
     await waitFor(() =>
       expect(store.accounts.find((a) => a.id === 'a1')?.saldo_inicial_centavos).toBe(-1000),
     )
+  })
+
+  describe('cartão de crédito', () => {
+    const cartao = () =>
+      makeAccount({
+        id: 'c1',
+        nome: 'Visa',
+        tipo: 'cartao_credito',
+        dia_fechamento: 25,
+        dia_vencimento: 5,
+        limite_centavos: 500000,
+        conta_pagamento_id: 'a1',
+      })
+
+    it('os campos do cartão só aparecem para o tipo cartão (e o saldo inicial desaparece)', async () => {
+      renderApp('/configuracoes/contas')
+      await screen.findByRole('button', { name: /Carteira/ })
+      await userEvent.click(screen.getByRole('button', { name: 'Nova conta' }))
+      const dialog = await screen.findByRole('dialog', { name: 'Nova conta' })
+      expect(within(dialog).getByLabelText('Saldo inicial')).toBeInTheDocument()
+      expect(within(dialog).queryByLabelText('Dia de fechamento')).not.toBeInTheDocument()
+
+      await userEvent.selectOptions(within(dialog).getByLabelText('Tipo'), 'cartao_credito')
+      expect(within(dialog).queryByLabelText('Saldo inicial')).not.toBeInTheDocument()
+      for (const label of ['Dia de fechamento', 'Dia de vencimento', 'Limite de crédito']) {
+        expect(within(dialog).getByLabelText(label)).toBeInTheDocument()
+      }
+      expect(within(dialog).getByLabelText('Conta de pagamento')).toBeInTheDocument()
+
+      await userEvent.selectOptions(within(dialog).getByLabelText('Tipo'), 'poupanca')
+      expect(within(dialog).queryByLabelText('Dia de fechamento')).not.toBeInTheDocument()
+    })
+
+    it('cria um cartão com fechamento, vencimento, limite e conta de pagamento', async () => {
+      renderApp('/configuracoes/contas')
+      await screen.findByRole('button', { name: /Carteira/ })
+      await userEvent.click(screen.getByRole('button', { name: 'Nova conta' }))
+      const dialog = await screen.findByRole('dialog', { name: 'Nova conta' })
+      await userEvent.type(within(dialog).getByLabelText('Nome'), 'Visa')
+      await userEvent.selectOptions(within(dialog).getByLabelText('Tipo'), 'cartao_credito')
+      await userEvent.selectOptions(within(dialog).getByLabelText('Dia de fechamento'), '25')
+      await userEvent.selectOptions(within(dialog).getByLabelText('Dia de vencimento'), '5')
+      await userEvent.type(within(dialog).getByLabelText('Limite de crédito'), '5.000,00')
+      await userEvent.selectOptions(within(dialog).getByLabelText('Conta de pagamento'), 'a1')
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Criar conta' }))
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+      expect(store.accounts.at(-1)).toMatchObject({
+        nome: 'Visa',
+        tipo: 'cartao_credito',
+        saldo_inicial_centavos: 0,
+        dia_fechamento: 25,
+        dia_vencimento: 5,
+        limite_centavos: 500000,
+        conta_pagamento_id: 'a1',
+      })
+    })
+
+    it('mostra os erros dos dias e avisa de prazos pouco habituais', async () => {
+      renderApp('/configuracoes/contas')
+      await screen.findByRole('button', { name: /Carteira/ })
+      await userEvent.click(screen.getByRole('button', { name: 'Nova conta' }))
+      const dialog = await screen.findByRole('dialog', { name: 'Nova conta' })
+      await userEvent.type(within(dialog).getByLabelText('Nome'), 'Visa')
+      await userEvent.selectOptions(within(dialog).getByLabelText('Tipo'), 'cartao_credito')
+
+      // Prazo de 1 dia: válido, mas com aviso
+      await userEvent.selectOptions(within(dialog).getByLabelText('Dia de fechamento'), '27')
+      await userEvent.selectOptions(within(dialog).getByLabelText('Dia de vencimento'), '28')
+      expect(within(dialog).getByRole('status')).toHaveTextContent('é de 1 dia.')
+
+      // Mesmo dia: erro no vencimento, nada é criado
+      await userEvent.selectOptions(within(dialog).getByLabelText('Dia de vencimento'), '27')
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Criar conta' }))
+      expect(
+        await within(dialog).findByText('O vencimento tem de ser num dia diferente do fechamento.'),
+      ).toBeInTheDocument()
+      expect(within(dialog).getByLabelText('Dia de vencimento')).toHaveAttribute(
+        'aria-invalid',
+        'true',
+      )
+      expect(store.accounts).toHaveLength(2)
+    })
+
+    it('a conta de pagamento exclui cartões, contas arquivadas e o próprio cartão', async () => {
+      store.accounts.push(
+        cartao(),
+        { ...cartao(), id: 'c2', nome: 'Master' },
+        makeAccount({ id: 'a3', nome: 'Antiga', arquivada: true }),
+      )
+      renderApp('/configuracoes/contas')
+      await userEvent.click(await screen.findByRole('button', { name: /Visa/ }))
+      const dialog = await screen.findByRole('dialog', { name: 'Editar conta' })
+      const pagamento = within(dialog).getByLabelText('Conta de pagamento')
+      expect(pagamento).toHaveValue('a1')
+      const options = within(pagamento)
+        .getAllByRole('option')
+        .map((option) => option.textContent)
+      expect(options).toEqual(['Escolhe a conta', 'Carteira', 'Conta principal'])
+    })
+
+    it('na lista, o cartão mostra os dias da fatura e o limite', async () => {
+      store.accounts.push(cartao())
+      renderApp('/configuracoes/contas')
+      const visa = await screen.findByRole('button', { name: /Visa/ })
+      expect(visa).toHaveTextContent('Cartão de crédito · fecha dia 25 · vence dia 5')
+      await waitFor(() => expect(plain(visa.textContent)).toContain('LimiteR$ 5.000,00'))
+    })
   })
 
   it('as Configurações têm ligação para as contas', async () => {

@@ -77,9 +77,11 @@ export function validateCardConfig({
   if (errors.every((error) => error.field === 'limiteCentavos')) {
     const { min, max } = paymentWindowDays(diaFechamento, diaVencimento)
     if (min < PRAZO_AVISO_MIN || max > PRAZO_AVISO_MAX) {
+      const dias = (n: number) => `${n} ${n === 1 ? 'dia' : 'dias'}`
+      const prazo = min === max ? `é de ${dias(min)}` : `varia entre ${min} e ${dias(max)}`
       warnings.push({
         field: 'diaVencimento',
-        message: `O prazo entre o fechamento e o vencimento varia entre ${min} e ${max} dias. Confirma com o teu banco.`,
+        message: `O prazo entre o fechamento e o vencimento ${prazo}. Confirma com o teu banco.`,
       })
     }
   }

@@ -65,7 +65,7 @@ financas/                     # raiz do repositório Git
     features/<área>/          # páginas e lógica por funcionalidade
       auth/                   # AuthProvider, auth-context (useAuth), route-guards, UserCacheBoundary, schemas, auth-errors, páginas
       categories/             # categories-api, hooks, schemas, category-options (cores/ícones), CategoriesPage, CategoryFormDialog
-      accounts/               # accounts-api, hooks, schemas, account-options (tipos de conta), AccountsPage, AccountFormDialog
+      accounts/               # accounts-api (accountRow, mensagens por regra), hooks, schemas (campos do cartão), account-options (tipos de conta, isCreditCard), AccountsPage, AccountFormDialog
       profile/                # profile-api, hooks (useProfile, useCurrency)
       transactions/           # transactions-api (paginado), hooks (useTransactions, useBalanceMovements), schemas, TransactionsPage, TransactionRow, TransactionFormDialog
       dashboard/              # DashboardPage, StatTile, CategorySpendingList, category-ranking (top 5 + "Outras")
@@ -77,8 +77,9 @@ financas/                     # raiz do repositório Git
       db-errors.ts            # dbErrorMessage (código Postgres/PostgREST → português), UserFacingError
       money.ts                # centavos: parseMoney, formatMoney, centsToInput
       money-schema.ts         # moneyField(): campo Zod texto → centavos (allowNegative, positive)
-      dates.ts                # todayIso (data LOCAL), monthRange, addMonths, isIsoDate, formatMonth/formatDay
+      dates.ts                # todayIso (data LOCAL), monthRange, addMonths, addMonthsClamped, daysBetween, isIsoDate, formatMonth/formatDay
       finance.ts              # regras de cálculo (docs/plano.md): monthSummary, saldos, spendingByCategory, budgetStatus
+      credit-card.ts          # cartões: validateCardConfig, invoiceDates, invoiceForPurchase, splitInstallments, installmentSchedule, invoiceStatus
       pagination.ts           # fetchAllPages: junta páginas de 1000 linhas (limite max_rows do Supabase)
       database.types.ts       # GERADO por `npm run db:types` — não editar à mão
       theme.ts, utils.ts      # funções puras + testes ao lado
@@ -136,6 +137,7 @@ Os tipos de `tests/` e `e2e/` são verificados por `tsconfig.tests.json`.
 | `npm run db:start` / `db:stop`       | Liga / desliga o Supabase local (Docker)                              |
 | `npm run db:status`                  | Mostra URLs e chaves locais                                           |
 | `npm run db:reset`                   | Recria a base local e aplica todas as migrations (apaga dados locais) |
+| `npx supabase migration up --local`  | Aplica só as migrations novas, **sem apagar** os dados locais         |
 | `npm run db:types`                   | Regenera `src/lib/database.types.ts` a partir da base local           |
 | `npm run env:local`                  | Escreve `.env` com o URL e a chave pública locais                     |
 | `npx supabase migration new <nome>`  | Cria uma migration vazia em `supabase/migrations/`                    |
@@ -193,9 +195,14 @@ Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etap
 - [x] 12. Orçamentos (tabela `budgets` com FK composta e trigger só-despesa, um por categoria/mês, página com estado cor+ícone+texto, copiar do mês anterior sem substituir limites; RLS + isolamento + E2E)
 - [x] Dashboard 2 (parte dos relatórios da 13): comparação com o mês anterior (cartões e categorias), receitas × despesas de 6 meses (barras), evolução do saldo (linha, previsão a tracejado), tabelas alternativas; divisão do bundle por rotas. Falta da 13: filtros e pesquisa nas transações.
 
+- [ ] **Cartões de crédito** (branch `feat/cartoes`; regras em `docs/plano.md` → "Cartões de crédito"):
+  - [x] C1. Cálculos puros (`src/lib/credit-card.ts`: datas e ciclos das faturas, validação dos dias, parcelas, estado da fatura) + testes exaustivos
+  - [x] C2. Configuração do cartão: tipo `cartao_credito`, colunas e CHECKs em `accounts` (migration `cartao_config`), FK composta da conta de pagamento, triggers (cartão não paga cartão; conta com transações não muda de/para cartão; **temporário até à C3:** transações normais não usam cartões); formulário com campos condicionais e aviso de prazo; cartões fora do formulário de transações; testes RLS (incl. CHECK × `validateCardConfig` nos 961 pares), componentes e E2E
+  - [ ] C3 faturas e compras na base de dados · C4 compras na interface · C5 pagamentos · C6 página de faturas · C7 Início e relatórios · C8 estornos
+
 **Seguintes:** 13. Filtros e relatórios · 14. Deploy · 15. Google login, PWA, importar/exportar CSV, atualizações otimistas, recorrentes, metas.
 
-**Próxima etapa:** resto da 13 (filtros e pesquisa nas transações). A 14 (deploy) precisa de autorização e credenciais.
+**Próxima etapa:** C3 (faturas e compras na base de dados), depois o resto da 13 (filtros e pesquisa nas transações). A 14 (deploy) precisa de autorização e credenciais.
 
 ### Decisões em aberto (precisam do utilizador)
 

@@ -106,6 +106,10 @@ beforeEach(() => {
       saldo_inicial_centavos: 0,
       arquivada: false,
       created_at: '',
+      dia_fechamento: null,
+      dia_vencimento: null,
+      limite_centavos: null,
+      conta_pagamento_id: null,
     },
   ]
   store.transactions = [
@@ -199,6 +203,27 @@ describe('página de transações', () => {
       descricao: 'Renda',
     })
     expect(await screen.findByRole('button', { name: /Renda/ })).toBeInTheDocument()
+  })
+
+  it('cartões de crédito não aparecem na escolha de conta nem são pré-selecionados', async () => {
+    // O cartão vem primeiro na lista: se não fosse excluído, seria o pré-selecionado
+    store.accounts.unshift({
+      ...store.accounts[0],
+      id: 'cartao',
+      nome: 'A Visa',
+      tipo: 'cartao_credito',
+      dia_fechamento: 25,
+      dia_vencimento: 5,
+      limite_centavos: 500000,
+      conta_pagamento_id: 'conta',
+    })
+    renderApp('/transacoes')
+    await screen.findByText('Supermercado')
+    await userEvent.click(newButton())
+    const dialog = await screen.findByRole('dialog', { name: 'Nova transação' })
+    const conta = within(dialog).getByLabelText('Conta')
+    expect(conta).toHaveValue('conta')
+    expect(within(conta).queryByRole('option', { name: 'A Visa' })).not.toBeInTheDocument()
   })
 
   it('ao mudar para receita, mostra só categorias de receita e limpa a escolha anterior', async () => {

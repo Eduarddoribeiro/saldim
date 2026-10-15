@@ -56,6 +56,10 @@ const account = (id: string, nome: string, saldo: number, arquivada = false): Ac
   arquivada,
   user_id: 'u',
   created_at: '',
+  dia_fechamento: null,
+  dia_vencimento: null,
+  limite_centavos: null,
+  conta_pagamento_id: null,
 })
 
 let counter = 0

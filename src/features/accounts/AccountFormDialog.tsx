@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { ArchiveDeleteActions } from '@/components/form/ArchiveDeleteActions'
 import { FormAlert } from '@/components/form/FormAlert'
 import { SelectField } from '@/components/form/SelectField'
@@ -14,12 +14,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { validateCardConfig } from '@/lib/credit-card'
 import { centsToInput } from '@/lib/money'
 import { MONEY_EXAMPLE } from '@/lib/money-schema'
-import { TIPO_CONTA_OPTIONS, TIPOS_CONTA } from './account-options'
-import type { Account } from './accounts-api'
-import { useCreateAccount, useDeleteAccount, useUpdateAccount } from './hooks'
+import { isCreditCard, TIPO_CONTA_OPTIONS, TIPOS_CONTA } from './account-options'
+import { accountRow, type Account } from './accounts-api'
+import { useAccounts, useCreateAccount, useDeleteAccount, useUpdateAccount } from './hooks'
 import { accountFormSchema, type AccountFormInput, type AccountFormValues } from './schemas'
+
+/** Dias do mês para o fechamento e o vencimento (o mês curto é tratado no cálculo das faturas). */
+const DIAS = Array.from({ length: 31 }, (_, index) => ({
+  value: String(index + 1),
+  label: String(index + 1),
+}))
 
 type Props = {
   open: boolean
@@ -43,36 +50,56 @@ function AccountForm({ onOpenChange, account }: Props) {
   const create = useCreateAccount()
   const update = useUpdateAccount()
   const remove = useDeleteAccount()
+  const accounts = useAccounts()
 
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<AccountFormInput, unknown, AccountFormValues>({
     resolver: zodResolver(accountFormSchema),
-    defaultValues: account
-      ? {
-          nome: account.nome,
-          tipo: account.tipo,
-          saldoInicial: centsToInput(account.saldo_inicial_centavos),
-        }
-      : { nome: '', tipo: 'corrente', saldoInicial: '0,00' },
+    defaultValues: {
+      nome: account?.nome ?? '',
+      tipo: account?.tipo ?? 'corrente',
+      saldoInicial: centsToInput(account?.saldo_inicial_centavos ?? 0),
+      diaFechamento: account?.dia_fechamento?.toString() ?? '',
+      diaVencimento: account?.dia_vencimento?.toString() ?? '',
+      limite: account?.limite_centavos != null ? centsToInput(account.limite_centavos) : '',
+      contaPagamentoId: account?.conta_pagamento_id ?? '',
+    },
   })
 
   const onSubmit = handleSubmit((values) =>
     run(() =>
       account
-        ? update.mutateAsync({
-            id: account.id,
-            patch: {
-              nome: values.nome,
-              tipo: values.tipo,
-              saldo_inicial_centavos: values.saldoInicial,
-            },
-          })
+        ? update.mutateAsync({ id: account.id, patch: accountRow(values) })
         : create.mutateAsync(values),
     ),
   )
+
+  const [tipo, diaFechamento, diaVencimento] = useWatch({
+    control,
+    name: ['tipo', 'diaFechamento', 'diaVencimento'],
+  })
+  const isCard = tipo === 'cartao_credito'
+  // Contas que podem pagar a fatura: de dinheiro (não cartões), não a própria, ativas — mais a atual
+  const paymentOptions = (accounts.data ?? [])
+    .filter((other) => !isCreditCard(other) && other.id !== account?.id)
+    .filter((other) => !other.arquivada || other.id === account?.conta_pagamento_id)
+    .map((other) => ({
+      value: other.id,
+      label: other.arquivada ? `${other.nome} (arquivada)` : other.nome,
+    }))
+  // Aviso (não bloqueia) para prazos pouco habituais entre fechamento e vencimento
+  const prazoWarning =
+    isCard && diaFechamento !== '' && diaVencimento !== ''
+      ? validateCardConfig({
+          diaFechamento: Number(diaFechamento),
+          diaVencimento: Number(diaVencimento),
+          limiteCentavos: 1,
+        }).warnings[0]?.message
+      : undefined
 
   const busy = isSubmitting || update.isPending || remove.isPending
 
@@ -80,7 +107,9 @@ function AccountForm({ onOpenChange, account }: Props) {
     <form onSubmit={onSubmit} noValidate className="grid gap-4">
       <DialogHeader>
         <DialogTitle>{account ? 'Editar conta' : 'Nova conta'}</DialogTitle>
-        <DialogDescription>Onde o teu dinheiro está: banco, poupança, carteira…</DialogDescription>
+        <DialogDescription>
+          Onde o teu dinheiro está (banco, poupança, carteira) ou um cartão de crédito.
+        </DialogDescription>
       </DialogHeader>
 
       {serverError && <FormAlert>{serverError}</FormAlert>}
@@ -104,15 +133,64 @@ function AccountForm({ onOpenChange, account }: Props) {
         error={errors.tipo?.message}
         {...register('tipo')}
       />
-      <TextField
-        id="conta-saldo-inicial"
-        label="Saldo inicial"
-        inputMode="decimal"
-        autoComplete="off"
-        hint={`Quanto tinha a conta quando começaste a usar o Saldo. Pode ser negativo. ${MONEY_EXAMPLE}`}
-        error={errors.saldoInicial?.message}
-        {...register('saldoInicial')}
-      />
+      {isCard ? (
+        <fieldset className="grid gap-4">
+          <legend className="mb-1 text-sm text-muted-foreground">
+            O fechamento e o vencimento servem para calcular as faturas. Um cartão começa sem
+            dívida.
+          </legend>
+          <div className="grid grid-cols-2 gap-3">
+            <SelectField
+              id="conta-dia-fechamento"
+              label="Dia de fechamento"
+              placeholder="Escolhe"
+              options={DIAS}
+              error={errors.diaFechamento?.message}
+              {...register('diaFechamento')}
+            />
+            <SelectField
+              id="conta-dia-vencimento"
+              label="Dia de vencimento"
+              placeholder="Escolhe"
+              options={DIAS}
+              error={errors.diaVencimento?.message}
+              {...register('diaVencimento')}
+            />
+          </div>
+          {prazoWarning && (
+            <p role="status" className="-mt-2 text-xs text-muted-foreground">
+              {prazoWarning}
+            </p>
+          )}
+          <TextField
+            id="conta-limite"
+            label="Limite de crédito"
+            inputMode="decimal"
+            autoComplete="off"
+            hint={MONEY_EXAMPLE}
+            error={errors.limite?.message}
+            {...register('limite')}
+          />
+          <SelectField
+            id="conta-pagamento"
+            label="Conta de pagamento"
+            placeholder="Escolhe a conta"
+            options={paymentOptions}
+            error={errors.contaPagamentoId?.message}
+            {...register('contaPagamentoId')}
+          />
+        </fieldset>
+      ) : (
+        <TextField
+          id="conta-saldo-inicial"
+          label="Saldo inicial"
+          inputMode="decimal"
+          autoComplete="off"
+          hint={`Quanto tinha a conta quando começaste a usar o Saldo. Pode ser negativo. ${MONEY_EXAMPLE}`}
+          error={errors.saldoInicial?.message}
+          {...register('saldoInicial')}
+        />
+      )}
 
       {account && (
         <ArchiveDeleteActions

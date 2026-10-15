@@ -1,4 +1,12 @@
-import { Banknote, Landmark, PiggyBank, TrendingUp, Wallet, type LucideIcon } from 'lucide-react'
+import {
+  Banknote,
+  CreditCard,
+  Landmark,
+  PiggyBank,
+  TrendingUp,
+  Wallet,
+  type LucideIcon,
+} from 'lucide-react'
 import { Constants, type Enums } from '@/lib/database.types'
 
 export type TipoConta = Enums<'tipo_conta'>
@@ -13,4 +21,10 @@ export const TIPO_CONTA_OPTIONS: Record<TipoConta, { label: string; icon: Lucide
   dinheiro: { label: 'Dinheiro', icon: Banknote },
   investimento: { label: 'Investimentos', icon: TrendingUp },
   outra: { label: 'Outra', icon: Wallet },
+  cartao_credito: { label: 'Cartão de crédito', icon: CreditCard },
+}
+
+/** Cartões têm regras próprias (fatura, limite, conta de pagamento): ver src/lib/credit-card.ts. */
+export function isCreditCard(account: { tipo: TipoConta }): boolean {
+  return account.tipo === 'cartao_credito'
 }

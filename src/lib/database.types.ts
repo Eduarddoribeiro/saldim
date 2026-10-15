@@ -6,8 +6,12 @@ export type Database = {
       accounts: {
         Row: {
           arquivada: boolean
+          conta_pagamento_id: string | null
           created_at: string
+          dia_fechamento: number | null
+          dia_vencimento: number | null
           id: string
+          limite_centavos: number | null
           nome: string
           saldo_inicial_centavos: number
           tipo: Database['public']['Enums']['tipo_conta']
@@ -16,8 +20,12 @@ export type Database = {
         ComputedFields: never
         Insert: {
           arquivada?: boolean
+          conta_pagamento_id?: string | null
           created_at?: string
+          dia_fechamento?: number | null
+          dia_vencimento?: number | null
           id?: string
+          limite_centavos?: number | null
           nome: string
           saldo_inicial_centavos?: number
           tipo?: Database['public']['Enums']['tipo_conta']
@@ -25,14 +33,26 @@ export type Database = {
         }
         Update: {
           arquivada?: boolean
+          conta_pagamento_id?: string | null
           created_at?: string
+          dia_fechamento?: number | null
+          dia_vencimento?: number | null
           id?: string
+          limite_centavos?: number | null
           nome?: string
           saldo_inicial_centavos?: number
           tipo?: Database['public']['Enums']['tipo_conta']
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'accounts_conta_pagamento_fk'
+            columns: ['conta_pagamento_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
       }
       budgets: {
         Row: {
@@ -186,7 +206,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      tipo_conta: 'corrente' | 'poupanca' | 'dinheiro' | 'investimento' | 'outra'
+      tipo_conta: 'corrente' | 'poupanca' | 'dinheiro' | 'investimento' | 'outra' | 'cartao_credito'
       tipo_movimento: 'receita' | 'despesa'
     }
     CompositeTypes: {
@@ -299,7 +319,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      tipo_conta: ['corrente', 'poupanca', 'dinheiro', 'investimento', 'outra'],
+      tipo_conta: ['corrente', 'poupanca', 'dinheiro', 'investimento', 'outra', 'cartao_credito'],
       tipo_movimento: ['receita', 'despesa'],
     },
   },

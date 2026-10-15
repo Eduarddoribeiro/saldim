@@ -85,8 +85,9 @@ describe('validateCardConfig', () => {
   })
 
   it('avisa (sem recusar) quando o prazo sai de 5–25 dias em algum mês', () => {
-    // 27 → 28: 1 dia
-    expect(valid(27, 28).warnings).toHaveLength(1)
+    // 27 → 28: 1 dia (prazo fixo: 'é de', no singular)
+    expect(valid(27, 28).warnings[0].message).toMatch(/prazo .* é de 1 dia\. /)
+    expect(valid(3, 10).warnings).toEqual([])
     // 2 → 1 do mês seguinte: 27 a 30 dias
     expect(valid(2, 1).warnings).toHaveLength(1)
     expect(valid(2, 1).warnings[0].message).toMatch(/entre 27 e 30 dias/)
