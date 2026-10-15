@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Plus } from 'lucide-react'
+import { ArrowLeftRight, CreditCard, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { FormAlert } from '@/components/form/FormAlert'
 import { EmptyState } from '@/components/layout/EmptyState'
@@ -6,7 +6,11 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { MonthPicker } from '@/components/month/MonthPicker'
 import { useMonthParam } from '@/components/month/use-month-param'
 import { Button } from '@/components/ui/button'
+import { isCreditCard } from '@/features/accounts/account-options'
 import { useAccounts } from '@/features/accounts/hooks'
+import { usePurchases } from '@/features/card-purchases/hooks'
+import { PurchaseDetailsDialog } from '@/features/card-purchases/PurchaseDetailsDialog'
+import { PurchaseFormDialog } from '@/features/card-purchases/PurchaseFormDialog'
 import { useCategories } from '@/features/categories/hooks'
 import { useCurrency } from '@/features/profile/hooks'
 import { formatDay, formatMonth } from '@/lib/dates'
@@ -22,16 +26,29 @@ export function TransactionsPage() {
   const transactions = useTransactions(month)
   const categories = useCategories()
   const accounts = useAccounts()
+  const purchases = usePurchases()
   const currency = useCurrency()
   const [dialog, setDialog] = useState<{ open: boolean; transaction: Transaction | null }>({
     open: false,
     transaction: null,
   })
+  const [purchaseFormOpen, setPurchaseFormOpen] = useState(false)
+  // Compra aberta no detalhe (a partir de uma das suas parcelas)
+  const [details, setDetails] = useState<{ open: boolean; purchaseId: string | null }>({
+    open: false,
+    purchaseId: null,
+  })
 
   const categoriesById = new Map((categories.data ?? []).map((category) => [category.id, category]))
   const accountsById = new Map((accounts.data ?? []).map((account) => [account.id, account]))
-  const isPending = transactions.isPending || categories.isPending || accounts.isPending
-  const error = transactions.error ?? categories.error ?? accounts.error
+  const purchasesById = new Map((purchases.data ?? []).map((purchase) => [purchase.id, purchase]))
+  const hasCards = (accounts.data ?? []).some(
+    (account) => isCreditCard(account) && !account.arquivada,
+  )
+  const isPending =
+    transactions.isPending || categories.isPending || accounts.isPending || purchases.isPending
+  const error = transactions.error ?? categories.error ?? accounts.error ?? purchases.error
+  const openedPurchase = details.purchaseId ? purchasesById.get(details.purchaseId) : undefined
   const openNew = () => setDialog({ open: true, transaction: null })
   const list = transactions.data ?? []
 
@@ -39,10 +56,18 @@ export function TransactionsPage() {
     <>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <PageHeader title="Transações" description="Receitas e despesas registadas." />
-        <Button size="lg" onClick={openNew} className="max-md:hidden">
-          <Plus aria-hidden />
-          Nova transação
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {hasCards && (
+            <Button size="lg" variant="outline" onClick={() => setPurchaseFormOpen(true)}>
+              <CreditCard aria-hidden />
+              Compra no cartão
+            </Button>
+          )}
+          <Button size="lg" onClick={openNew} className="max-md:hidden">
+            <Plus aria-hidden />
+            Nova transação
+          </Button>
+        </div>
       </div>
 
       <MonthPicker month={month} onChange={setMonth} className="mb-6 max-sm:justify-center" />
@@ -61,6 +86,7 @@ export function TransactionsPage() {
               void transactions.refetch()
               void categories.refetch()
               void accounts.refetch()
+              void purchases.refetch()
             }}
           >
             Tentar de novo
@@ -91,7 +117,16 @@ export function TransactionsPage() {
                       category={categoriesById.get(transaction.category_id)}
                       account={accountsById.get(transaction.account_id)}
                       currency={currency}
-                      onSelect={() => setDialog({ open: true, transaction })}
+                      totalParcelas={
+                        transaction.compra_id
+                          ? purchasesById.get(transaction.compra_id)?.parcelas
+                          : undefined
+                      }
+                      onSelect={() =>
+                        transaction.compra_id
+                          ? setDetails({ open: true, purchaseId: transaction.compra_id })
+                          : setDialog({ open: true, transaction })
+                      }
                     />
                   </li>
                 ))}
@@ -117,6 +152,21 @@ export function TransactionsPage() {
         transaction={dialog.transaction}
         categories={categories.data ?? []}
         accounts={accounts.data ?? []}
+      />
+
+      <PurchaseFormDialog
+        open={purchaseFormOpen}
+        onOpenChange={setPurchaseFormOpen}
+        categories={categories.data ?? []}
+        accounts={accounts.data ?? []}
+      />
+
+      <PurchaseDetailsDialog
+        open={details.open && Boolean(openedPurchase)}
+        onOpenChange={(open) => setDetails((current) => ({ ...current, open }))}
+        purchase={openedPurchase ?? null}
+        card={openedPurchase ? accountsById.get(openedPurchase.account_id) : undefined}
+        category={openedPurchase ? categoriesById.get(openedPurchase.category_id) : undefined}
       />
     </>
   )

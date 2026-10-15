@@ -110,7 +110,7 @@ function TransactionForm({ onOpenChange, transaction, categories, accounts }: Pr
     transaction?.category_id,
   )
   // Cartões ficam de fora: as compras no cartão têm fatura e parcelas e um fluxo próprio (a base de
-  // dados também o recusa — trigger transactions_check_account_not_card)
+  // dados também o recusa — trigger transactions_check_cartao)
   const accountOptions = selectable(
     accounts.filter((account) => !isCreditCard(account)),
     transaction?.account_id,

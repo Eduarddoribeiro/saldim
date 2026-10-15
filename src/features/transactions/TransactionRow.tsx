@@ -6,24 +6,34 @@ import { formatMoney, type Currency } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import type { Transaction } from './transactions-api'
 
-/** Linha de uma transação: categoria, descrição, conta e valor com sinal (+ receita, − despesa). */
+/**
+ * Linha de uma transação: categoria, descrição, conta e valor com sinal (+ receita, − despesa).
+ * Uma parcela de uma compra no cartão mostra também "Parcela k/n".
+ */
 export function TransactionRow({
   transaction,
   category,
   account,
   currency,
+  totalParcelas,
   onSelect,
 }: {
   transaction: Transaction
   category: Category | undefined
   account: Account | undefined
   currency: Currency
+  /** Número total de parcelas da compra (só para parcelas) */
+  totalParcelas?: number
   onSelect?: () => void
 }) {
   const isIncome = transaction.tipo === 'receita'
   const categoryName = category?.nome ?? 'Sem categoria'
   const title = transaction.descricao || categoryName
-  const subtitle = [transaction.descricao ? categoryName : null, account?.nome]
+  const installment =
+    transaction.parcela_numero !== null
+      ? `Parcela ${transaction.parcela_numero}/${totalParcelas ?? '?'}`
+      : null
+  const subtitle = [transaction.descricao ? categoryName : null, account?.nome, installment]
     .filter(Boolean)
     .join(' · ')
   // Valor guardado sempre positivo; o sinal só aparece na apresentação
@@ -59,7 +69,7 @@ export function TransactionRow({
       type="button"
       onClick={onSelect}
       // Nome explícito e bem pontuado para leitores de ecrã (texto sr-only solto fica colado ao resto)
-      aria-label={`${title}: ${isIncome ? 'receita' : 'despesa'} de ${formatMoney(transaction.valor_centavos, currency)}${subtitle ? `, ${subtitle}` : ''}. Editar`}
+      aria-label={`${title}: ${isIncome ? 'receita' : 'despesa'} de ${formatMoney(transaction.valor_centavos, currency)}${subtitle ? `, ${subtitle}` : ''}. ${installment ? 'Ver compra' : 'Editar'}`}
       className="flex min-h-16 w-full items-center gap-3 px-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none"
     >
       {content}

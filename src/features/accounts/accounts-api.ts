@@ -25,13 +25,16 @@ const MESSAGES = {
   '23503': 'Esta conta tem transações. Arquiva-a em vez de a apagar.',
 }
 
-// Regras com nome (CHECK, FK ou HINT dos triggers da migration cartao_config): mensagem própria.
+// Regras com nome (CHECK, FK ou HINT dos triggers das migrations cartao_config e faturas_compras).
 // O nome aparece no texto técnico do erro; a pessoa vê só a mensagem em português.
 const RULE_MESSAGES: Record<string, string> = {
   accounts_conta_pagamento_tipo_check:
     'Um cartão paga-se com uma conta de dinheiro: a conta de pagamento não pode ser um cartão.',
   accounts_tipo_cartao_em_uso_check:
-    'Esta conta tem transações, por isso não pode mudar de ou para cartão de crédito.',
+    'Esta conta tem transações ou faturas, por isso não pode mudar de ou para cartão de crédito.',
+  // Até à etapa C8 (migration faturas_compras)
+  accounts_cartao_dias_em_uso_check:
+    'Este cartão já tem faturas: os dias de fechamento e vencimento ainda não podem ser alterados. O limite e a conta de pagamento podem.',
   accounts_conta_pagamento_propria_check:
     'Um cartão não pode ser a sua própria conta de pagamento.',
   accounts_cartao_dias_check: 'Os dias de fechamento e vencimento não são válidos.',

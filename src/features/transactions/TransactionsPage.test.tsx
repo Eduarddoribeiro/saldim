@@ -23,6 +23,10 @@ vi.mock('@/features/categories/categories-api', () => ({
 vi.mock('@/features/accounts/accounts-api', () => ({
   listAccounts: vi.fn(async () => store.accounts),
 }))
+// As compras no cartão têm testes próprios (card-purchases/CardPurchases.test.tsx)
+vi.mock('@/features/card-purchases/purchases-api', () => ({
+  listPurchases: vi.fn(async () => []),
+}))
 vi.mock('./transactions-api', () => ({
   listTransactions: vi.fn(async (month: string) => {
     store.months.push(month)
