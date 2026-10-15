@@ -53,6 +53,26 @@ export function lastDayOfMonth(month: MonthKey): IsoDate {
   return `${month}-${pad(new Date(year, monthIndex, 0).getDate())}`
 }
 
+/**
+ * A mesma data `delta` meses depois (ou antes), mantendo o dia; se esse mês não tem o dia, usa o último
+ * ('2026-01-31' + 1 → '2026-02-28'). Calcula sempre a partir da data dada: para uma série de meses,
+ * chamar com a data original e delta 1, 2, 3… (em cadeia, 31/01 → 28/02 → 28/03 perderia o dia 31).
+ */
+export function addMonthsClamped(date: IsoDate, delta: number): IsoDate {
+  const month = addMonths(monthOf(date), delta)
+  const day = Math.min(Number(date.slice(8, 10)), Number(lastDayOfMonth(month).slice(8, 10)))
+  return `${month}-${pad(day)}`
+}
+
+/** Dias de `from` até `to` (negativo se `to` for anterior). Contas em UTC: a hora de verão não conta. */
+export function daysBetween(from: IsoDate, to: IsoDate): number {
+  const utc = (date: IsoDate) => {
+    const [year, month, day] = date.split('-').map(Number)
+    return Date.UTC(year, month - 1, day)
+  }
+  return Math.round((utc(to) - utc(from)) / 86_400_000)
+}
+
 /** Os `count` meses que terminam em `end`, do mais antigo para o mais recente. */
 export function monthsEndingAt(end: MonthKey, count: number): MonthKey[] {
   return Array.from({ length: count }, (_, index) => addMonths(end, index - count + 1))

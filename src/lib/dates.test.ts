@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   addMonths,
+  addMonthsClamped,
   currentMonth,
+  daysBetween,
   formatDay,
   formatMonth,
   formatMonthShort,
@@ -71,6 +73,56 @@ describe('janelas de meses', () => {
   it('formatMonthShort: rótulo curto, com ano opcional', () => {
     expect(formatMonthShort('2026-10')).toBe('out')
     expect(formatMonthShort('2027-01', true)).toBe('jan 27')
+  })
+})
+
+describe('addMonthsClamped', () => {
+  it('mantém o dia quando o mês o tem, atravessando anos nos dois sentidos', () => {
+    expect(addMonthsClamped('2026-10-14', 1)).toBe('2026-11-14')
+    expect(addMonthsClamped('2026-11-15', 2)).toBe('2027-01-15')
+    expect(addMonthsClamped('2026-01-15', -1)).toBe('2025-12-15')
+    expect(addMonthsClamped('2026-10-14', 0)).toBe('2026-10-14')
+  })
+
+  it('dias 29, 30 e 31 passam ao último dia de meses mais curtos', () => {
+    expect(addMonthsClamped('2026-01-31', 1)).toBe('2026-02-28')
+    expect(addMonthsClamped('2028-01-31', 1)).toBe('2028-02-29') // bissexto
+    expect(addMonthsClamped('2026-01-29', 1)).toBe('2026-02-28')
+    expect(addMonthsClamped('2028-01-29', 1)).toBe('2028-02-29')
+    expect(addMonthsClamped('2026-01-30', 1)).toBe('2026-02-28')
+    expect(addMonthsClamped('2026-03-31', 1)).toBe('2026-04-30')
+    expect(addMonthsClamped('2026-03-31', -1)).toBe('2026-02-28')
+    expect(addMonthsClamped('2100-01-31', 1)).toBe('2100-02-28') // 2100 não é bissexto
+  })
+
+  it('a partir da data original recupera o dia depois de um mês curto', () => {
+    expect([0, 1, 2, 3].map((delta) => addMonthsClamped('2026-01-31', delta))).toEqual([
+      '2026-01-31',
+      '2026-02-28',
+      '2026-03-31',
+      '2026-04-30',
+    ])
+  })
+})
+
+describe('daysBetween', () => {
+  it('conta dias, com sinal', () => {
+    expect(daysBetween('2026-10-14', '2026-10-14')).toBe(0)
+    expect(daysBetween('2026-10-14', '2026-10-21')).toBe(7)
+    expect(daysBetween('2026-10-21', '2026-10-14')).toBe(-7)
+  })
+
+  it('fevereiro normal e bissexto, viragem de ano', () => {
+    expect(daysBetween('2026-02-01', '2026-03-01')).toBe(28)
+    expect(daysBetween('2028-02-01', '2028-03-01')).toBe(29)
+    expect(daysBetween('2026-12-25', '2027-01-05')).toBe(11)
+    expect(daysBetween('2026-01-01', '2027-01-01')).toBe(365)
+    expect(daysBetween('2028-01-01', '2029-01-01')).toBe(366)
+  })
+
+  it('não é afetado pela mudança da hora (março e outubro)', () => {
+    expect(daysBetween('2026-03-28', '2026-03-30')).toBe(2)
+    expect(daysBetween('2026-10-24', '2026-10-26')).toBe(2)
   })
 })
 
