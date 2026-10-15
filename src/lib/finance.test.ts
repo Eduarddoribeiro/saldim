@@ -12,6 +12,7 @@ import {
   signedAmount,
   spendingByCategory,
   totalBalance,
+  transferMovements,
   type AccountMovement,
   type CategoryMovement,
 } from './finance'
@@ -375,5 +376,84 @@ describe('categoryComparison (gastos por categoria vs mês anterior)', () => {
 
   it('sem despesas nos dois meses: lista vazia', () => {
     expect(categoryComparison([], '2026-10')).toEqual([])
+  })
+})
+
+describe('transferências e pagamentos de fatura (sem dupla contagem)', () => {
+  // Compra no cartão de 300,00 em 3× (parcelas de 100,00 a 10/10, 10/11 e 10/12) e o pagamento de
+  // 100,00 da primeira fatura, do banco para o cartão, a 05/11.
+  const contas = [
+    { id: 'banco', saldo_inicial_centavos: 500000 },
+    { id: 'visa', saldo_inicial_centavos: 0 },
+  ]
+  const parcelas = ['2026-10-10', '2026-11-10', '2026-12-10'].map((data) =>
+    tx({ account_id: 'visa', valor_centavos: 10000, data }),
+  )
+  const pagamento = {
+    conta_origem_id: 'banco',
+    conta_destino_id: 'visa',
+    valor_centavos: 10000,
+    data: '2026-11-05',
+  }
+  const hoje = { today: '2026-11-20' }
+
+  it('cada transferência dá dois movimentos: sai da origem e entra no destino', () => {
+    expect(transferMovements([pagamento])).toEqual([
+      { account_id: 'banco', tipo: 'despesa', valor_centavos: 10000, data: '2026-11-05' },
+      { account_id: 'visa', tipo: 'receita', valor_centavos: 10000, data: '2026-11-05' },
+    ])
+    expect(transferMovements([])).toEqual([])
+  })
+
+  it('o banco desce X, o cartão sobe X e o total não muda', () => {
+    const sem = balancesByAccount(contas, parcelas, hoje)
+    const com = balancesByAccount(contas, [...parcelas, ...transferMovements([pagamento])], hoje)
+    expect(com.get('banco')).toBe(sem.get('banco')! - 10000)
+    expect(com.get('visa')).toBe(sem.get('visa')! + 10000)
+    expect(totalBalance(contas, [...parcelas, ...transferMovements([pagamento])], hoje)).toBe(
+      totalBalance(contas, parcelas, hoje),
+    )
+    // Dívida do cartão até hoje: 2 parcelas (200,00) − pagamento (100,00)
+    expect(com.get('visa')).toBe(-10000)
+  })
+
+  it('o pagamento não é despesa: resumo do mês, séries e gastos por categoria não mudam', () => {
+    // As funções do mês recebem só as transações: as transferências nunca lhes chegam.
+    // Se alguém as juntasse por engano, as despesas de novembro passariam de 100,00 a 200,00:
+    expect(monthSummary(parcelas, '2026-11')).toEqual({
+      receitas: 0,
+      despesas: 10000,
+      resultado: -10000,
+    })
+    expect(monthSummary(transferMovements([pagamento]), '2026-11')).toEqual({
+      receitas: 10000,
+      despesas: 10000,
+      resultado: 0,
+    })
+    expect(spendingByCategory(parcelas, '2026-11')).toEqual([
+      { categoryId: 'alim', total: 10000, percent: 100 },
+    ])
+    // A soma das parcelas é exatamente o valor da compra
+    expect(parcelas.reduce((soma, p) => soma + p.valor_centavos, 0)).toBe(30000)
+  })
+
+  it('evolução do saldo: o total continua igual com ou sem o pagamento, mês a mês', () => {
+    const meses = ['2026-10', '2026-11', '2026-12']
+    const com = balanceSeries(
+      contas,
+      [...parcelas, ...transferMovements([pagamento])],
+      meses,
+      hoje.today,
+    )
+    expect(com).toEqual(balanceSeries(contas, parcelas, meses, hoje.today))
+  })
+
+  it('pagamento com data futura só conta no saldo previsto', () => {
+    const futuro = { ...pagamento, data: '2026-12-05' }
+    const movimentos = [...parcelas, ...transferMovements([futuro])]
+    expect(balancesByAccount(contas, movimentos, hoje).get('banco')).toBe(500000)
+    expect(
+      balancesByAccount(contas, movimentos, { ...hoje, includeFuture: true }).get('banco'),
+    ).toBe(490000)
   })
 })

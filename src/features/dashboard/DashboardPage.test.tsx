@@ -5,12 +5,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Account } from '@/features/accounts/accounts-api'
 import type { Category } from '@/features/categories/categories-api'
 import type { Transaction } from '@/features/transactions/transactions-api'
+import type { Transfer } from '@/lib/finance'
 import { renderApp } from '@/test/render-app'
 
 const store = vi.hoisted(() => ({
   transactions: [] as Transaction[],
   categories: [] as Category[],
   accounts: [] as Account[],
+  transfers: [] as Transfer[],
 }))
 
 vi.mock('@/features/profile/profile-api', () => ({
@@ -29,6 +31,9 @@ vi.mock('@/features/transactions/transactions-api', () => ({
       .sort((a, b) => b.data.localeCompare(a.data)),
   ),
   listBalanceMovements: vi.fn(async () => store.transactions),
+}))
+vi.mock('@/features/transfers/transfers-api', () => ({
+  listTransfers: vi.fn(async () => store.transfers),
 }))
 // O Recharts precisa de um browser real para medir o espaço (testado nos E2E). Aqui o módulo dos
 // gráficos é substituído por um marcador; os números verificam-se nas tabelas alternativas.
@@ -91,6 +96,7 @@ beforeEach(() => {
     category('sal', 'Salário', 'receita'),
   ]
   store.accounts = [account('banco', 'Banco', 100000), account('velha', 'Conta antiga', 5000, true)]
+  store.transfers = []
   store.transactions = [
     tx({ tipo: 'receita', category_id: 'sal', valor_centavos: 500000, data: '2026-10-05' }),
     tx({ category_id: 'casa', valor_centavos: 150000, data: '2026-10-06', descricao: 'Renda' }),
@@ -114,6 +120,41 @@ describe('início (dashboard)', () => {
     // 1000,00 + 50,00 (arquivada) + 5000 − 1500 − 500 − 999 (setembro) = 3051,00 ; futura −200 → 2851,00
     expect(tile(/^Saldo atual$/)).toContain('R$ 3.051,00')
     expect(tile(/^Saldo atual$/)).toContain('Previsto com transações futuras: R$ 2.851,00')
+  })
+
+  it('pagamento de fatura: o banco desce, o cartão sobe, o saldo total e as despesas não mudam', async () => {
+    store.accounts.push({
+      ...account('visa', 'Visa', 0),
+      tipo: 'cartao_credito',
+      dia_fechamento: 25,
+      dia_vencimento: 5,
+      limite_centavos: 500000,
+      conta_pagamento_id: 'banco',
+    })
+    // Parcela de 300,00 no cartão (despesa de outubro) e o pagamento dela a 13/10
+    store.transactions.push(
+      tx({ account_id: 'visa', valor_centavos: 30000, data: '2026-10-08', compra_id: 'c' }),
+    )
+    store.transfers = [
+      {
+        conta_origem_id: 'banco',
+        conta_destino_id: 'visa',
+        valor_centavos: 30000,
+        data: '2026-10-13',
+      },
+    ]
+    renderApp('/')
+    await screen.findByText('Saldo atual')
+    // 3051,00 − 300,00 (a parcela é uma despesa); o pagamento não muda o total
+    expect(tile(/^Saldo atual$/)).toContain('R$ 2.751,00')
+    // Despesas do mês: 2200,00 + 300,00 da parcela — o pagamento NÃO conta como despesa
+    expect(tile(/^Despesas · este mês$/)).toContain('R$ 2.500,00')
+    const contas = screen.getByRole('region', { name: 'Contas' })
+    // Banco: 1000 + 5000 − 1500 − 500 − 999 − 300 (pagamento) = 2701,00; Visa: −300 + 300 = 0
+    expect(plain(within(contas).getByText('Banco').closest('li')?.textContent)).toContain(
+      'R$ 2.701,00',
+    )
+    expect(plain(within(contas).getByText('Visa').closest('li')?.textContent)).toContain('R$ 0,00')
   })
 
   it('receitas, despesas e resultado do mês (inclui transações futuras do próprio mês)', async () => {

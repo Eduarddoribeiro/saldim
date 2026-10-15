@@ -10,6 +10,7 @@ import { useAccounts } from '@/features/accounts/hooks'
 import { useCategories } from '@/features/categories/hooks'
 import { useProfile } from '@/features/profile/hooks'
 import { useBalanceMovements, useTransactions } from '@/features/transactions/hooks'
+import { useTransfers } from '@/features/transfers/hooks'
 import { TransactionRow } from '@/features/transactions/TransactionRow'
 import { addMonths, currentMonth, formatMonth, monthsEndingAt, todayIso } from '@/lib/dates'
 import { errorMessage } from '@/lib/db-errors'
@@ -22,6 +23,7 @@ import {
   monthSummary,
   spendingByCategory,
   totalBalance,
+  transferMovements,
 } from '@/lib/finance'
 import { formatMoney } from '@/lib/money'
 import { CategorySpendingList } from './CategorySpendingList'
@@ -40,8 +42,9 @@ export function DashboardPage() {
   const categories = useCategories()
   const monthTransactions = useTransactions(month)
   const movements = useBalanceMovements()
+  const transfers = useTransfers()
 
-  const queries = [accounts, categories, monthTransactions, movements]
+  const queries = [accounts, categories, monthTransactions, movements, transfers]
   const isPending = queries.some((query) => query.isPending)
   const error = queries.find((query) => query.error)?.error
   const currency = profile.data?.moeda === 'EUR' ? 'EUR' : 'BRL'
@@ -94,9 +97,12 @@ export function DashboardPage() {
   const today = todayIso()
   const allAccounts = accounts.data ?? []
   const allMovements = movements.data ?? []
-  const saldoAtual = totalBalance(allAccounts, allMovements, { today })
-  const saldoPrevisto = totalBalance(allAccounts, allMovements, { today, includeFuture: true })
-  const balances = balancesByAccount(allAccounts, allMovements, { today })
+  // Saldos = transações + transferências (pagamentos de fatura). As transferências NÃO entram nos
+  // números do mês (receitas, despesas, categorias): não são consumo nem rendimento.
+  const balanceMovements = [...allMovements, ...transferMovements(transfers.data ?? [])]
+  const saldoAtual = totalBalance(allAccounts, balanceMovements, { today })
+  const saldoPrevisto = totalBalance(allAccounts, balanceMovements, { today, includeFuture: true })
+  const balances = balancesByAccount(allAccounts, balanceMovements, { today })
   const transactions = monthTransactions.data ?? []
   // Todos os números do mês saem do mesmo conjunto (todos os movimentos), para baterem entre si
   const previousMonth = addMonths(month, -1)
@@ -109,7 +115,7 @@ export function DashboardPage() {
   )
   const chartMonths = monthsEndingAt(month, CHART_MONTHS)
   const series = monthlySeries(allMovements, chartMonths)
-  const balancePoints = balanceSeries(allAccounts, allMovements, chartMonths, today)
+  const balancePoints = balanceSeries(allAccounts, balanceMovements, chartMonths, today)
   const vsPrevious = (key: 'receitas' | 'despesas' | 'resultado') =>
     comparisonText(compareAmounts(summary[key], previousSummary[key]), currency, previousLabel)
   const categoriesById = new Map((categories.data ?? []).map((category) => [category.id, category]))

@@ -18,6 +18,37 @@ export type Movement = {
 export type AccountMovement = Movement & { account_id: string }
 export type CategoryMovement = Movement & { category_id: string }
 
+/** Transferência entre contas próprias (o pagamento de uma fatura é uma transferência para o cartão). */
+export type Transfer = {
+  conta_origem_id: string
+  conta_destino_id: string
+  valor_centavos: number
+  data: IsoDate
+}
+
+/**
+ * Transferências como movimentos de SALDO: sai da origem e entra no destino, na mesma data.
+ * Só para os saldos (balancesByAccount, totalBalance, balanceSeries) — nunca para receitas, despesas,
+ * gastos por categoria ou orçamentos: uma transferência não é consumo nem rendimento, e o total das
+ * contas não muda (−valor + valor = 0).
+ */
+export function transferMovements(transfers: Transfer[]): AccountMovement[] {
+  return transfers.flatMap((transfer) => [
+    {
+      account_id: transfer.conta_origem_id,
+      tipo: 'despesa' as const,
+      valor_centavos: transfer.valor_centavos,
+      data: transfer.data,
+    },
+    {
+      account_id: transfer.conta_destino_id,
+      tipo: 'receita' as const,
+      valor_centavos: transfer.valor_centavos,
+      data: transfer.data,
+    },
+  ])
+}
+
 /** Movimento com sinal: receitas somam, despesas subtraem. */
 export function signedAmount(movement: Movement): number {
   return movement.tipo === 'receita' ? movement.valor_centavos : -movement.valor_centavos

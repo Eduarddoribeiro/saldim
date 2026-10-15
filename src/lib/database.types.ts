@@ -315,6 +315,65 @@ export type Database = {
           },
         ]
       }
+      transferencias: {
+        Row: {
+          conta_destino_id: string
+          conta_origem_id: string
+          created_at: string
+          data: string
+          descricao: string
+          fatura_id: string | null
+          id: string
+          user_id: string
+          valor_centavos: number
+        }
+        ComputedFields: never
+        Insert: {
+          conta_destino_id: string
+          conta_origem_id: string
+          created_at?: string
+          data?: string
+          descricao?: string
+          fatura_id?: string | null
+          id?: string
+          user_id?: string
+          valor_centavos: number
+        }
+        Update: {
+          conta_destino_id?: string
+          conta_origem_id?: string
+          created_at?: string
+          data?: string
+          descricao?: string
+          fatura_id?: string | null
+          id?: string
+          user_id?: string
+          valor_centavos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'transferencias_destino_fk'
+            columns: ['conta_destino_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id', 'user_id']
+          },
+          {
+            foreignKeyName: 'transferencias_fatura_fk'
+            columns: ['fatura_id', 'conta_destino_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'faturas'
+            referencedColumns: ['id', 'account_id', 'user_id']
+          },
+          {
+            foreignKeyName: 'transferencias_origem_fk'
+            columns: ['conta_origem_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

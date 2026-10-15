@@ -21,6 +21,9 @@ const RULE_MESSAGES: Record<string, string> = {
   compras_cartao_categoria_check: 'Uma compra no cartão tem de usar uma categoria de despesa.',
   compras_cartao_valor_check: 'O valor tem de chegar para todas as parcelas (1 centavo cada).',
   compras_cartao_parcelas_check: 'O número de parcelas não é válido.',
+  // D6 (migration transferencias): o histórico pago não se apaga; a correção será um estorno (C8)
+  compras_cartao_fatura_paga_check:
+    'Esta compra tem parcelas em faturas com pagamentos, por isso não pode ser apagada.',
   faturas_mes_check: 'As parcelas passariam do ano 2999. Confirma a data da compra.',
   faturas_datas_check: 'As parcelas passariam do ano 2999. Confirma a data da compra.',
 }
