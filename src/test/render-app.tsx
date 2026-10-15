@@ -6,7 +6,12 @@ import { RouterProvider } from 'react-router/dom'
 import { vi } from 'vitest'
 import { ThemeProvider } from '@/components/theme/ThemeProvider'
 import { AuthContext, type AuthContextValue } from '@/features/auth/auth-context'
+import { preloadPages } from '@/lib/lazy-page'
 import { routes } from '@/routes'
+
+// As páginas carregam à parte (lazy). Nos testes descarregam-se já, para renderApp continuar síncrono:
+// o que um teste vê logo a seguir a renderizar é a página, não o "A carregar…".
+await preloadPages()
 
 export const TEST_EMAIL = 'ana@exemplo.pt'
 

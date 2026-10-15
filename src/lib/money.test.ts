@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { assertCents, centsToInput, formatMoney, MAX_CENTS, parseMoney } from './money'
+import {
+  assertCents,
+  centsToInput,
+  formatMoney,
+  formatMoneyCompact,
+  MAX_CENTS,
+  parseMoney,
+} from './money'
 
 // Intl usa espaços não separáveis entre o símbolo e o número; normalizamos para comparar.
 const plain = (text: string) => text.replace(/[\u00a0\u202f]/g, ' ')
@@ -92,6 +99,20 @@ describe('formatMoney', () => {
   it('recusa valores que não são centavos inteiros', () => {
     expect(() => formatMoney(12.5)).toThrow(TypeError)
     expect(() => formatMoney(Number.NaN)).toThrow(TypeError)
+  })
+})
+
+describe('formatMoneyCompact (eixos de gráficos)', () => {
+  it('abrevia milhares e milhões, sem casas decimais inúteis', () => {
+    expect(plain(formatMoneyCompact(0))).toBe('R$ 0')
+    expect(plain(formatMoneyCompact(150000))).toBe('R$ 1,5 mil')
+    expect(plain(formatMoneyCompact(123456789))).toBe('R$ 1,2 mi')
+    expect(plain(formatMoneyCompact(-500000))).toBe('-R$ 5 mil')
+    expect(plain(formatMoneyCompact(150000, 'EUR'))).toBe('1,5 mil €')
+  })
+
+  it('recusa valores que não são centavos inteiros', () => {
+    expect(() => formatMoneyCompact(0.5)).toThrow(TypeError)
   })
 })
 

@@ -1,5 +1,4 @@
 import { ArrowDownRight, ArrowUpRight, ChevronRight, Scale, Wallet } from 'lucide-react'
-import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { FormAlert } from '@/components/form/FormAlert'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -12,32 +11,27 @@ import { useCategories } from '@/features/categories/hooks'
 import { useProfile } from '@/features/profile/hooks'
 import { useBalanceMovements, useTransactions } from '@/features/transactions/hooks'
 import { TransactionRow } from '@/features/transactions/TransactionRow'
-import { currentMonth, formatMonth, todayIso } from '@/lib/dates'
+import { addMonths, currentMonth, formatMonth, monthsEndingAt, todayIso } from '@/lib/dates'
 import { errorMessage } from '@/lib/db-errors'
-import { balancesByAccount, monthSummary, spendingByCategory, totalBalance } from '@/lib/finance'
+import {
+  balanceSeries,
+  balancesByAccount,
+  categoryComparison,
+  compareAmounts,
+  monthlySeries,
+  monthSummary,
+  spendingByCategory,
+  totalBalance,
+} from '@/lib/finance'
 import { formatMoney } from '@/lib/money'
 import { CategorySpendingList } from './CategorySpendingList'
+import { comparisonText, previousMonthLabel } from './comparison-text'
+import { BalanceEvolutionPanel, MonthlyComparisonPanel } from './DashboardCharts'
+import { Panel } from './Panel'
 import { StatTile } from './StatTile'
 
-function Panel({
-  title,
-  action,
-  children,
-}: {
-  title: string
-  action?: ReactNode
-  children: ReactNode
-}) {
-  return (
-    <section aria-label={title} className="min-w-0 rounded-xl border p-4">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="font-medium">{title}</h2>
-        {action}
-      </div>
-      {children}
-    </section>
-  )
-}
+/** Meses dos gráficos de evolução: o mês escolhido e os 5 anteriores. */
+const CHART_MONTHS = 6
 
 export function DashboardPage() {
   const [month, setMonth] = useMonthParam()
@@ -104,8 +98,20 @@ export function DashboardPage() {
   const saldoPrevisto = totalBalance(allAccounts, allMovements, { today, includeFuture: true })
   const balances = balancesByAccount(allAccounts, allMovements, { today })
   const transactions = monthTransactions.data ?? []
-  const summary = monthSummary(transactions, month)
-  const spending = spendingByCategory(transactions, month)
+  // Todos os números do mês saem do mesmo conjunto (todos os movimentos), para baterem entre si
+  const previousMonth = addMonths(month, -1)
+  const previousLabel = previousMonthLabel(previousMonth, month)
+  const summary = monthSummary(allMovements, month)
+  const previousSummary = monthSummary(allMovements, previousMonth)
+  const spending = spendingByCategory(allMovements, month)
+  const previousTotals = new Map(
+    categoryComparison(allMovements, month).map((row) => [row.categoryId, row.anterior]),
+  )
+  const chartMonths = monthsEndingAt(month, CHART_MONTHS)
+  const series = monthlySeries(allMovements, chartMonths)
+  const balancePoints = balanceSeries(allAccounts, allMovements, chartMonths, today)
+  const vsPrevious = (key: 'receitas' | 'despesas' | 'resultado') =>
+    comparisonText(compareAmounts(summary[key], previousSummary[key]), currency, previousLabel)
   const categoriesById = new Map((categories.data ?? []).map((category) => [category.id, category]))
   const accountsById = new Map(allAccounts.map((account) => [account.id, account]))
   const monthLabel = month === currentMonth() ? 'este mês' : formatMonth(month)
@@ -132,38 +138,50 @@ export function DashboardPage() {
           label={`Receitas · ${monthLabel}`}
           icon={ArrowUpRight}
           value={formatMoney(summary.receitas, currency)}
+          hint={vsPrevious('receitas')}
         />
         <StatTile
           label={`Despesas · ${monthLabel}`}
           icon={ArrowDownRight}
           value={formatMoney(summary.despesas, currency)}
+          hint={vsPrevious('despesas')}
         />
         <StatTile
           label={`Resultado · ${monthLabel}`}
           icon={Scale}
           value={formatMoney(summary.resultado, currency, { signDisplay: 'exceptZero' })}
           hint={
-            summary.resultado > 0
-              ? 'Ganhaste mais do que gastaste.'
-              : summary.resultado < 0
-                ? 'Gastaste mais do que ganhaste.'
-                : undefined
+            <>
+              {summary.resultado > 0 && <p>Ganhaste mais do que gastaste.</p>}
+              {summary.resultado < 0 && <p>Gastaste mais do que ganhaste.</p>}
+              <p>{vsPrevious('resultado')}</p>
+            </>
           }
           className="col-span-2 sm:col-span-1"
         />
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <MonthlyComparisonPanel series={series} currency={currency} />
+        <BalanceEvolutionPanel
+          points={balancePoints}
+          currency={currency}
+          hasAccounts={allAccounts.length > 0}
+        />
+
         <Panel title="Gastos por categoria">
-          {spending.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Sem despesas em {formatMonth(month)}.</p>
-          ) : (
-            <CategorySpendingList
-              spending={spending}
-              categoriesById={categoriesById}
-              currency={currency}
-            />
+          {spending.length === 0 && (
+            <p className="mb-2 text-sm text-muted-foreground">
+              Sem despesas em {formatMonth(month)}.
+            </p>
           )}
+          <CategorySpendingList
+            spending={spending}
+            previousTotals={previousTotals}
+            previousLabel={previousLabel}
+            categoriesById={categoriesById}
+            currency={currency}
+          />
         </Panel>
 
         <Panel

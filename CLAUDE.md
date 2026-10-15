@@ -24,12 +24,13 @@ Ambiente: Node 22.22, npm 10.9, Windows, Docker Desktop 29 (necessário para o S
 | Backend      | @supabase/supabase-js / supabase (CLI, devDependency)        | 2.117 / 2.121     |
 | Formulários  | react-hook-form / zod / @hookform/resolvers                  | 7.90 / 4.6 / 5.9  |
 | Dados        | @tanstack/react-query                                        | 5.104             |
+| Gráficos     | recharts (+ react-is na versão do React), carregado à parte  | 3.10              |
 | Testes       | vitest / jsdom                                               | 5.0 / 29.1        |
 |              | @testing-library/react / user-event / jest-dom               | 16.3 / 14.6 / 7.0 |
 |              | @playwright/test (E2E com o Edge do sistema, sem downloads)  | 1.64              |
 | Qualidade    | oxlint (não ESLint) / prettier + prettier-plugin-tailwindcss | 1.88 / 3.9 / 0.8  |
 
-**Previstos no plano mas não instalados, de propósito:** `recharts` — os gastos por categoria são barras horizontais em HTML/CSS (mais legíveis que uma rosca para comparar valores próximos; acessíveis como lista); instalar só quando houver gráficos de evolução (Etapa 13). `date-fns` — as poucas operações de datas estão em `src/lib/dates.ts` (testadas, com `Intl`).
+**Gráficos:** o Recharts só é usado nos gráficos de evolução do Início (`features/dashboard/charts.tsx`, carregado com `lazy`). Os gastos por categoria continuam em barras HTML/CSS (mais legíveis que uma rosca e acessíveis como lista). Cada gráfico é `role="img"` com descrição e tem uma tabela alternativa; as cores das séries (`--chart-receitas`/`--chart-despesas` em `index.css`) foram validadas para daltonismo e contraste nos dois temas. **Não instalado, de propósito:** `date-fns` — as poucas operações de datas estão em `src/lib/dates.ts` (testadas, com `Intl`).
 
 Notas:
 
@@ -109,7 +110,7 @@ financas/                     # raiz do repositório Git
 
 **Supabase local:** API `http://127.0.0.1:54321`, Studio (painel) `http://127.0.0.1:54323`, Mailpit (e-mails de teste) `http://127.0.0.1:54324`, Postgres na porta 54322. Confirmação de e-mail desligada localmente; senha mínima 8 caracteres. As chaves locais são as de demonstração do Supabase, mas mesmo assim só a pública vai para o `.env`.
 
-**Acesso a dados (padrão a repetir em cada tabela):** `features/<área>/<área>-api.ts` é o único ficheiro que chama `supabase.from('<tabela>')`; erros saem como `UserFacingError` com mensagem traduzida (`dbErrorMessage` + mensagens específicas). `hooks.ts` envolve-o em `useQuery`/`useMutation`; as chaves incluem o id do utilizador (`['categories', userId]`) e cada mutação invalida a lista. `UserCacheBoundary` limpa o cache quando o utilizador muda. `user_id` nunca é enviado: a base preenche-o com `auth.uid()`. Valores fixos (tipo receita/despesa) são enums do Postgres → uniões no TypeScript gerado. Enums gerados (`Constants.public.Enums.*`) alimentam as listas da interface, com `Record<Enum, …>` para o TypeScript obrigar a tratar valores novos. Transações: FKs compostas `(account_id, user_id)`/`(category_id, user_id)` com `ON DELETE NO ACTION` (bloqueia apagar conta/categoria em uso, mas permite a cascata ao apagar o utilizador) e trigger que exige categoria do mesmo tipo. As chaves de cache das transações são `['transactions', userId, mes]` e as mutações invalidam o prefixo `['transactions', userId]` (uma edição pode mudar a transação de mês). Datas: só dia (`date`), sempre a data local (`todayIso`), nunca `toISOString()`. **Limite de 1000 linhas:** o Supabase corta respostas em `max_rows` (1000) sem erro — consultas que podem passar disso (transações) usam `fetchAllPages` com ordem total (terminar em `.order('id')`); provado em `tests/rls/pagination.test.ts`. Cálculos financeiros só em `src/lib/finance.ts`; o dashboard pede todas as transações (só 4 colunas) para os saldos — decisão do MVP, passar para view SQL se o volume crescer. Formulários com dinheiro usam `moneyField()` e `useForm<Input, unknown, Output>` (entra texto, sai centavos); ao editar, o campo é preenchido com `centsToInput`. Cores e ícones guardam-se como chaves, mapeadas para classes/ícones em `category-options.ts` (um teste confirma que as cores coincidem com o CHECK da migration).
+**Acesso a dados (padrão a repetir em cada tabela):** `features/<área>/<área>-api.ts` é o único ficheiro que chama `supabase.from('<tabela>')`; erros saem como `UserFacingError` com mensagem traduzida (`dbErrorMessage` + mensagens específicas). `hooks.ts` envolve-o em `useQuery`/`useMutation`; as chaves incluem o id do utilizador (`['categories', userId]`) e cada mutação invalida a lista. `UserCacheBoundary` limpa o cache quando o utilizador muda. `user_id` nunca é enviado: a base preenche-o com `auth.uid()`. Valores fixos (tipo receita/despesa) são enums do Postgres → uniões no TypeScript gerado. Enums gerados (`Constants.public.Enums.*`) alimentam as listas da interface, com `Record<Enum, …>` para o TypeScript obrigar a tratar valores novos. Transações: FKs compostas `(account_id, user_id)`/`(category_id, user_id)` com `ON DELETE NO ACTION` (bloqueia apagar conta/categoria em uso, mas permite a cascata ao apagar o utilizador) e trigger que exige categoria do mesmo tipo. As chaves de cache das transações são `['transactions', userId, mes]` e as mutações invalidam o prefixo `['transactions', userId]` (uma edição pode mudar a transação de mês). Datas: só dia (`date`), sempre a data local (`todayIso`), nunca `toISOString()`. **Limite de 1000 linhas:** o Supabase corta respostas em `max_rows` (1000) sem erro — consultas que podem passar disso (transações) usam `fetchAllPages` com ordem total (terminar em `.order('id')`); provado em `tests/rls/pagination.test.ts`. Cálculos financeiros só em `src/lib/finance.ts`; o dashboard pede todas as transações (só 5 colunas) e calcula tudo a partir delas (saldos, mês, mês anterior, séries de 6 meses) — decisão do MVP, passar para view SQL se o volume crescer. **Páginas carregadas por rota:** `routes.tsx` usa `lazyPage` (`src/lib/lazy-page.tsx`), com `<Suspense>` no `AppShell`/`AuthLayout`; os testes chamam `preloadPages()` (em `render-app.tsx`) para renderizar de forma síncrona. Formulários com dinheiro usam `moneyField()` e `useForm<Input, unknown, Output>` (entra texto, sai centavos); ao editar, o campo é preenchido com `centsToInput`. Cores e ícones guardam-se como chaves, mapeadas para classes/ícones em `category-options.ts` (um teste confirma que as cores coincidem com o CHECK da migration).
 
 **Testes:** três níveis.
 
@@ -190,18 +191,18 @@ Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etap
 **Fase C — Depois do MVP**
 
 - [x] 12. Orçamentos (tabela `budgets` com FK composta e trigger só-despesa, um por categoria/mês, página com estado cor+ícone+texto, copiar do mês anterior sem substituir limites; RLS + isolamento + E2E)
+- [x] Dashboard 2 (parte dos relatórios da 13): comparação com o mês anterior (cartões e categorias), receitas × despesas de 6 meses (barras), evolução do saldo (linha, previsão a tracejado), tabelas alternativas; divisão do bundle por rotas. Falta da 13: filtros e pesquisa nas transações.
 
 **Seguintes:** 13. Filtros e relatórios · 14. Deploy · 15. Google login, PWA, importar/exportar CSV, atualizações otimistas, recorrentes, metas.
 
-**Próxima etapa:** 13 (filtros, pesquisa e relatórios). A 14 (deploy) precisa de autorização e credenciais.
+**Próxima etapa:** resto da 13 (filtros e pesquisa nas transações). A 14 (deploy) precisa de autorização e credenciais.
 
 ### Decisões em aberto (precisam do utilizador)
 
 - **Moeda:** o perfil guarda `BRL` por omissão (o plano aprovado mostrava "R$"); `EUR` também é suportado, mas ainda não há ecrã para mudar a moeda nem o nome do perfil.
-- **GitHub:** os commits estão só no computador (`main` à frente de `origin/main`). Enviar com `git push` só com autorização.
+- **GitHub:** enviar com `git push` só com autorização explícita de cada vez.
 - **Hook `post-commit`:** versionado e sem rede, mas inativo até aprovação (`git config core.hooksPath .githooks`).
 - **Deploy / projeto Supabase na cloud (Etapa 14):** exige conta, credenciais reais e possíveis custos; ativar confirmação de e-mail e SMTP próprio em produção.
-- **Tamanho da build:** o Vite avisa que o JavaScript passa de 500 kB; resolver com divisão por rotas (`lazy`) quando fizer sentido.
 - **Renomear** o pacote/pasta `financas` → `saldo` (opcional; só cosmético).
 
 ## Forma de trabalho

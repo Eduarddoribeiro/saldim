@@ -20,19 +20,23 @@ Plano aprovado pelo utilizador em 2026-10-14. O estado de cada etapa está em `C
 
 ### Cálculos (funções puras em `src/lib/finance.ts`)
 
-| Indicador                  | Regra                                                                                                     |
-| -------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Receitas do mês            | Σ `valor_centavos` das transações `receita` no mês                                                        |
-| Despesas do mês            | Σ `valor_centavos` das transações `despesa` no mês                                                        |
-| Resultado do mês           | Receitas do mês − Despesas do mês (pode ser negativo)                                                     |
-| Saldo atual da conta       | `saldo_inicial` + Σ receitas − Σ despesas da conta com `data <= hoje`                                     |
-| Saldo previsto da conta    | Igual, mas incluindo transações com data futura                                                           |
-| Saldo total                | Σ saldos atuais de todas as contas, **incluindo arquivadas** (arquivar esconde, não apaga dinheiro)       |
-| Gastos por categoria (mês) | Σ despesas do mês agrupadas por categoria, ordenadas por valor; % = gasto da categoria / despesas do mês  |
-| Orçamento — gasto          | Σ despesas da categoria no mês do orçamento                                                               |
-| Orçamento — restante       | limite − gasto (negativo = ultrapassado)                                                                  |
-| Orçamento — % usado        | `Math.round(gasto * 100 / limite)` (inteiro)                                                              |
-| Orçamento — estado         | `ok` < 80 % · `alerta` 80–100 % · `excedido` > 100 % (comparando valores exatos: 100,4 % já é `excedido`) |
+| Indicador                            | Regra                                                                                                                                                                                             |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Receitas do mês                      | Σ `valor_centavos` das transações `receita` no mês                                                                                                                                                |
+| Despesas do mês                      | Σ `valor_centavos` das transações `despesa` no mês                                                                                                                                                |
+| Resultado do mês                     | Receitas do mês − Despesas do mês (pode ser negativo)                                                                                                                                             |
+| Saldo atual da conta                 | `saldo_inicial` + Σ receitas − Σ despesas da conta com `data <= hoje`                                                                                                                             |
+| Saldo previsto da conta              | Igual, mas incluindo transações com data futura                                                                                                                                                   |
+| Saldo total                          | Σ saldos atuais de todas as contas, **incluindo arquivadas** (arquivar esconde, não apaga dinheiro)                                                                                               |
+| Gastos por categoria (mês)           | Σ despesas do mês agrupadas por categoria, ordenadas por valor; % = gasto da categoria / despesas do mês                                                                                          |
+| Orçamento — gasto                    | Σ despesas da categoria no mês do orçamento                                                                                                                                                       |
+| Orçamento — restante                 | limite − gasto (negativo = ultrapassado)                                                                                                                                                          |
+| Orçamento — % usado                  | `Math.round(gasto * 100 / limite)` (inteiro)                                                                                                                                                      |
+| Orçamento — estado                   | `ok` < 80 % · `alerta` 80–100 % · `excedido` > 100 % (comparando valores exatos: 100,4 % já é `excedido`)                                                                                         |
+| Variação face ao mês anterior        | diferença = atual − anterior (centavos); % = `Math.round(diferença * 100 / Math.abs(anterior))`; sem % quando o anterior é 0                                                                      |
+| Receitas × despesas (série)          | Para cada um dos 6 meses que terminam no mês escolhido: as mesmas regras de receitas/despesas/resultado do mês; meses vazios = 0                                                                  |
+| Evolução do saldo                    | Saldo total (todas as contas, incluindo arquivadas) com os movimentos até ao corte: último dia do mês; **hoje** no mês atual (bate com o saldo atual); meses futuros = previsão até ao fim do mês |
+| Gastos por categoria vs mês anterior | Gastos por categoria do mês e do mês anterior; categorias só com gastos no anterior aparecem numa nota                                                                                            |
 
 - Orçamentos só para categorias do tipo `despesa`; um por (utilizador, categoria, mês); `limite_centavos > 0`.
 - A categoria de uma transação tem de ter o mesmo `tipo` da transação (validado no Zod **e** na base de dados).

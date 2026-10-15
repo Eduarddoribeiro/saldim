@@ -25,7 +25,12 @@ describe('topCategories', () => {
     ]
     const result = topCategories(spending, 5)
     expect(result).toHaveLength(6)
-    expect(result.at(-1)).toEqual({ categoryId: OTHER_CATEGORIES_ID, total: 90, percent: 9 })
+    expect(result.at(-1)).toEqual({
+      categoryId: OTHER_CATEGORIES_ID,
+      total: 90,
+      percent: 9,
+      memberIds: ['f', 'g'],
+    })
     expect(result.reduce((sum, r) => sum + r.percent, 0)).toBe(100)
   })
 })
