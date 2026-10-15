@@ -64,6 +64,9 @@ function transaction(overrides: Partial<Transaction>): Transaction {
     data: '2026-10-14',
     descricao: '',
     created_at: '2026-10-14T10:00:00Z',
+    fatura_id: null,
+    compra_id: null,
+    parcela_numero: null,
     ...overrides,
   }
 }

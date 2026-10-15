@@ -211,7 +211,7 @@ describe('cartões — regras de dados', () => {
     expect(error?.hint).toBe('accounts_tipo_cartao_em_uso_check')
   })
 
-  it('até à C3: uma transação normal não pode usar um cartão (nem ser movida para um)', async () => {
+  it('uma transação normal não pode usar um cartão (nem ser movida para um) — regra da C3', async () => {
     const { data: cartao } = await b.client
       .from('accounts')
       .insert(cardRow(principalB))

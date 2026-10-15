@@ -276,7 +276,8 @@ describe('invoiceForPurchase', () => {
       }
     }
     expect(falhas).toEqual([])
-  })
+    // ~2 s sozinho; com todos os ficheiros em paralelo no verify chegou a passar os 5 s por omissão
+  }, 20_000)
 
   it('recusa datas inválidas', () => {
     expect(() => invoiceForPurchase(config(3, 10), '2026-02-30')).toThrow(RangeError)

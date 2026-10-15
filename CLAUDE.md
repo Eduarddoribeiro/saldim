@@ -197,12 +197,13 @@ Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etap
 
 - [ ] **Cartões de crédito** (branch `feat/cartoes`; regras em `docs/plano.md` → "Cartões de crédito"):
   - [x] C1. Cálculos puros (`src/lib/credit-card.ts`: datas e ciclos das faturas, validação dos dias, parcelas, estado da fatura) + testes exaustivos
-  - [x] C2. Configuração do cartão: tipo `cartao_credito`, colunas e CHECKs em `accounts` (migration `cartao_config`), FK composta da conta de pagamento, triggers (cartão não paga cartão; conta com transações não muda de/para cartão; **temporário até à C3:** transações normais não usam cartões); formulário com campos condicionais e aviso de prazo; cartões fora do formulário de transações; testes RLS (incl. CHECK × `validateCardConfig` nos 961 pares), componentes e E2E
-  - [ ] C3 faturas e compras na base de dados · C4 compras na interface · C5 pagamentos · C6 página de faturas · C7 Início e relatórios · C8 estornos
+  - [x] C2. Configuração do cartão: tipo `cartao_credito`, colunas e CHECKs em `accounts` (migration `cartao_config`), FK composta da conta de pagamento, triggers (cartão não paga cartão; conta com transações não muda de/para cartão; transações normais não usam cartões — regra temporária substituída na C3); formulário com campos condicionais e aviso de prazo; cartões fora do formulário de transações; testes RLS (incl. CHECK × `validateCardConfig` nos 961 pares), componentes e E2E
+  - [x] C3. Faturas e compras na base de dados (migration `faturas_compras`): tabelas `faturas` (datas calculadas pela trigger, sem update) e `compras_cartao` (sem update; apagar a compra apaga as parcelas); parcelas = transações `despesa` com `fatura_id`, `compra_id`, `parcela_numero` (FKs compostas com o cartão); função atómica `registar_compra_cartao` (`security invoker`); triggers garantem as mesmas regras em escritas diretas (parcela certa na fatura certa, conjunto exato de parcelas no fim da transação, parcelas não se alteram nem se apagam sozinhas; **até à C8:** os dias de um cartão com faturas não mudam); cálculos SQL = `credit-card.ts` provado nas 924 configurações; testes RLS, atomicidade e integridade
+  - [ ] C4 compras na interface · C5 pagamentos · C6 página de faturas · C7 Início e relatórios · C8 estornos e alteração da configuração
 
 **Seguintes:** 13. Filtros e relatórios · 14. Deploy · 15. Google login, PWA, importar/exportar CSV, atualizações otimistas, recorrentes, metas.
 
-**Próxima etapa:** C3 (faturas e compras na base de dados), depois o resto da 13 (filtros e pesquisa nas transações). A 14 (deploy) precisa de autorização e credenciais.
+**Próxima etapa:** C4 (compras no cartão na interface: diálogo com pré-visualização, parcelas "k/n" na lista, apagar a compra; mensagens para os HINTs da C3), depois o resto da 13 (filtros e pesquisa nas transações). A 14 (deploy) precisa de autorização e credenciais.
 
 ### Decisões em aberto (precisam do utilizador)
 

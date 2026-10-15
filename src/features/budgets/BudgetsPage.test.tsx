@@ -82,6 +82,9 @@ const despesa = (categoryId: string, valor: number, data = '2026-10-10'): Transa
   data,
   descricao: '',
   created_at: '',
+  fatura_id: null,
+  compra_id: null,
+  parcela_numero: null,
 })
 const plain = (text: string | null | undefined) => (text ?? '').replace(/[\u00a0\u202f]/g, ' ')
 

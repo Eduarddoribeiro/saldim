@@ -124,6 +124,100 @@ export type Database = {
         }
         Relationships: []
       }
+      compras_cartao: {
+        Row: {
+          account_id: string
+          category_id: string
+          created_at: string
+          data_compra: string
+          descricao: string
+          id: string
+          parcela_inicial: number
+          parcelas: number
+          user_id: string
+          valor_total_centavos: number
+        }
+        ComputedFields: never
+        Insert: {
+          account_id: string
+          category_id: string
+          created_at?: string
+          data_compra: string
+          descricao?: string
+          id?: string
+          parcela_inicial?: number
+          parcelas: number
+          user_id?: string
+          valor_total_centavos: number
+        }
+        Update: {
+          account_id?: string
+          category_id?: string
+          created_at?: string
+          data_compra?: string
+          descricao?: string
+          id?: string
+          parcela_inicial?: number
+          parcelas?: number
+          user_id?: string
+          valor_total_centavos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'compras_cartao_account_fk'
+            columns: ['account_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id', 'user_id']
+          },
+          {
+            foreignKeyName: 'compras_cartao_category_fk'
+            columns: ['category_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'categories'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
+      }
+      faturas: {
+        Row: {
+          account_id: string
+          created_at: string
+          data_fechamento: string
+          data_vencimento: string
+          id: string
+          mes_referencia: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          account_id: string
+          created_at?: string
+          data_fechamento: string
+          data_vencimento: string
+          id?: string
+          mes_referencia: string
+          user_id?: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          data_fechamento?: string
+          data_vencimento?: string
+          id?: string
+          mes_referencia?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'faturas_account_fk'
+            columns: ['account_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -150,10 +244,13 @@ export type Database = {
         Row: {
           account_id: string
           category_id: string
+          compra_id: string | null
           created_at: string
           data: string
           descricao: string
+          fatura_id: string | null
           id: string
+          parcela_numero: number | null
           tipo: Database['public']['Enums']['tipo_movimento']
           user_id: string
           valor_centavos: number
@@ -162,10 +259,13 @@ export type Database = {
         Insert: {
           account_id: string
           category_id: string
+          compra_id?: string | null
           created_at?: string
           data?: string
           descricao?: string
+          fatura_id?: string | null
           id?: string
+          parcela_numero?: number | null
           tipo: Database['public']['Enums']['tipo_movimento']
           user_id?: string
           valor_centavos: number
@@ -173,10 +273,13 @@ export type Database = {
         Update: {
           account_id?: string
           category_id?: string
+          compra_id?: string | null
           created_at?: string
           data?: string
           descricao?: string
+          fatura_id?: string | null
           id?: string
+          parcela_numero?: number | null
           tipo?: Database['public']['Enums']['tipo_movimento']
           user_id?: string
           valor_centavos?: number
@@ -196,6 +299,20 @@ export type Database = {
             referencedRelation: 'categories'
             referencedColumns: ['id', 'user_id']
           },
+          {
+            foreignKeyName: 'transactions_compra_fk'
+            columns: ['compra_id', 'account_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'compras_cartao'
+            referencedColumns: ['id', 'account_id', 'user_id']
+          },
+          {
+            foreignKeyName: 'transactions_fatura_fk'
+            columns: ['fatura_id', 'account_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'faturas'
+            referencedColumns: ['id', 'account_id', 'user_id']
+          },
         ]
       }
     }
@@ -203,7 +320,32 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cartao_data_parcela: { Args: { data_compra: string; numero: number }; Returns: string }
+      cartao_datas_fatura: {
+        Args: { dia_fechamento: number; dia_vencimento: number; mes_referencia: string }
+        Returns: Record<string, unknown>
+      }
+      cartao_dia_no_mes: { Args: { dia: number; mes: string }; Returns: string }
+      cartao_fatura_da_compra: {
+        Args: { data_compra: string; dia_fechamento: number; dia_vencimento: number }
+        Returns: string
+      }
+      cartao_valor_parcela: {
+        Args: { numero: number; parcelas: number; total: number }
+        Returns: number
+      }
+      registar_compra_cartao: {
+        Args: {
+          p_account_id: string
+          p_category_id: string
+          p_data_compra: string
+          p_descricao?: string
+          p_parcela_inicial?: number
+          p_parcelas: number
+          p_valor_total_centavos: number
+        }
+        Returns: string
+      }
     }
     Enums: {
       tipo_conta: 'corrente' | 'poupanca' | 'dinheiro' | 'investimento' | 'outra' | 'cartao_credito'

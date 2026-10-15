@@ -45,24 +45,27 @@ Plano aprovado pelo utilizador em 2026-10-14. O estado de cada etapa está em `C
 
 ### Cartões de crédito (cálculos em `src/lib/credit-card.ts`)
 
-Decisões aprovadas (D1–D10); as etapas C3–C8 ainda vão implementar o que depende de faturas, pagamentos e estornos.
+Decisões aprovadas (D1–D10); as etapas C4–C8 ainda vão implementar a interface, os pagamentos e os estornos.
 
 - **Configuração** (C2): uma conta do tipo `cartao_credito` tem dia de fechamento F e de vencimento V (1–31), limite (centavos, > 0) e conta de pagamento (uma conta de dinheiro do mesmo utilizador, não um cartão nem o próprio). Começa sem dívida (saldo inicial 0). Regra dos dias, igual no Zod e no CHECK: **F ≠ V** e **não (V > F e F ≥ 28)** — senão, num fevereiro de 28 dias, fechamento e vencimento cairiam no mesmo dia. Prazo (dias do fechamento ao vencimento) fora de 5–25 dias gera um aviso, não um erro. Só dia de fechamento fixo (D8b).
 - **Fatura**: identifica-se pelo mês do vencimento. Vencimento = dia V desse mês; fechamento = dia F no mesmo mês se V > F, ou no mês anterior se V < F; dias que o mês não tem passam ao último dia. **Ciclo = [fechamento anterior, fechamento)**: uma compra no dia do fechamento vai para a fatura seguinte (D2a). Os ciclos são contíguos.
 - **Parcelas**: total ÷ n em centavos inteiros, **a última leva o resto** (D3c); soma exata. Parcela k: data = data original da compra + (k−1) meses (dia ajustado ao fim do mês), fatura = fatura da compra + (k−1). O consumo conta na **data de cada parcela** (D1a): parcelas futuras ficam no previsto, não no atual. Compra já em curso (D5a): guarda o valor original e n, mas só cria as parcelas a partir da primeira ainda não paga.
-- **Sem dupla contagem**: cada parcela é uma despesa uma única vez; o pagamento da fatura é uma transferência entre contas próprias (não é despesa nem tem categoria). Até à C3, uma transação normal não pode usar um cartão (trigger temporário).
+- **Sem dupla contagem**: cada parcela é uma despesa uma única vez; o pagamento da fatura é uma transferência entre contas próprias (não é despesa nem tem categoria).
+- **Faturas e compras na base de dados** (C3): uma compra regista-se só com a função `registar_compra_cartao` (`security invoker`, uma única transação: compra + faturas em falta + parcelas, ou nada). Os mesmos cálculos existem em SQL (`cartao_datas_fatura`, `cartao_fatura_da_compra`, `cartao_valor_parcela`, `cartao_data_parcela`) e são comparados com os de `credit-card.ts` nos testes. Como a função corre com as permissões de quem chama, as regras estão nas tabelas e valem também para escritas diretas: num cartão só há parcelas; cada parcela tem o valor, a data, a categoria e a fatura que a compra determina; a compra tem exatamente as suas parcelas (verificado no fim da transação); as datas da fatura são calculadas pelo servidor e ficam fixas; parcelas e compras não se alteram (só a descrição da parcela) e uma parcela não se apaga sozinha (apaga-se a compra). O limite do cartão não bloqueia compras (é informativo, C7). Até à C8, os dias de fechamento/vencimento de um cartão com faturas não mudam.
 - **Histórico** (D6): operações que afetam faturas com pagamentos não se editam nem apagam; usa-se estorno/correção. Estorno = tipo `estorno` nas transações (D9a). Pagamentos com data futura não são permitidos na v1 (D10a).
 - **Indicadores** (D4a, C7): o Início mostra o dinheiro disponível como número principal, com a dívida em cartões, o saldo líquido e o saldo líquido previsto.
 
 ## Modelo de dados
 
-| Tabela         | Campos principais                                                                                                                                                                |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `profiles`     | `id` (= `auth.users.id`), `nome`, `moeda`                                                                                                                                        |
-| `accounts`     | `id`, `user_id`, `nome`, `tipo`, `saldo_inicial_centavos` (pode ser negativo), `arquivada`; cartões: `dia_fechamento`, `dia_vencimento`, `limite_centavos`, `conta_pagamento_id` |
-| `categories`   | `id`, `user_id`, `nome`, `tipo`, `cor`, `icone`, `arquivada`                                                                                                                     |
-| `transactions` | `id`, `user_id`, `account_id`, `category_id`, `tipo`, `valor_centavos`, `data`, `descricao`, `created_at`                                                                        |
-| `budgets`      | `id`, `user_id`, `category_id`, `mes` (1.º dia do mês), `limite_centavos`                                                                                                        |
+| Tabela           | Campos principais                                                                                                                                                                |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `profiles`       | `id` (= `auth.users.id`), `nome`, `moeda`                                                                                                                                        |
+| `accounts`       | `id`, `user_id`, `nome`, `tipo`, `saldo_inicial_centavos` (pode ser negativo), `arquivada`; cartões: `dia_fechamento`, `dia_vencimento`, `limite_centavos`, `conta_pagamento_id` |
+| `categories`     | `id`, `user_id`, `nome`, `tipo`, `cor`, `icone`, `arquivada`                                                                                                                     |
+| `transactions`   | `id`, `user_id`, `account_id`, `category_id`, `tipo`, `valor_centavos`, `data`, `descricao`, `created_at`; parcelas: `fatura_id`, `compra_id`, `parcela_numero`                  |
+| `faturas`        | `id`, `user_id`, `account_id` (cartão), `mes_referencia` (1.º dia do mês do vencimento), `data_fechamento`, `data_vencimento`                                                    |
+| `compras_cartao` | `id`, `user_id`, `account_id`, `category_id`, `descricao`, `data_compra`, `valor_total_centavos`, `parcelas`, `parcela_inicial`                                                  |
+| `budgets`        | `id`, `user_id`, `category_id`, `mes` (1.º dia do mês), `limite_centavos`                                                                                                        |
 
 - Categorias/contas com transações não se apagam (FK `ON DELETE RESTRICT`); arquivam-se.
 - Trigger no registo cria o `profile` e as categorias padrão.

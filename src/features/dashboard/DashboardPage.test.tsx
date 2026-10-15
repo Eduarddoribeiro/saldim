@@ -73,6 +73,9 @@ const tx = (overrides: Partial<Transaction>): Transaction => ({
   data: '2026-10-10',
   descricao: '',
   created_at: '',
+  fatura_id: null,
+  compra_id: null,
+  parcela_numero: null,
   ...overrides,
 })
 
