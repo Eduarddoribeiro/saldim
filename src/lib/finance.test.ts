@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   accountBalance,
+  availableCredit,
   balanceSeries,
   balancesByAccount,
   budgetStatus,
@@ -9,6 +10,7 @@ import {
   isInMonth,
   monthlySeries,
   monthSummary,
+  netPosition,
   signedAmount,
   spendingByCategory,
   totalBalance,
@@ -118,6 +120,75 @@ describe('saldos', () => {
     const withOrphan = [...movements, tx({ account_id: 'outra', valor_centavos: 123 })]
     expect(totalBalance([banco, carteira], withOrphan, { today })).toBe(120000 + -2493)
     expect(totalBalance([], movements, { today })).toBe(0)
+  })
+})
+
+describe('posição do Início: disponível, dívida nos cartões e líquido (D4a)', () => {
+  const today = '2026-10-14'
+  const contas = [
+    { id: 'banco', saldo_inicial_centavos: 100000, tipo: 'corrente' },
+    { id: 'velha', saldo_inicial_centavos: 5000, tipo: 'poupanca' }, // arquivada: conta igual
+    { id: 'visa', saldo_inicial_centavos: 0, tipo: 'cartao_credito' },
+    { id: 'master', saldo_inicial_centavos: 0, tipo: 'cartao_credito' },
+  ]
+  // Compra de 300,00 em 3× no Visa: uma parcela já passou, duas são futuras; 50,00 pagos
+  const movimentos = [
+    tx({ account_id: 'visa', valor_centavos: 10000, data: '2026-10-01' }),
+    tx({ account_id: 'visa', valor_centavos: 10000, data: '2026-11-01' }),
+    tx({ account_id: 'visa', valor_centavos: 10000, data: '2026-12-01' }),
+    tx({ account_id: 'banco', valor_centavos: 2000, data: '2026-10-02' }),
+    ...transferMovements([
+      { conta_origem_id: 'banco', conta_destino_id: 'visa', valor_centavos: 5000, data: today },
+    ]),
+  ]
+
+  it('o disponível é só dinheiro; a dívida é o que falta pagar das parcelas até hoje', () => {
+    expect(netPosition(contas, movimentos, { today })).toEqual({
+      disponivel: 100000 + 5000 - 2000 - 5000,
+      dividaCartoes: 10000 - 5000,
+      liquido: 98000 - 5000,
+    })
+  })
+
+  it('o líquido é sempre igual ao saldo total (atual e previsto)', () => {
+    for (const includeFuture of [false, true]) {
+      const options = { today, includeFuture }
+      const { disponivel, dividaCartoes, liquido } = netPosition(contas, movimentos, options)
+      expect(liquido).toBe(totalBalance(contas, movimentos, options))
+      expect(liquido).toBe(disponivel - dividaCartoes)
+    }
+  })
+
+  it('no previsto, a dívida inclui as parcelas futuras', () => {
+    expect(netPosition(contas, movimentos, { today, includeFuture: true }).dividaCartoes).toBe(
+      30000 - 5000,
+    )
+  })
+
+  it('pagar mais do que a dívida dá dívida negativa (crédito a favor)', () => {
+    const credito = [
+      ...movimentos,
+      ...transferMovements([
+        { conta_origem_id: 'banco', conta_destino_id: 'master', valor_centavos: 700, data: today },
+      ]),
+    ]
+    expect(netPosition(contas, credito, { today }).dividaCartoes).toBe(5000 - 700)
+  })
+
+  it('sem cartões: dívida 0 e o líquido é o disponível', () => {
+    const semCartoes = contas.filter((conta) => conta.tipo !== 'cartao_credito')
+    const posicao = netPosition(semCartoes, movimentos, { today })
+    expect(posicao.dividaCartoes).toBe(0)
+    expect(posicao.liquido).toBe(posicao.disponivel)
+  })
+
+  it('limite disponível = limite − tudo por pagar, incluindo parcelas futuras', () => {
+    const saldoPrevisto = balancesByAccount(contas, movimentos, { today, includeFuture: true }).get(
+      'visa',
+    )!
+    expect(availableCredit(500000, saldoPrevisto)).toBe(500000 - 25000)
+    expect(availableCredit(20000, saldoPrevisto)).toBe(-5000) // ultrapassado (não bloqueia)
+    expect(availableCredit(20000, 700)).toBe(20700) // crédito a favor soma ao limite
   })
 })
 

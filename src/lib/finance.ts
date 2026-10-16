@@ -132,6 +132,47 @@ export function totalBalance(
   return total
 }
 
+export type NetPosition = {
+  /** Σ saldos das contas de dinheiro (tudo menos cartões) */
+  disponivel: number
+  /** O que se deve nos cartões: −Σ saldos dos cartões (negativo = crédito a favor) */
+  dividaCartoes: number
+  /** disponivel − dividaCartoes = Σ saldos de todas as contas (= totalBalance) */
+  liquido: number
+}
+
+/**
+ * Posição do Início (D4a): dinheiro disponível, dívida nos cartões e saldo líquido. Todas as contas
+ * contam, incluindo as arquivadas (como em totalBalance). Com `includeFuture`, a dívida inclui as
+ * parcelas futuras (D1a: cada parcela conta na sua data).
+ */
+export function netPosition(
+  accounts: { id: string; saldo_inicial_centavos: number; tipo: string }[],
+  movements: AccountMovement[],
+  options: BalanceOptions,
+): NetPosition {
+  const balances = balancesByAccount(accounts, movements, options)
+  let disponivel = 0
+  let cartoes = 0
+  for (const account of accounts) {
+    const balance = balances.get(account.id) ?? 0
+    if (account.tipo === 'cartao_credito') cartoes += balance
+    else disponivel += balance
+  }
+  // `|| 0`: sem cartões, −0 apareceria como "-R$ 0,00"
+  return { disponivel, dividaCartoes: -cartoes || 0, liquido: disponivel + cartoes }
+}
+
+/**
+ * Limite disponível de um cartão: limite − tudo o que está por pagar, incluindo parcelas futuras
+ * (como nos bancos: uma compra parcelada ocupa logo o valor total do limite). `saldoPrevisto` é o
+ * saldo do cartão com includeFuture (negativo = dívida). Pode ser negativo (limite ultrapassado:
+ * o limite não bloqueia compras) ou maior que o limite (crédito a favor).
+ */
+export function availableCredit(limite: number, saldoPrevisto: number): number {
+  return limite + saldoPrevisto
+}
+
 export type CategorySpending = {
   categoryId: string
   /** Σ despesas da categoria no mês */

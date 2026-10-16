@@ -96,6 +96,13 @@ test('faturas: pagar em parte, pagar o resto e a fatura fica paga; o saldo não 
   await expect(contas.getByRole('listitem').filter({ hasText: 'Visa' })).toContainText(
     money('R$ 0,00'),
   )
-  const tile = (label: string) => page.getByText(label, { exact: true }).locator('..').locator('..')
-  await expect(tile('Saldo atual')).toContainText(money('-R$ 300,00'))
+  // O rótulo é um <p> dentro do cartão do número: subir um nível isola esse número
+  const tile = (label: string) => page.getByText(label, { exact: true }).locator('..')
+  // D4a: o cartão está pago, por isso o dinheiro disponível é igual ao saldo líquido
+  await expect(tile('Dinheiro disponível')).toContainText(money('-R$ 300,00'))
+  await expect(tile('Dívida nos cartões')).toContainText(money('R$ 0,00'))
+  await expect(tile('Saldo líquido')).toContainText(money('-R$ 300,00'))
+  await expect(contas.getByRole('listitem').filter({ hasText: 'Visa' })).toContainText(
+    money('Limite disponível: R$ 5.000,00'),
+  )
 })

@@ -32,6 +32,22 @@ vi.mock('@/features/transactions/transactions-api', () => ({
   ),
   listBalanceMovements: vi.fn(async () => store.transactions),
 }))
+vi.mock('@/features/card-purchases/purchases-api', () => ({
+  listPurchases: vi.fn(async () => [
+    {
+      id: 'c',
+      user_id: 'u',
+      account_id: 'visa',
+      category_id: 'alim',
+      descricao: '',
+      data_compra: '2026-10-08',
+      valor_total_centavos: 30000,
+      parcelas: 3,
+      parcela_inicial: 1,
+      created_at: '',
+    },
+  ]),
+}))
 vi.mock('@/features/transfers/transfers-api', () => ({
   listTransfers: vi.fn(async () => store.transfers),
 }))
@@ -65,6 +81,15 @@ const account = (id: string, nome: string, saldo: number, arquivada = false): Ac
   dia_vencimento: null,
   limite_centavos: null,
   conta_pagamento_id: null,
+})
+
+const visa = (): Account => ({
+  ...account('visa', 'Visa', 0),
+  tipo: 'cartao_credito',
+  dia_fechamento: 25,
+  dia_vencimento: 5,
+  limite_centavos: 500000,
+  conta_pagamento_id: 'banco',
 })
 
 let counter = 0
@@ -122,15 +147,8 @@ describe('início (dashboard)', () => {
     expect(tile(/^Saldo atual$/)).toContain('Previsto com transações futuras: R$ 2.851,00')
   })
 
-  it('pagamento de fatura: o banco desce, o cartão sobe, o saldo total e as despesas não mudam', async () => {
-    store.accounts.push({
-      ...account('visa', 'Visa', 0),
-      tipo: 'cartao_credito',
-      dia_fechamento: 25,
-      dia_vencimento: 5,
-      limite_centavos: 500000,
-      conta_pagamento_id: 'banco',
-    })
+  it('pagamento de fatura: o banco desce, o cartão sobe, o saldo líquido e as despesas não mudam', async () => {
+    store.accounts.push(visa())
     // Parcela de 300,00 no cartão (despesa de outubro) e o pagamento dela a 13/10
     store.transactions.push(
       tx({ account_id: 'visa', valor_centavos: 30000, data: '2026-10-08', compra_id: 'c' }),
@@ -144,9 +162,12 @@ describe('início (dashboard)', () => {
       },
     ]
     renderApp('/')
-    await screen.findByText('Saldo atual')
+    await screen.findByText('Dinheiro disponível')
     // 3051,00 − 300,00 (a parcela é uma despesa); o pagamento não muda o total
-    expect(tile(/^Saldo atual$/)).toContain('R$ 2.751,00')
+    expect(tile(/^Saldo líquido$/)).toContain('R$ 2.751,00')
+    // O cartão está pago: o dinheiro disponível é o líquido e a dívida é zero
+    expect(tile(/^Dinheiro disponível$/)).toContain('R$ 2.751,00')
+    expect(tile(/^Dívida nos cartões$/)).toContain('R$ 0,00')
     // Despesas do mês: 2200,00 + 300,00 da parcela — o pagamento NÃO conta como despesa
     expect(tile(/^Despesas · este mês$/)).toContain('R$ 2.500,00')
     const contas = screen.getByRole('region', { name: 'Contas' })
@@ -154,7 +175,82 @@ describe('início (dashboard)', () => {
     expect(plain(within(contas).getByText('Banco').closest('li')?.textContent)).toContain(
       'R$ 2.701,00',
     )
-    expect(plain(within(contas).getByText('Visa').closest('li')?.textContent)).toContain('R$ 0,00')
+    expect(plain(within(contas).getByText('Visa').closest('li')?.textContent)).toBe(
+      'VisaCartão de créditoLimite disponível: R$ 5.000,00R$ 0,00',
+    )
+  })
+
+  it('com cartões (D4a): dinheiro disponível em destaque, dívida até hoje e saldo líquido', async () => {
+    store.accounts.push(visa())
+    // Compra de 300,00 em 3×: a 1.ª parcela já passou, as outras duas são futuras
+    store.transactions.push(
+      tx({
+        account_id: 'visa',
+        valor_centavos: 10000,
+        data: '2026-10-08',
+        compra_id: 'c',
+        parcela_numero: 1,
+        descricao: 'Televisão',
+      }),
+      tx({ account_id: 'visa', valor_centavos: 10000, data: '2026-11-08', compra_id: 'c' }),
+      tx({ account_id: 'visa', valor_centavos: 10000, data: '2026-12-08', compra_id: 'c' }),
+    )
+    renderApp('/')
+    await screen.findByText('Dinheiro disponível')
+    expect(screen.queryByText('Saldo atual')).not.toBeInTheDocument()
+    // Só as contas de dinheiro: 3051,00 (a futura de 200,00 fica no previsto)
+    expect(tile(/^Dinheiro disponível$/)).toContain('R$ 3.051,00')
+    expect(tile(/^Dinheiro disponível$/)).toContain('Previsto com transações futuras: R$ 2.851,00')
+    // Dívida: só a parcela até hoje (D1a); as futuras aparecem à parte
+    expect(tile(/^Dívida nos cartões$/)).toContain('R$ 100,00')
+    expect(tile(/^Dívida nos cartões$/)).toContain('Com as parcelas futuras: R$ 300,00')
+    // Líquido = 3051,00 − 100,00; previsto = 2851,00 − 300,00
+    expect(tile(/^Saldo líquido$/)).toContain('R$ 2.951,00')
+    expect(tile(/^Saldo líquido$/)).toContain('Previsto: R$ 2.551,00')
+    // A parcela nas últimas transações mostra o total de parcelas da compra
+    expect(
+      within(screen.getByRole('region', { name: 'Últimas transações' })).getByText(/Parcela 1\/3/),
+    ).toBeInTheDocument()
+    // O limite já desconta a compra inteira (5000,00 − 300,00)
+    const contas = screen.getByRole('region', { name: 'Contas' })
+    expect(plain(within(contas).getByText('Visa').closest('li')?.textContent)).toBe(
+      'VisaCartão de créditoLimite disponível: R$ 4.700,00-R$ 100,00',
+    )
+  })
+
+  it('pagar a mais dá crédito nos cartões, que soma ao limite disponível', async () => {
+    store.accounts.push({ ...visa(), limite_centavos: 20000 })
+    store.transactions.push(
+      tx({ account_id: 'visa', valor_centavos: 30000, data: '2026-10-08', compra_id: 'c' }),
+    )
+    store.transfers = [
+      {
+        conta_origem_id: 'banco',
+        conta_destino_id: 'visa',
+        valor_centavos: 35000,
+        data: '2026-10-13',
+      },
+    ]
+    renderApp('/')
+    // Pagou 350,00 de 300,00: 50,00 de crédito, e o limite fica 200,00 + 50,00
+    await screen.findByText('Crédito nos cartões')
+    expect(tile(/^Crédito nos cartões$/)).toContain('R$ 50,00')
+    const contas = screen.getByRole('region', { name: 'Contas' })
+    expect(plain(within(contas).getByText('Visa').closest('li')?.textContent)).toContain(
+      'Limite disponível: R$ 250,00',
+    )
+  })
+
+  it('compras acima do limite: mostra quanto passou (o limite não bloqueia compras)', async () => {
+    store.accounts.push({ ...visa(), limite_centavos: 20000 })
+    store.transactions.push(
+      tx({ account_id: 'visa', valor_centavos: 30000, data: '2026-10-08', compra_id: 'c' }),
+    )
+    renderApp('/')
+    const contas = await screen.findByRole('region', { name: 'Contas' })
+    expect(plain(within(contas).getByText('Visa').closest('li')?.textContent)).toContain(
+      'Limite ultrapassado em R$ 100,00',
+    )
   })
 
   it('receitas, despesas e resultado do mês (inclui transações futuras do próprio mês)', async () => {
