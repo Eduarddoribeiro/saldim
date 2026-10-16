@@ -9,7 +9,7 @@ export function BottomNav() {
       aria-label="Navegação principal"
       className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
     >
-      <ul className="grid grid-cols-4">
+      <ul className="grid grid-cols-5">
         {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
           <li key={to}>
             <NavLink
@@ -17,8 +17,9 @@ export function BottomNav() {
               end={to === '/'}
               className={({ isActive }) =>
                 cn(
-                  // min-h-14 (56px) garante uma área de toque confortável
-                  'flex min-h-14 flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                  // min-h-14 (56px) garante uma área de toque confortável; 10px (como as barras do iOS)
+                  // para 5 rótulos caberem a 360px de largura
+                  'flex min-h-14 flex-col items-center justify-center gap-1 text-[10px] leading-tight font-medium whitespace-nowrap transition-colors',
                   'focus-visible:bg-muted focus-visible:outline-none',
                   isActive ? 'text-foreground' : 'text-muted-foreground',
                 )

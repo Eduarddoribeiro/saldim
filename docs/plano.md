@@ -40,12 +40,12 @@ Plano aprovado pelo utilizador em 2026-10-14. O estado de cada etapa está em `C
 
 - Orçamentos só para categorias do tipo `despesa`; um por (utilizador, categoria, mês); `limite_centavos > 0`.
 - A categoria de uma transação tem de ter o mesmo `tipo` da transação (validado no Zod **e** na base de dados).
-- Transferências entre contas (C5): tabela `transferencias`; entram só nos saldos (`transferMovements` em `finance.ts`), nunca em receitas, despesas, categorias ou orçamentos. A interface para as registar chega com os pagamentos (C6).
+- Transferências entre contas (C5): tabela `transferencias`; entram só nos saldos (`transferMovements` em `finance.ts`), nunca em receitas, despesas, categorias ou orçamentos. Na C6, a página de faturas regista pagamentos (transferências para o cartão); as transferências entre contas de dinheiro ainda não têm ecrã.
 - _Decisão:_ no MVP os cálculos são feitos em TypeScript com funções puras (fáceis de testar e de entender). Se o volume de dados crescer, movemos as somas para views SQL mantendo as mesmas regras e testes.
 
 ### Cartões de crédito (cálculos em `src/lib/credit-card.ts`)
 
-Decisões aprovadas (D1–D10); as etapas C5–C8 ainda vão implementar os pagamentos, a página de faturas, os indicadores e os estornos.
+Decisões aprovadas (D1–D10); as etapas C7–C8 ainda vão implementar os indicadores do Início e os estornos.
 
 - **Configuração** (C2): uma conta do tipo `cartao_credito` tem dia de fechamento F e de vencimento V (1–31), limite (centavos, > 0) e conta de pagamento (uma conta de dinheiro do mesmo utilizador, não um cartão nem o próprio). Começa sem dívida (saldo inicial 0). Regra dos dias, igual no Zod e no CHECK: **F ≠ V** e **não (V > F e F ≥ 28)** — senão, num fevereiro de 28 dias, fechamento e vencimento cairiam no mesmo dia. Prazo (dias do fechamento ao vencimento) fora de 5–25 dias gera um aviso, não um erro. Só dia de fechamento fixo (D8b).
 - **Fatura**: identifica-se pelo mês do vencimento. Vencimento = dia V desse mês; fechamento = dia F no mesmo mês se V > F, ou no mês anterior se V < F; dias que o mês não tem passam ao último dia. **Ciclo = [fechamento anterior, fechamento)**: uma compra no dia do fechamento vai para a fatura seguinte (D2a). Os ciclos são contíguos.

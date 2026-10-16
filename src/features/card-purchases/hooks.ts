@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/auth-context'
+import { invoicesKey } from '@/features/invoices/hooks'
 import { transactionsKey } from '@/features/transactions/hooks'
 import { deletePurchase, listPurchases, registerPurchase } from './purchases-api'
 import type { PurchaseFormValues } from './schemas'
@@ -15,7 +16,7 @@ export function usePurchases() {
   })
 }
 
-/** Uma compra muda as compras E as transações (as parcelas): invalida as duas. */
+/** Uma compra muda as compras, as transações (as parcelas) e as faturas: invalida as três. */
 function useInvalidatePurchases() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
@@ -23,6 +24,7 @@ function useInvalidatePurchases() {
     Promise.all([
       queryClient.invalidateQueries({ queryKey: purchasesKey(user?.id) }),
       queryClient.invalidateQueries({ queryKey: transactionsKey(user?.id) }),
+      queryClient.invalidateQueries({ queryKey: invoicesKey(user?.id) }),
     ])
 }
 

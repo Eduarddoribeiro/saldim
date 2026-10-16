@@ -23,6 +23,7 @@ const TransactionsPage = page(
   () => import('@/features/transactions/TransactionsPage'),
   'TransactionsPage',
 )
+const InvoicesPage = page(() => import('@/features/invoices/InvoicesPage'), 'InvoicesPage')
 const BudgetsPage = page(() => import('@/features/budgets/BudgetsPage'), 'BudgetsPage')
 const SettingsPage = page(() => import('@/features/settings/SettingsPage'), 'SettingsPage')
 const CategoriesPage = page(() => import('@/features/categories/CategoriesPage'), 'CategoriesPage')
@@ -58,6 +59,7 @@ export const routes: RouteObject[] = [
         children: [
           { index: true, element: <DashboardPage /> },
           { path: 'transacoes', element: <TransactionsPage /> },
+          { path: 'faturas', element: <InvoicesPage /> },
           { path: 'orcamentos', element: <BudgetsPage /> },
           { path: 'configuracoes', element: <SettingsPage /> },
           { path: 'configuracoes/categorias', element: <CategoriesPage /> },
