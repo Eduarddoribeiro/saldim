@@ -106,6 +106,7 @@ const tx = (overrides: Partial<Transaction>): Transaction => ({
   fatura_id: null,
   compra_id: null,
   parcela_numero: null,
+  recorrencia_id: null,
   ...overrides,
 })
 
@@ -190,6 +191,7 @@ describe('início (dashboard)', () => {
         data: '2026-10-08',
         compra_id: 'c',
         parcela_numero: 1,
+        recorrencia_id: null,
         descricao: 'Televisão',
       }),
       tx({ account_id: 'visa', valor_centavos: 10000, data: '2026-11-08', compra_id: 'c' }),

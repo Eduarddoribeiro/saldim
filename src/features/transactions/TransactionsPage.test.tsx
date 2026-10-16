@@ -71,6 +71,7 @@ function transaction(overrides: Partial<Transaction>): Transaction {
     fatura_id: null,
     compra_id: null,
     parcela_numero: null,
+    recorrencia_id: null,
     ...overrides,
   }
 }
@@ -313,5 +314,21 @@ describe('página de transações', () => {
 
     await waitFor(() => expect(screen.queryByText('Supermercado')).not.toBeInTheDocument())
     expect(store.transactions.map((t) => t.id)).not.toContain('t1')
+  })
+
+  it('tem um atalho para os lançamentos recorrentes', async () => {
+    const { router } = renderApp('/transacoes')
+    await userEvent.click(screen.getByRole('link', { name: 'Recorrentes' }))
+    expect(router.state.location.pathname).toBe('/configuracoes/recorrentes')
+  })
+
+  it('um lançamento criado por uma recorrência mostra "Recorrente" e continua editável', async () => {
+    store.transactions.push(
+      transaction({ id: 'rec', descricao: 'Netflix', data: '2026-10-10', recorrencia_id: 'r1' }),
+    )
+    renderApp('/transacoes')
+    const row = await screen.findByRole('button', { name: /^Netflix: despesa/ })
+    expect(plain(row.textContent)).toContain('Recorrente · Alimentação · Conta principal')
+    expect(row).toHaveAccessibleName(/\. Editar$/)
   })
 })

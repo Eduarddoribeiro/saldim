@@ -1,11 +1,12 @@
-import { ArrowLeftRight, CreditCard, Plus } from 'lucide-react'
+import { ArrowLeftRight, CreditCard, Plus, Repeat } from 'lucide-react'
 import { useState } from 'react'
+import { Link } from 'react-router'
 import { FormAlert } from '@/components/form/FormAlert'
 import { EmptyState } from '@/components/layout/EmptyState'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { MonthPicker } from '@/components/month/MonthPicker'
 import { useMonthParam } from '@/components/month/use-month-param'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { isCreditCard } from '@/features/accounts/account-options'
 import { useAccounts } from '@/features/accounts/hooks'
 import { usePurchases } from '@/features/card-purchases/hooks'
@@ -15,6 +16,7 @@ import { useCategories } from '@/features/categories/hooks'
 import { useCurrency } from '@/features/profile/hooks'
 import { formatDay, formatMonth } from '@/lib/dates'
 import { errorMessage } from '@/lib/db-errors'
+import { cn } from '@/lib/utils'
 import { useTransactions } from './hooks'
 import { groupByDay } from './group-by-day'
 import { TransactionFormDialog } from './TransactionFormDialog'
@@ -57,6 +59,15 @@ export function TransactionsPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <PageHeader title="Transações" description="Receitas e despesas registadas." />
         <div className="flex flex-wrap gap-2">
+          {/* Atalho para os lançamentos recorrentes (a página vive nas Configurações) */}
+          <Link
+            to="/configuracoes/recorrentes"
+            // cn resolve o conflito border-transparent × border-border, como no <Button>
+            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}
+          >
+            <Repeat aria-hidden />
+            Recorrentes
+          </Link>
           {hasCards && (
             <Button size="lg" variant="outline" onClick={() => setPurchaseFormOpen(true)}>
               <CreditCard aria-hidden />

@@ -16,6 +16,12 @@ const MESSAGES = {
 }
 
 function fail(error: { code?: string; message?: string }): never {
+  // FK da migration recorrentes: o nome da regra aparece no texto técnico do erro
+  if (error.message?.includes('recorrencias_category_fk')) {
+    throw new UserFacingError(
+      'Esta categoria é usada num lançamento recorrente. Muda-o de categoria ou apaga-o primeiro (Configurações → Recorrentes).',
+    )
+  }
   throw new UserFacingError(dbErrorMessage(error, MESSAGES))
 }
 

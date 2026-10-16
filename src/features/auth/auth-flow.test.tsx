@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter } from 'react-router'
@@ -6,7 +7,7 @@ import { RouterProvider } from 'react-router/dom'
 import { describe, expect, it, vi } from 'vitest'
 import { ThemeProvider } from '@/components/theme/ThemeProvider'
 import { routes } from '@/routes'
-import { fakeAuth, renderApp } from '@/test/render-app'
+import { fakeAuth, renderApp, testQueryClient } from '@/test/render-app'
 import { AuthContext } from './auth-context'
 
 const noSession = () => fakeAuth({ session: null })
@@ -30,9 +31,11 @@ describe('rotas protegidas', () => {
     })
     render(
       <ThemeProvider>
-        <AuthContext value={fakeAuth()}>
-          <RouterProvider router={router} />
-        </AuthContext>
+        <QueryClientProvider client={testQueryClient()}>
+          <AuthContext value={fakeAuth()}>
+            <RouterProvider router={router} />
+          </AuthContext>
+        </QueryClientProvider>
       </ThemeProvider>,
     )
     expect(router.state.location.pathname).toBe('/transacoes')
@@ -40,11 +43,15 @@ describe('rotas protegidas', () => {
 
   it('ao sair dentro da app, o login não guarda a página onde se estava', () => {
     const router = createMemoryRouter(routes, { initialEntries: ['/configuracoes'] })
+    // Como em main.tsx: o AppShell usa o TanStack Query (lançamentos recorrentes)
+    const queryClient = testQueryClient()
     const app = (auth: ReturnType<typeof fakeAuth>) => (
       <ThemeProvider>
-        <AuthContext value={auth}>
-          <RouterProvider router={router} />
-        </AuthContext>
+        <QueryClientProvider client={queryClient}>
+          <AuthContext value={auth}>
+            <RouterProvider router={router} />
+          </AuthContext>
+        </QueryClientProvider>
       </ThemeProvider>
     )
     const { rerender } = render(app(fakeAuth()))

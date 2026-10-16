@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { Outlet } from 'react-router'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
+import { RecurringGenerator } from '@/features/recurring/RecurringGenerator'
 import { AppLogo } from './AppLogo'
 import { BottomNav } from './BottomNav'
 import { PageLoader } from './PageLoader'
@@ -14,6 +15,8 @@ import { Sidebar } from './Sidebar'
 export function AppShell() {
   return (
     <div className="flex min-h-svh">
+      {/* Cria os lançamentos recorrentes que já chegaram ao dia (não mostra nada) */}
+      <RecurringGenerator />
       <Sidebar />
 
       <div className="flex min-w-0 flex-1 flex-col">

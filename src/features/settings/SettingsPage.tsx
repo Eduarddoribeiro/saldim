@@ -1,4 +1,4 @@
-import { ChevronRight, Landmark, Tags, type LucideIcon } from 'lucide-react'
+import { ChevronRight, Landmark, Repeat, Tags, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -44,7 +44,10 @@ export function SettingsPage() {
 
   return (
     <>
-      <PageHeader title="Configurações" description="Preferências, categorias e contas." />
+      <PageHeader
+        title="Configurações"
+        description="Preferências, contas, categorias e recorrentes."
+      />
       <div className="grid gap-4">
         <SettingsSection
           title="Aparência"
@@ -62,6 +65,7 @@ export function SettingsPage() {
           <ul className="-mx-1 divide-y">
             <SettingsLink to="/configuracoes/contas" icon={Landmark} label="Contas" />
             <SettingsLink to="/configuracoes/categorias" icon={Tags} label="Categorias" />
+            <SettingsLink to="/configuracoes/recorrentes" icon={Repeat} label="Recorrentes" />
           </ul>
         </SettingsSection>
 

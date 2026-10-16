@@ -70,6 +70,7 @@ financas/                     # raiz do repositório Git
       transactions/           # transactions-api (paginado), hooks (useTransactions, useBalanceMovements), schemas, TransactionsPage, TransactionRow, TransactionFormDialog
       dashboard/              # DashboardPage, StatTile, CategorySpendingList, category-ranking (top 5 + "Outras")
       budgets/                # budgets-api (inclui copyBudgets), hooks, budget-status (cor+ícone+texto), BudgetsPage, BudgetFormDialog
+      recurring/              # recurring-api, generate-api (RPC gerar_recorrencias; simulado em src/test/setup.ts), hooks, schemas, recurring-options (textos), RecurringPage, RecurringFormDialog, RecurringGenerator (no AppShell)
     lib/
       supabase.ts             # cliente único (createClient<Database>)
       supabase-config.ts      # valida VITE_SUPABASE_*; recusa chaves secretas
@@ -80,6 +81,7 @@ financas/                     # raiz do repositório Git
       dates.ts                # todayIso (data LOCAL), monthRange, addMonths, addMonthsClamped, daysBetween, isIsoDate, formatMonth/formatDay
       finance.ts              # regras de cálculo (docs/plano.md): monthSummary, saldos, spendingByCategory, budgetStatus
       credit-card.ts          # cartões: validateCardConfig, invoiceDates, invoiceForPurchase, splitInstallments, installmentSchedule, invoiceStatus
+      recurrence.ts           # recorrentes: nextOccurrence (= SQL recorrencia_seguinte), nextOnOrAfter, occurrencesUntil
       pagination.ts           # fetchAllPages: junta páginas de 1000 linhas (limite max_rows do Supabase)
       database.types.ts       # GERADO por `npm run db:types` — não editar à mão
       theme.ts, utils.ts      # funções puras + testes ao lado
@@ -89,20 +91,21 @@ financas/                     # raiz do repositório Git
 
 **Rotas** (`src/routes.tsx`):
 
-| Caminho                     | Página               | Acesso                                   | Estado                                                   |
-| --------------------------- | -------------------- | ---------------------------------------- | -------------------------------------------------------- |
-| `/entrar`                   | `LoginPage`          | `PublicOnly` (com sessão → app)          | feito                                                    |
-| `/registar`                 | `SignUpPage`         | `PublicOnly`                             | feito                                                    |
-| `/recuperar-senha`          | `ForgotPasswordPage` | `PublicOnly`                             | feito                                                    |
-| `/nova-senha`               | `ResetPasswordPage`  | sessão temporária do link de recuperação | feito                                                    |
-| `/`                         | `DashboardPage`      | `RequireAuth` (sem sessão → `/entrar`)   | feito (`?mes=YYYY-MM`)                                   |
-| `/transacoes`               | `TransactionsPage`   | `RequireAuth`                            | feito (`?mes=YYYY-MM`)                                   |
-| `/faturas`                  | `InvoicesPage`       | `RequireAuth`                            | feito (por cartão; filtros Por pagar/Pagas/Todas)        |
-| `/orcamentos`               | `BudgetsPage`        | `RequireAuth`                            | feito (`?mes=YYYY-MM`)                                   |
-| `/configuracoes`            | `SettingsPage`       | `RequireAuth`                            | Aparência, Organização, Conta                            |
-| `/configuracoes/categorias` | `CategoriesPage`     | `RequireAuth`                            | feito                                                    |
-| `/configuracoes/contas`     | `AccountsPage`       | `RequireAuth`                            | feito (mostra saldo inicial; saldo atual na Etapa 10/11) |
-| `*`                         | `NotFoundPage`       | `RequireAuth`                            | —                                                        |
+| Caminho                      | Página               | Acesso                                   | Estado                                                   |
+| ---------------------------- | -------------------- | ---------------------------------------- | -------------------------------------------------------- |
+| `/entrar`                    | `LoginPage`          | `PublicOnly` (com sessão → app)          | feito                                                    |
+| `/registar`                  | `SignUpPage`         | `PublicOnly`                             | feito                                                    |
+| `/recuperar-senha`           | `ForgotPasswordPage` | `PublicOnly`                             | feito                                                    |
+| `/nova-senha`                | `ResetPasswordPage`  | sessão temporária do link de recuperação | feito                                                    |
+| `/`                          | `DashboardPage`      | `RequireAuth` (sem sessão → `/entrar`)   | feito (`?mes=YYYY-MM`)                                   |
+| `/transacoes`                | `TransactionsPage`   | `RequireAuth`                            | feito (`?mes=YYYY-MM`)                                   |
+| `/faturas`                   | `InvoicesPage`       | `RequireAuth`                            | feito (por cartão; filtros Por pagar/Pagas/Todas)        |
+| `/orcamentos`                | `BudgetsPage`        | `RequireAuth`                            | feito (`?mes=YYYY-MM`)                                   |
+| `/configuracoes`             | `SettingsPage`       | `RequireAuth`                            | Aparência, Organização, Conta                            |
+| `/configuracoes/categorias`  | `CategoriesPage`     | `RequireAuth`                            | feito                                                    |
+| `/configuracoes/contas`      | `AccountsPage`       | `RequireAuth`                            | feito (mostra saldo inicial; saldo atual na Etapa 10/11) |
+| `/configuracoes/recorrentes` | `RecurringPage`      | `RequireAuth`                            | feito (R1)                                               |
+| `*`                          | `NotFoundPage`       | `RequireAuth`                            | —                                                        |
 
 **Autenticação:** só o `AuthProvider` chama `supabase.auth`; páginas e componentes usam `useAuth()` (ações devolvem `{ error }` já traduzido por `auth-errors.ts`, pelo `code` do erro). `RequireAuth` guarda a página pedida em `location.state.from` e o login volta lá — exceto quando a sessão termina dentro da app (botão Sair), para o próximo login começar no Início. Recuperação de senha: e-mail com link → `/nova-senha` (o supabase-js lê o token do URL). Nos testes de componentes usa-se `renderApp(path, fakeAuth({...}))`, sem rede.
 
@@ -112,7 +115,7 @@ financas/                     # raiz do repositório Git
 
 **Supabase local:** API `http://127.0.0.1:54321`, Studio (painel) `http://127.0.0.1:54323`, Mailpit (e-mails de teste) `http://127.0.0.1:54324`, Postgres na porta 54322. Confirmação de e-mail desligada localmente; senha mínima 8 caracteres. As chaves locais são as de demonstração do Supabase, mas mesmo assim só a pública vai para o `.env`.
 
-**Acesso a dados (padrão a repetir em cada tabela):** `features/<área>/<área>-api.ts` é o único ficheiro que chama `supabase.from('<tabela>')`; erros saem como `UserFacingError` com mensagem traduzida (`dbErrorMessage` + mensagens específicas). `hooks.ts` envolve-o em `useQuery`/`useMutation`; as chaves incluem o id do utilizador (`['categories', userId]`) e cada mutação invalida a lista. `UserCacheBoundary` limpa o cache quando o utilizador muda. `user_id` nunca é enviado: a base preenche-o com `auth.uid()`. Valores fixos (tipo receita/despesa) são enums do Postgres → uniões no TypeScript gerado. Enums gerados (`Constants.public.Enums.*`) alimentam as listas da interface, com `Record<Enum, …>` para o TypeScript obrigar a tratar valores novos. Transações: FKs compostas `(account_id, user_id)`/`(category_id, user_id)` com `ON DELETE NO ACTION` (bloqueia apagar conta/categoria em uso, mas permite a cascata ao apagar o utilizador) e trigger que exige categoria do mesmo tipo. As chaves de cache das transações são `['transactions', userId, mes]` e as mutações invalidam o prefixo `['transactions', userId]` (uma edição pode mudar a transação de mês). Datas: só dia (`date`), sempre a data local (`todayIso`), nunca `toISOString()`. **Limite de 1000 linhas:** o Supabase corta respostas em `max_rows` (1000) sem erro — consultas que podem passar disso (transações) usam `fetchAllPages` com ordem total (terminar em `.order('id')`); provado em `tests/rls/pagination.test.ts`. Compras e estornos no cartão: só pelas RPCs `registar_compra_cartao` e `registar_estorno_cartao` (as únicas chamadas `supabase.rpc` da app). Faturas de cartões cujos dias mudaram: calcular sempre com o histórico (`useCardDaysHistory` + `historyFor`, funções `*WithHistory` de `credit-card.ts`). Cálculos financeiros só em `src/lib/finance.ts` (cartões: `src/lib/credit-card.ts`); o dashboard pede todas as transações (só 5 colunas) e calcula tudo a partir delas (saldos, mês, mês anterior, séries de 6 meses) — decisão do MVP, passar para view SQL se o volume crescer. **Páginas carregadas por rota:** `routes.tsx` usa `lazyPage` (`src/lib/lazy-page.tsx`), com `<Suspense>` no `AppShell`/`AuthLayout`; os testes chamam `preloadPages()` (em `render-app.tsx`) para renderizar de forma síncrona. Formulários com dinheiro usam `moneyField()` e `useForm<Input, unknown, Output>` (entra texto, sai centavos); ao editar, o campo é preenchido com `centsToInput`. Cores e ícones guardam-se como chaves, mapeadas para classes/ícones em `category-options.ts` (um teste confirma que as cores coincidem com o CHECK da migration).
+**Acesso a dados (padrão a repetir em cada tabela):** `features/<área>/<área>-api.ts` é o único ficheiro que chama `supabase.from('<tabela>')`; erros saem como `UserFacingError` com mensagem traduzida (`dbErrorMessage` + mensagens específicas). `hooks.ts` envolve-o em `useQuery`/`useMutation`; as chaves incluem o id do utilizador (`['categories', userId]`) e cada mutação invalida a lista. `UserCacheBoundary` limpa o cache quando o utilizador muda. `user_id` nunca é enviado: a base preenche-o com `auth.uid()`. Valores fixos (tipo receita/despesa) são enums do Postgres → uniões no TypeScript gerado. Enums gerados (`Constants.public.Enums.*`) alimentam as listas da interface, com `Record<Enum, …>` para o TypeScript obrigar a tratar valores novos. Transações: FKs compostas `(account_id, user_id)`/`(category_id, user_id)` com `ON DELETE NO ACTION` (bloqueia apagar conta/categoria em uso, mas permite a cascata ao apagar o utilizador) e trigger que exige categoria do mesmo tipo. As chaves de cache das transações são `['transactions', userId, mes]` e as mutações invalidam o prefixo `['transactions', userId]` (uma edição pode mudar a transação de mês). Datas: só dia (`date`), sempre a data local (`todayIso`), nunca `toISOString()`. **Limite de 1000 linhas:** o Supabase corta respostas em `max_rows` (1000) sem erro — consultas que podem passar disso (transações) usam `fetchAllPages` com ordem total (terminar em `.order('id')`); provado em `tests/rls/pagination.test.ts`. Compras e estornos no cartão: só pelas RPCs `registar_compra_cartao` e `registar_estorno_cartao`; lançamentos recorrentes: só pela RPC `gerar_recorrencias` (chamada pelo `RecurringGenerator` ao abrir a app e depois de criar/mudar uma recorrência). São as únicas chamadas `supabase.rpc` da app. Faturas de cartões cujos dias mudaram: calcular sempre com o histórico (`useCardDaysHistory` + `historyFor`, funções `*WithHistory` de `credit-card.ts`). Cálculos financeiros só em `src/lib/finance.ts` (cartões: `src/lib/credit-card.ts`); o dashboard pede todas as transações (só 5 colunas) e calcula tudo a partir delas (saldos, mês, mês anterior, séries de 6 meses) — decisão do MVP, passar para view SQL se o volume crescer. **Páginas carregadas por rota:** `routes.tsx` usa `lazyPage` (`src/lib/lazy-page.tsx`), com `<Suspense>` no `AppShell`/`AuthLayout`; os testes chamam `preloadPages()` (em `render-app.tsx`) para renderizar de forma síncrona. Formulários com dinheiro usam `moneyField()` e `useForm<Input, unknown, Output>` (entra texto, sai centavos); ao editar, o campo é preenchido com `centsToInput`. Cores e ícones guardam-se como chaves, mapeadas para classes/ícones em `category-options.ts` (um teste confirma que as cores coincidem com o CHECK da migration).
 
 **Testes:** três níveis.
 
@@ -124,25 +127,25 @@ Os tipos de `tests/` e `e2e/` são verificados por `tsconfig.tests.json`.
 
 ## Comandos (dentro de `financas/`)
 
-| Comando                              | O que faz                                                             |
-| ------------------------------------ | --------------------------------------------------------------------- |
-| `npm run dev`                        | Servidor de desenvolvimento (localhost:5173)                          |
-| `npm run build`                      | `tsc -b` + build Vite (verifica tipos de src, tests e configs)        |
-| `npm run preview`                    | Serve a build                                                         |
-| `npm run lint`                       | oxlint com `--deny-warnings` (avisos contam como erro)                |
-| `npm test`                           | Vitest uma vez (`npm run test:watch` em modo contínuo)                |
-| `npm run test:rls`                   | Testes de integração/RLS contra o Supabase local                      |
-| `npm run test:e2e`                   | Testes E2E (Playwright + Edge) contra o Supabase local                |
-| `npm run format`                     | Prettier (escreve)                                                    |
-| `npm run format:check`               | Prettier (só verifica)                                                |
-| `npm run db:start` / `db:stop`       | Liga / desliga o Supabase local (Docker)                              |
-| `npm run db:status`                  | Mostra URLs e chaves locais                                           |
-| `npm run db:reset`                   | Recria a base local e aplica todas as migrations (apaga dados locais) |
-| `npx supabase migration up --local`  | Aplica só as migrations novas, **sem apagar** os dados locais         |
-| `npm run db:types`                   | Regenera `src/lib/database.types.ts` a partir da base local           |
-| `npm run env:local`                  | Escreve `.env` com o URL e a chave pública locais                     |
-| `npx supabase migration new <nome>`  | Cria uma migration vazia em `supabase/migrations/`                    |
-| `npx shadcn@latest add <componente>` | Acrescenta um componente shadcn a `components/ui/`                    |
+| Comando                              | O que faz                                                                                                                                    |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`                        | Servidor de desenvolvimento (localhost:5173)                                                                                                 |
+| `npm run build`                      | `tsc -b` + build Vite (verifica tipos de src, tests e configs)                                                                               |
+| `npm run preview`                    | Serve a build                                                                                                                                |
+| `npm run lint`                       | oxlint com `--deny-warnings` (avisos contam como erro)                                                                                       |
+| `npm test`                           | Vitest uma vez (`npm run test:watch` em modo contínuo)                                                                                       |
+| `npm run test:rls`                   | Testes de integração/RLS contra o Supabase local                                                                                             |
+| `npm run test:e2e`                   | Testes E2E (Playwright + Edge) contra o Supabase local; arranca o seu próprio Vite na 5173 (porta ocupada → erro; `E2E_PORT=5174` usa outra) |
+| `npm run format`                     | Prettier (escreve)                                                                                                                           |
+| `npm run format:check`               | Prettier (só verifica)                                                                                                                       |
+| `npm run db:start` / `db:stop`       | Liga / desliga o Supabase local (Docker)                                                                                                     |
+| `npm run db:status`                  | Mostra URLs e chaves locais                                                                                                                  |
+| `npm run db:reset`                   | Recria a base local e aplica todas as migrations (apaga dados locais)                                                                        |
+| `npx supabase migration up --local`  | Aplica só as migrations novas, **sem apagar** os dados locais                                                                                |
+| `npm run db:types`                   | Regenera `src/lib/database.types.ts` a partir da base local                                                                                  |
+| `npm run env:local`                  | Escreve `.env` com o URL e a chave pública locais                                                                                            |
+| `npx supabase migration new <nome>`  | Cria uma migration vazia em `supabase/migrations/`                                                                                           |
+| `npx shadcn@latest add <componente>` | Acrescenta um componente shadcn a `components/ui/`                                                                                           |
 
 **Primeira vez / outro computador:** `npm install` → `npm run db:start` → `npm run env:local` → `npm run dev`.
 
@@ -196,7 +199,7 @@ Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etap
 - [x] 12. Orçamentos (tabela `budgets` com FK composta e trigger só-despesa, um por categoria/mês, página com estado cor+ícone+texto, copiar do mês anterior sem substituir limites; RLS + isolamento + E2E)
 - [x] Dashboard 2 (parte dos relatórios da 13): comparação com o mês anterior (cartões e categorias), receitas × despesas de 6 meses (barras), evolução do saldo (linha, previsão a tracejado), tabelas alternativas; divisão do bundle por rotas. Falta da 13: filtros e pesquisa nas transações.
 
-- [x] **Cartões de crédito** (branch `feat/cartoes`, ainda por juntar à `main`; regras em `docs/plano.md` → "Cartões de crédito"):
+- [x] **Cartões de crédito** (juntos à `main` e enviados para o GitHub; regras em `docs/plano.md` → "Cartões de crédito"):
   - [x] C1. Cálculos puros (`src/lib/credit-card.ts`: datas e ciclos das faturas, validação dos dias, parcelas, estado da fatura) + testes exaustivos
   - [x] C2. Configuração do cartão: tipo `cartao_credito`, colunas e CHECKs em `accounts` (migration `cartao_config`), FK composta da conta de pagamento, triggers (cartão não paga cartão; conta com transações não muda de/para cartão; transações normais não usam cartões — regra temporária substituída na C3); formulário com campos condicionais e aviso de prazo; cartões fora do formulário de transações; testes RLS (incl. CHECK × `validateCardConfig` nos 961 pares), componentes e E2E
   - [x] C3. Faturas e compras na base de dados (migration `faturas_compras`): tabelas `faturas` (datas calculadas pela trigger, sem update) e `compras_cartao` (sem update; apagar a compra apaga as parcelas); parcelas = transações `despesa` com `fatura_id`, `compra_id`, `parcela_numero` (FKs compostas com o cartão); função atómica `registar_compra_cartao` (`security invoker`); triggers garantem as mesmas regras em escritas diretas (parcela certa na fatura certa, conjunto exato de parcelas no fim da transação, parcelas não se alteram nem se apagam sozinhas; **até à C8:** os dias de um cartão com faturas não mudam); cálculos SQL = `credit-card.ts` provado nas 924 configurações; testes RLS, atomicidade e integridade
@@ -206,9 +209,11 @@ Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etap
   - [x] C7. Início com cartões (D4a): `netPosition` e `availableCredit` em `finance.ts`; com cartões, o número principal é o dinheiro disponível (contas de dinheiro), com a dívida nos cartões até hoje (as parcelas futuras na dica; negativa = "Crédito nos cartões") e o saldo líquido (= saldo total) com o previsto; sem cartões, o Início fica como estava ("Saldo atual"); cada cartão nas Contas mostra o limite disponível (limite − tudo por pagar, incluindo parcelas futuras) ou quanto foi ultrapassado; as últimas transações mostram "Parcela k/n"; os gráficos já contavam as parcelas pela data (D1a)
   - [x] C8. Estornos e mudança dos dias (migrations `tipo_estorno` e `estornos_dias_cartao`; D11–D14 em `docs/plano.md`): tipo `estorno` nas transações (CHECKs e triggers; função `registar_estorno_cartao`; soma ≤ valor da compra com lock; sem data futura; D6 também para estornos); `finance.ts` trata estornos (crédito no saldo, desconta das despesas e das categorias no mês do estorno); detalhe da compra com estornos (registar parcial, apagar) e linhas "Estorno" nas transações e nas faturas; dias de um cartão com faturas mudam a partir da fatura aberta, com histórico em `cartao_dias_anteriores` e espelho em `credit-card.ts` (`previewDaysChange` explica a mudança no formulário da conta); testes RLS (SQL = TS com histórico, concorrência, escritas diretas), componentes e E2E
 
-**Seguintes:** 13. Filtros e relatórios · 14. Deploy · 15. Google login, PWA, importar/exportar CSV, atualizações otimistas, recorrentes, metas.
+- [x] **R1. Lançamentos recorrentes** (branch `feat/recorrentes`; migration `recorrentes`; D15–D18 em `docs/plano.md`): tabela `recorrencias` (RLS, FKs compostas, CHECKs do dia e da frequência, trigger: categoria do tipo certo, cartão só com despesas, próxima data não passada); `transactions.recorrencia_id` (apagar a recorrência mantém os lançamentos); função `gerar_recorrencias` (`security invoker`, cria os que chegaram ao dia incluindo os em atraso, compra à vista no cartão, falhas registadas sem travar as outras, `FOR UPDATE` contra duplicados); página `/configuracoes/recorrentes` (criar, editar, pausar/retomar, apagar, avisos de falha); "Recorrente" nas transações; testes RLS (isolamento, regras, geração, concorrência, SQL = TS em todos os dias de 2027–2028), componentes e E2E
 
-**Próxima etapa:** juntar `feat/cartoes` à `main` (precisa de autorização), o resto da 13 (filtros e pesquisa nas transações) e a 14 (deploy, precisa de autorização e credenciais).
+**Seguintes:** 13. Filtros e relatórios · 14. Deploy · 15. Google login, PWA, importar/exportar CSV, atualizações otimistas, metas.
+
+**Próxima etapa:** juntar `feat/recorrentes` (e a correção `fix/select-tema-escuro`) à `main` (precisa de autorização), o resto da 13 (filtros e pesquisa nas transações) e a 14 (deploy, precisa de autorização e credenciais).
 
 ### Decisões em aberto (precisam do utilizador)
 

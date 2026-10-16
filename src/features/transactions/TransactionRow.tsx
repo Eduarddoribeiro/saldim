@@ -15,7 +15,8 @@ const TIPO_LABELS: Record<Transaction['tipo'], string> = {
 
 /**
  * Linha de uma transação: categoria, descrição, conta e valor com sinal (+ receita ou estorno,
- * − despesa). Uma parcela de uma compra no cartão mostra também "Parcela k/n"; um estorno, "Estorno".
+ * − despesa). Uma parcela de uma compra no cartão mostra também "Parcela k/n"; um estorno, "Estorno";
+ * um lançamento criado por uma recorrência (R1), "Recorrente".
  */
 export function TransactionRow({
   transaction,
@@ -41,11 +42,18 @@ export function TransactionRow({
   const cardItem =
     transaction.tipo === 'estorno'
       ? 'Estorno'
-      : transaction.parcela_numero !== null
+      : transaction.parcela_numero !== null && !transaction.recorrencia_id
         ? `Parcela ${transaction.parcela_numero}/${totalParcelas ?? '?'}`
         : null
-  // "Estorno"/"Parcela k/n" primeiro: no telemóvel o fim da linha é cortado
-  const subtitle = [cardItem, transaction.descricao ? categoryName : null, account?.nome]
+  // Uma compra à vista criada por uma recorrência mostra só "Recorrente" (não "Parcela 1/1")
+  const recurringItem = transaction.recorrencia_id ? 'Recorrente' : null
+  // "Estorno"/"Parcela k/n"/"Recorrente" primeiro: no telemóvel o fim da linha é cortado
+  const subtitle = [
+    cardItem,
+    recurringItem,
+    transaction.descricao ? categoryName : null,
+    account?.nome,
+  ]
     .filter(Boolean)
     .join(' · ')
   // Valor guardado sempre positivo; o sinal só aparece na apresentação
@@ -83,7 +91,7 @@ export function TransactionRow({
       type="button"
       onClick={onSelect}
       // Nome explícito e bem pontuado para leitores de ecrã (texto sr-only solto fica colado ao resto)
-      aria-label={`${title}: ${tipoLabel} de ${formatMoney(transaction.valor_centavos, currency)}${subtitle ? `, ${subtitle}` : ''}. ${cardItem ? 'Ver compra' : 'Editar'}`}
+      aria-label={`${title}: ${tipoLabel} de ${formatMoney(transaction.valor_centavos, currency)}${subtitle ? `, ${subtitle}` : ''}. ${transaction.compra_id ? 'Ver compra' : 'Editar'}`}
       className="flex min-h-16 w-full items-center gap-3 px-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none"
     >
       {content}

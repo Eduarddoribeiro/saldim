@@ -149,6 +149,7 @@ beforeEach(() => {
       fatura_id: 'f',
       compra_id: 'tv',
       parcela_numero: 2,
+      recorrencia_id: null,
     },
   ]
   vi.mocked(registerPurchase).mockClear()
@@ -399,6 +400,7 @@ describe('estornos (C8)', () => {
       valor_centavos: 2500,
       data: '2026-10-12',
       parcela_numero: null,
+      recorrencia_id: null,
       descricao: 'Devolução',
     })
     store.refunds = [estorno(2500, '2026-10-12', 'Devolução')]

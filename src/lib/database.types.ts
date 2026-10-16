@@ -279,6 +279,73 @@ export type Database = {
         }
         Relationships: []
       }
+      recorrencias: {
+        Row: {
+          account_id: string
+          ativa: boolean
+          category_id: string
+          created_at: string
+          descricao: string
+          dia: number
+          falha: string | null
+          falha_data: string | null
+          frequencia: string
+          id: string
+          proxima_data: string
+          tipo: Database['public']['Enums']['tipo_movimento']
+          user_id: string
+          valor_centavos: number
+        }
+        ComputedFields: never
+        Insert: {
+          account_id: string
+          ativa?: boolean
+          category_id: string
+          created_at?: string
+          descricao: string
+          dia: number
+          falha?: string | null
+          falha_data?: string | null
+          frequencia: string
+          id?: string
+          proxima_data: string
+          tipo: Database['public']['Enums']['tipo_movimento']
+          user_id?: string
+          valor_centavos: number
+        }
+        Update: {
+          account_id?: string
+          ativa?: boolean
+          category_id?: string
+          created_at?: string
+          descricao?: string
+          dia?: number
+          falha?: string | null
+          falha_data?: string | null
+          frequencia?: string
+          id?: string
+          proxima_data?: string
+          tipo?: Database['public']['Enums']['tipo_movimento']
+          user_id?: string
+          valor_centavos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'recorrencias_account_fk'
+            columns: ['account_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id', 'user_id']
+          },
+          {
+            foreignKeyName: 'recorrencias_category_fk'
+            columns: ['category_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'categories'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
+      }
       transactions: {
         Row: {
           account_id: string
@@ -290,6 +357,7 @@ export type Database = {
           fatura_id: string | null
           id: string
           parcela_numero: number | null
+          recorrencia_id: string | null
           tipo: Database['public']['Enums']['tipo_movimento']
           user_id: string
           valor_centavos: number
@@ -305,6 +373,7 @@ export type Database = {
           fatura_id?: string | null
           id?: string
           parcela_numero?: number | null
+          recorrencia_id?: string | null
           tipo: Database['public']['Enums']['tipo_movimento']
           user_id?: string
           valor_centavos: number
@@ -319,6 +388,7 @@ export type Database = {
           fatura_id?: string | null
           id?: string
           parcela_numero?: number | null
+          recorrencia_id?: string | null
           tipo?: Database['public']['Enums']['tipo_movimento']
           user_id?: string
           valor_centavos?: number
@@ -351,6 +421,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'faturas'
             referencedColumns: ['id', 'account_id', 'user_id']
+          },
+          {
+            foreignKeyName: 'transactions_recorrencia_fk'
+            columns: ['recorrencia_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'recorrencias'
+            referencedColumns: ['id', 'user_id']
           },
         ]
       }
@@ -457,6 +534,11 @@ export type Database = {
       cartao_valor_parcela: {
         Args: { numero: number; parcelas: number; total: number }
         Returns: number
+      }
+      gerar_recorrencias: { Args: { p_hoje: string }; Returns: number }
+      recorrencia_seguinte: {
+        Args: { p_data: string; p_dia: number; p_frequencia: string }
+        Returns: string
       }
       registar_compra_cartao: {
         Args: {

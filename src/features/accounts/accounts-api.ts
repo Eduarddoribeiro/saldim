@@ -44,6 +44,9 @@ const RULE_MESSAGES: Record<string, string> = {
   accounts_cartao_dias_check: 'Os dias de fechamento e vencimento não são válidos.',
   accounts_cartao_campos_check:
     'Falta configurar o cartão (fechamento, vencimento, limite e conta).',
+  // FK da migration recorrentes (ao apagar)
+  recorrencias_account_fk:
+    'Esta conta é usada num lançamento recorrente. Muda-o de conta ou apaga-o primeiro (Configurações → Recorrentes).',
 }
 
 type DbError = { code?: string; message?: string; details?: string; hint?: string }
