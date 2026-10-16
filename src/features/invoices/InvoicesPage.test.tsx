@@ -91,6 +91,7 @@ const fatura = (id: string, mes: string, fechamento: string, vencimento: string)
 })
 const parcela = (fatura_id: string, n: number, valor: number): InvoiceItem => ({
   id: `${fatura_id}-${n}`,
+  tipo: 'despesa',
   fatura_id,
   compra_id: 'tv',
   parcela_numero: n,
@@ -230,6 +231,30 @@ describe('página de faturas', () => {
       await within(form).findByText('Um pagamento não pode ter data futura.'),
     ).toBeInTheDocument()
     expect(createPayment).not.toHaveBeenCalled()
+  })
+
+  it('estornos (C8): secção própria no detalhe e descontam do total', async () => {
+    store.items.push({
+      ...parcela('set', 1, 12000),
+      id: 'estorno',
+      tipo: 'estorno',
+      parcela_numero: null,
+      descricao: 'Devolução',
+    })
+    renderApp('/faturas')
+    await userEvent.click(await screen.findByRole('button', { name: /Fatura de setembro/ }))
+    const dialog = await screen.findByRole('dialog', { name: 'Fatura de setembro de 2026' })
+    // 300,00 − 120,00
+    expect(plain(dialog.textContent)).toContain('TotalR$ 180,00')
+    expect(
+      within(within(dialog).getByRole('list', { name: 'Compras da fatura' })).getAllByRole(
+        'listitem',
+      ),
+    ).toHaveLength(1)
+    const estornos = within(within(dialog).getByRole('list', { name: 'Estornos da fatura' }))
+      .getAllByRole('listitem')
+      .map((li) => plain(li.textContent))
+    expect(estornos).toEqual(['Devolução20/09/2026 · estorno-R$ 120,00'])
   })
 
   it('apaga um pagamento depois de confirmar', async () => {

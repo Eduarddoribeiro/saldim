@@ -14,6 +14,16 @@ import { listInvoices } from './invoices-api'
 // pagamentos): uma compra ou um pagamento invalida-o inteiro.
 export const invoicesKey = (userId: string | undefined) => ['invoices', userId] as const
 
+/** Só as faturas (a mesma consulta e cache de useInvoiceData). `enabled: false` não as pede. */
+export function useInvoices({ enabled = true }: { enabled?: boolean } = {}) {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: [...invoicesKey(user?.id), 'faturas'] as const,
+    queryFn: listInvoices,
+    enabled: Boolean(user) && enabled,
+  })
+}
+
 /** Faturas, parcelas e pagamentos (três pedidos paginados). */
 export function useInvoiceData() {
   const { user } = useAuth()

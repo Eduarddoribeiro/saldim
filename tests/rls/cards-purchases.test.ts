@@ -543,7 +543,7 @@ describe('integridade: escritas diretas não contornam as regras', () => {
       valor_centavos: 100,
       parcela_numero: 1,
     })
-    expect(parcial.error?.message).toContain('transactions_parcela_campos_check')
+    expect(parcial.error?.message).toContain('transactions_cartao_campos_check')
   })
 
   it('uma compra inserida diretamente sem as parcelas é recusada no fim da transação', async () => {
@@ -719,7 +719,8 @@ describe('cartões com compras e faturas', () => {
     expect(apagar.data).toHaveLength(1)
   })
 
-  it('até à C8: com faturas, os dias não mudam (limite e conta de pagamento sim) e o tipo não muda', async () => {
+  // Mudar os dias de um cartão com faturas é possível desde a C8: ver cards-refunds-days.test.ts
+  it('com faturas, o limite muda mas o tipo não muda', async () => {
     const cartao = await criarCartao(b)
     const { data: compra } = await comprar(b, {
       cartao,
@@ -728,12 +729,9 @@ describe('cartões com compras e faturas', () => {
       parcelas: 1,
     })
 
-    const dias = await b.client.from('accounts').update({ dia_fechamento: 20 }).eq('id', cartao)
-    expect(dias.error?.hint).toBe('accounts_cartao_dias_em_uso_check')
-
     const limite = await b.client
       .from('accounts')
-      .update({ limite_centavos: 2_000_000, dia_fechamento: 25, dia_vencimento: 5 })
+      .update({ limite_centavos: 2_000_000 })
       .eq('id', cartao)
       .select('limite_centavos')
       .single()

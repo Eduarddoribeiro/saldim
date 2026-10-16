@@ -96,6 +96,7 @@ function PurchaseForm({ onOpenChange, categories, accounts }: Props) {
   const previewInput: PreviewInput | null =
     card?.dia_fechamento && card.dia_vencimento && total !== null && total > 0
       ? {
+          accountId: card.id,
           config: { diaFechamento: card.dia_fechamento, diaVencimento: card.dia_vencimento },
           dataCompra: data,
           totalCentavos: total,

@@ -1,14 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import {
+  configForInvoice,
   installmentSchedule,
   invoiceDates,
+  invoiceDatesWithHistory,
   invoiceForPurchase,
+  invoiceForPurchaseWithHistory,
+  previewDaysChange,
   invoiceStatus,
   MAX_PARCELAS,
   paymentWindowDays,
   splitInstallments,
   validateCardConfig,
   type CardConfig,
+  type CardDaysChange,
   type InvoiceStatusInput,
 } from './credit-card'
 import { addMonths, daysBetween, type IsoDate, type MonthKey } from './dates'
@@ -561,5 +566,101 @@ describe('invoiceStatus (com totais simulados)', () => {
     expect(() =>
       invoiceStatus(fatura({ fechamento: '2026-11-05', vencimento: '2026-11-05' }), '2026-11-01'),
     ).toThrow(RangeError)
+  })
+})
+
+describe('mudança de dias (C8, D14): histórico de dias', () => {
+  // O mesmo cenário do ensaio da migration: 25/5 até à fatura de outubro, 10/20 a partir de novembro
+  const atual = config(10, 20)
+  const historico: CardDaysChange[] = [{ ateMes: '2026-11', config: config(25, 5) }]
+
+  it('cada fatura usa os dias do primeiro registo com ateMes depois dela, senão os atuais', () => {
+    const tres: CardDaysChange[] = [
+      { ateMes: '2026-11', config: config(25, 5) },
+      { ateMes: '2026-06', config: config(1, 10) },
+    ]
+    expect(configForInvoice(atual, tres, '2026-05')).toEqual(config(1, 10))
+    expect(configForInvoice(atual, tres, '2026-06')).toEqual(config(25, 5))
+    expect(configForInvoice(atual, tres, '2026-10')).toEqual(config(25, 5))
+    expect(configForInvoice(atual, tres, '2026-11')).toEqual(atual)
+  })
+
+  it('a fatura de transição começa no fechamento antigo e fecha com os dias novos', () => {
+    expect(invoiceDatesWithHistory(atual, historico, '2026-10')).toEqual({
+      mesReferencia: '2026-10',
+      inicioCiclo: '2026-08-25',
+      fechamento: '2026-09-25',
+      vencimento: '2026-10-05',
+    })
+    expect(invoiceDatesWithHistory(atual, historico, '2026-11')).toEqual({
+      mesReferencia: '2026-11',
+      inicioCiclo: '2026-09-25',
+      fechamento: '2026-11-10',
+      vencimento: '2026-11-20',
+    })
+  })
+
+  it('a fatura de cada data segue os ciclos com o histórico (igual ao SQL)', () => {
+    const fatura = (data: IsoDate) => invoiceForPurchaseWithHistory(atual, historico, data)
+    expect(fatura('2026-09-20')).toBe('2026-10')
+    expect(fatura('2026-09-25')).toBe('2026-11') // dia do fechamento antigo → a seguinte
+    expect(fatura('2026-09-30')).toBe('2026-11')
+    expect(fatura('2026-11-09')).toBe('2026-11')
+    expect(fatura('2026-11-10')).toBe('2026-12')
+    expect(fatura('2026-11-15')).toBe('2026-12')
+  })
+
+  it('os ciclos continuam contíguos e crescentes através da transição', () => {
+    for (const mes of months('2026-06', 12)) {
+      const anterior = invoiceDatesWithHistory(atual, historico, addMonths(mes, -1))
+      const esta = invoiceDatesWithHistory(atual, historico, mes)
+      expect(esta.inicioCiclo).toBe(anterior.fechamento)
+      expect(esta.fechamento > anterior.fechamento).toBe(true)
+      // Cada dia do ciclo vai para esta fatura
+      for (const dia of days(esta.inicioCiclo, esta.fechamento).slice(0, -1)) {
+        expect(invoiceForPurchaseWithHistory(atual, historico, dia)).toBe(mes)
+      }
+    }
+  })
+
+  it('sem histórico dá exatamente o mesmo que invoiceForPurchase', () => {
+    const datas = days('2027-12-20', '2028-03-10')
+    for (const cartao of VALID_CONFIGS) {
+      for (const data of datas) {
+        expect(invoiceForPurchaseWithHistory(cartao, [], data)).toBe(
+          invoiceForPurchase(cartao, data),
+        )
+      }
+    }
+  }, 20_000)
+
+  it('as parcelas usam o histórico para a primeira fatura', () => {
+    const { parcelas } = installmentSchedule({
+      dataCompra: '2026-09-30',
+      totalCentavos: 1000,
+      numeroParcelas: 2,
+      config: atual,
+      history: historico,
+    })
+    expect(parcelas.map((p) => p.mesFatura)).toEqual(['2026-11', '2026-12'])
+  })
+
+  it('pré-visualização: a fatura aberta passa aos dias novos, se ainda fechar depois de hoje', () => {
+    expect(previewDaysChange(config(25, 5), [], config(10, 20), '2026-10-16')).toEqual({
+      ok: true,
+      mesReferencia: '2026-11',
+      novas: {
+        mesReferencia: '2026-11',
+        inicioCiclo: '2026-09-25',
+        fechamento: '2026-11-10',
+        vencimento: '2026-11-20',
+      },
+    })
+    // 15/5: a fatura de novembro fecharia a 15/10, antes de hoje → recusado (como no SQL)
+    expect(previewDaysChange(config(25, 5), [], config(15, 5), '2026-10-16')).toEqual({
+      ok: false,
+      mesReferencia: '2026-11',
+      fechamento: '2026-10-15',
+    })
   })
 })

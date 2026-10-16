@@ -32,9 +32,13 @@ const RULE_MESSAGES: Record<string, string> = {
     'Um cartão paga-se com uma conta de dinheiro: a conta de pagamento não pode ser um cartão.',
   accounts_tipo_cartao_em_uso_check:
     'Esta conta tem transações ou faturas, por isso não pode mudar de ou para cartão de crédito.',
-  // Até à etapa C8 (migration faturas_compras)
-  accounts_cartao_dias_em_uso_check:
-    'Este cartão já tem faturas: os dias de fechamento e vencimento ainda não podem ser alterados. O limite e a conta de pagamento podem.',
+  // Mudar os dias de um cartão com faturas (C8, migration estornos_dias_cartao)
+  accounts_cartao_dias_transicao_check:
+    'Com estes dias, a fatura aberta fecharia hoje ou antes. Escolhe outros dias ou espera que a fatura aberta feche.',
+  accounts_cartao_dias_pagamentos_check:
+    'A fatura aberta ou uma fatura futura deste cartão já tem pagamentos, por isso os dias não podem mudar agora. O limite e a conta de pagamento podem.',
+  accounts_cartao_dias_compras_check:
+    'Com estes dias, compras ou estornos com data futura mudariam de fatura. Escolhe outros dias.',
   accounts_conta_pagamento_propria_check:
     'Um cartão não pode ser a sua própria conta de pagamento.',
   accounts_cartao_dias_check: 'Os dias de fechamento e vencimento não são válidos.',

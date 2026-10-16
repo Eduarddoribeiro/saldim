@@ -42,7 +42,7 @@ test('compra no cartão: 3 parcelas, uma por mês, sem duplicar a despesa; apaga
   // Este mês: só a 1.ª parcela
   const parcela = page.getByRole('button', { name: /Bicicleta/ })
   await expect(parcela).toHaveCount(1)
-  await expect(parcela).toContainText('Alimentação · Visa · Parcela 1/3')
+  await expect(parcela).toContainText('Parcela 1/3 · Alimentação · Visa')
   await expect(parcela).toContainText(money('-R$ 100,00'))
   await expectNoHorizontalScroll(page)
 

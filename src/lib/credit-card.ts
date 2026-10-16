@@ -8,6 +8,10 @@
 // - Ciclo da fatura = [inicioCiclo, fechamento): começa no fechamento da fatura anterior (inclusive) e
 //   acaba no seu fechamento (exclusive). Uma compra feita no dia do fechamento vai para a fatura seguinte.
 //   Os ciclos são contíguos: não há dias sem fatura nem dias em duas faturas.
+// - Mudança de dias (C8, D14): as faturas antes de um mês `ateMes` usam os dias antigos (histórico em
+//   `cartao_dias_anteriores`); a fatura aberta no dia da mudança e as seguintes usam os novos. O ciclo
+//   da fatura de transição começa no fechamento da anterior (dias antigos), por isso fica mais curto ou
+//   mais longo, mas os ciclos continuam contíguos.
 
 import {
   addMonths,
@@ -215,6 +219,91 @@ export function invoiceForPurchase(config: CardConfig, dataCompra: IsoDate): Mon
 }
 
 // ---------------------------------------------------------------------------------------------------
+// Mudança de dias (C8, D14) — o mesmo que as funções *_hist da migration estornos_dias_cartao
+
+/** Dias antigos de um cartão: valem para as faturas com mês de referência ANTES de `ateMes`. */
+export type CardDaysChange = { ateMes: MonthKey; config: CardConfig }
+
+/** Dias que valem na fatura `mesReferencia`: os do primeiro registo com ateMes > mês, senão os atuais. */
+export function configForInvoice(
+  current: CardConfig,
+  history: readonly CardDaysChange[],
+  mesReferencia: MonthKey,
+): CardConfig {
+  let found: CardDaysChange | undefined
+  for (const change of history) {
+    if (change.ateMes > mesReferencia && (!found || change.ateMes < found.ateMes)) found = change
+  }
+  return found ? found.config : current
+}
+
+/** Datas da fatura `mesReferencia` com o histórico. O ciclo começa no fechamento da fatura anterior. */
+export function invoiceDatesWithHistory(
+  current: CardConfig,
+  history: readonly CardDaysChange[],
+  mesReferencia: MonthKey,
+): InvoiceDates {
+  const dates = invoiceDates(configForInvoice(current, history, mesReferencia), mesReferencia)
+  const anterior = addMonths(mesReferencia, -1)
+  return {
+    ...dates,
+    inicioCiclo: invoiceDates(configForInvoice(current, history, anterior), anterior).fechamento,
+  }
+}
+
+/**
+ * Fatura de uma data (compra ou estorno) com o histórico: a primeira cujo fechamento é depois da data
+ * (está sempre entre o mês da data e dois meses depois). Sem histórico = invoiceForPurchase.
+ */
+export function invoiceForPurchaseWithHistory(
+  current: CardConfig,
+  history: readonly CardDaysChange[],
+  data: IsoDate,
+): MonthKey {
+  if (!isIsoDate(data)) throw new RangeError(`Data inválida: ${data}`)
+  for (let k = 0; k <= 2; k++) {
+    const mes = addMonths(monthOf(data), k)
+    if (data < invoiceDates(configForInvoice(current, history, mes), mes).fechamento) return mes
+  }
+  // Inalcançável com fechamentos crescentes (garantido ao mudar os dias)
+  throw new RangeError(`Sem fatura para ${data}`)
+}
+
+export type DaysChangePreview =
+  | {
+      ok: true
+      /** Primeira fatura com os dias novos (a que está aberta hoje) */
+      mesReferencia: MonthKey
+      /** Datas dessa fatura com os dias novos; o ciclo começa no fechamento da anterior */
+      novas: InvoiceDates
+    }
+  | { ok: false; mesReferencia: MonthKey; fechamento: IsoDate }
+
+/**
+ * O que acontece ao mudar os dias de um cartão com faturas no dia `hoje` (regra da trigger
+ * check_account_cartao): a fatura aberta passa aos dias novos e tem de continuar a fechar depois de hoje.
+ */
+export function previewDaysChange(
+  current: CardConfig,
+  history: readonly CardDaysChange[],
+  novos: CardConfig,
+  hoje: IsoDate,
+): DaysChangePreview {
+  const mesReferencia = invoiceForPurchaseWithHistory(current, history, hoje)
+  const novas = invoiceDates(novos, mesReferencia)
+  if (novas.fechamento <= hoje) return { ok: false, mesReferencia, fechamento: novas.fechamento }
+  const anterior = addMonths(mesReferencia, -1)
+  return {
+    ok: true,
+    mesReferencia,
+    novas: {
+      ...novas,
+      inicioCiclo: invoiceDates(configForInvoice(current, history, anterior), anterior).fechamento,
+    },
+  }
+}
+
+// ---------------------------------------------------------------------------------------------------
 // Parcelamento
 
 /**
@@ -262,6 +351,8 @@ export type InstallmentScheduleInput = {
   /** Primeira parcela a registar (1 = compra nova; k > 1 = compra em curso, as anteriores já foram pagas) */
   parcelaInicial?: number
   config: CardConfig
+  /** Dias antigos do cartão (C8); sem histórico, só os dias atuais */
+  history?: readonly CardDaysChange[]
 }
 
 /**
@@ -275,6 +366,7 @@ export function installmentSchedule({
   numeroParcelas,
   parcelaInicial = 1,
   config,
+  history = [],
 }: InstallmentScheduleInput): { parcelas: Installment[]; restanteCentavos: number } {
   if (!isIsoDate(dataCompra) || dataCompra < MIN_DATE || dataCompra > MAX_DATE) {
     throw new RangeError(`Data da compra inválida: ${dataCompra}`)
@@ -283,8 +375,12 @@ export function installmentSchedule({
   if (!Number.isInteger(parcelaInicial) || parcelaInicial < 1 || parcelaInicial > numeroParcelas) {
     throw new RangeError(`Parcela inicial inválida: ${parcelaInicial} (de 1 a ${numeroParcelas})`)
   }
-  const primeiraFatura = invoiceForPurchase(config, dataCompra)
+  const primeiraFatura =
+    history.length === 0
+      ? invoiceForPurchase(config, dataCompra)
+      : invoiceForPurchaseWithHistory(config, history, dataCompra)
   const ultimaFatura = addMonths(primeiraFatura, numeroParcelas - 1)
+  // As faturas futuras usam os dias atuais (o histórico só tem dias de faturas passadas)
   if (rawInvoiceDates(config, ultimaFatura).vencimento > MAX_DATE) {
     throw new RangeError(`A última parcela venceria depois de ${MAX_DATE}`)
   }

@@ -30,13 +30,13 @@ import {
   type TransactionFormInput,
   type TransactionFormValues,
 } from './schemas'
-import type { Transaction } from './transactions-api'
+import type { PlainTransaction } from './transaction-kind'
 
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
   /** Transação a editar; sem ela, o diálogo cria uma nova. */
-  transaction?: Transaction | null
+  transaction?: PlainTransaction | null
   categories: Category[]
   accounts: Account[]
 }

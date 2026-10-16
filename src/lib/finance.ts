@@ -11,7 +11,11 @@ import {
 } from './dates'
 
 export type Movement = {
-  tipo: 'receita' | 'despesa'
+  /**
+   * estorno (C8, D11): crédito de uma compra no cartão. Nos saldos soma (como uma receita); nos
+   * relatórios abate às despesas da categoria da compra no mês do estorno (não é rendimento).
+   */
+  tipo: 'receita' | 'despesa' | 'estorno'
   valor_centavos: number
   data: IsoDate
 }
@@ -49,9 +53,19 @@ export function transferMovements(transfers: Transfer[]): AccountMovement[] {
   ])
 }
 
-/** Movimento com sinal: receitas somam, despesas subtraem. */
+/** Movimento com sinal: receitas e estornos somam, despesas subtraem. */
 export function signedAmount(movement: Movement): number {
-  return movement.tipo === 'receita' ? movement.valor_centavos : -movement.valor_centavos
+  return movement.tipo === 'despesa' ? -movement.valor_centavos : movement.valor_centavos
+}
+
+/**
+ * Quanto o movimento conta nas DESPESAS (pode ser negativo): uma despesa conta o valor, um estorno
+ * desconta-o (D11), uma receita não conta.
+ */
+function expenseAmount(movement: Movement): number {
+  if (movement.tipo === 'despesa') return movement.valor_centavos
+  if (movement.tipo === 'estorno') return -movement.valor_centavos
+  return 0
 }
 
 /** data >= dia 1 do mês e < dia 1 do mês seguinte (comparação de texto 'YYYY-MM-DD' é cronológica). */
@@ -63,7 +77,7 @@ export function isInMonth(date: IsoDate, month: MonthKey): boolean {
 export type MonthSummary = {
   /** Σ receitas do mês */
   receitas: number
-  /** Σ despesas do mês (valor positivo) */
+  /** Σ despesas do mês − Σ estornos do mês (normalmente positivo; negativo só se houver mais estornos) */
   despesas: number
   /** receitas − despesas (pode ser negativo) */
   resultado: number
@@ -76,7 +90,7 @@ export function monthSummary(movements: Movement[], month: MonthKey): MonthSumma
   for (const movement of movements) {
     if (!isInMonth(movement.data, month)) continue
     if (movement.tipo === 'receita') receitas += movement.valor_centavos
-    else despesas += movement.valor_centavos
+    else despesas += expenseAmount(movement)
   }
   return { receitas, despesas, resultado: receitas - despesas }
 }
@@ -175,15 +189,17 @@ export function availableCredit(limite: number, saldoPrevisto: number): number {
 
 export type CategorySpending = {
   categoryId: string
-  /** Σ despesas da categoria no mês */
+  /** Σ despesas − Σ estornos da categoria no mês */
   total: number
   /** Percentagem inteira das despesas do mês (0–100) */
   percent: number
 }
 
 /**
- * Gastos por categoria no mês: só despesas, ordenadas do maior para o menor
- * (empate: ordem estável pelo id, para o gráfico não "saltar" entre renderizações).
+ * Gastos por categoria no mês: despesas menos estornos (D11), ordenados do maior para o menor
+ * (empate: ordem estável pelo id, para o gráfico não "saltar" entre renderizações). Uma categoria cujos
+ * estornos do mês igualam ou passam as despesas não aparece (não há gasto para mostrar); as
+ * percentagens são sobre as categorias que aparecem.
  */
 export function spendingByCategory(
   movements: CategoryMovement[],
@@ -192,12 +208,15 @@ export function spendingByCategory(
   const totals = new Map<string, number>()
   let all = 0
   for (const movement of movements) {
-    if (movement.tipo !== 'despesa' || !isInMonth(movement.data, month)) continue
+    if (movement.tipo === 'receita' || !isInMonth(movement.data, month)) continue
     totals.set(
       movement.category_id,
-      (totals.get(movement.category_id) ?? 0) + movement.valor_centavos,
+      (totals.get(movement.category_id) ?? 0) + expenseAmount(movement),
     )
-    all += movement.valor_centavos
+  }
+  for (const [categoryId, total] of totals) {
+    if (total <= 0) totals.delete(categoryId)
+    else all += total
   }
   return [...totals]
     .map(([categoryId, total]) => ({ categoryId, total, percent: Math.round((total * 100) / all) }))
@@ -241,7 +260,7 @@ export function monthlySeries(movements: Movement[], months: MonthKey[]): Monthl
     const row = totals.get(monthOf(movement.data))
     if (!row) continue
     if (movement.tipo === 'receita') row.receitas += movement.valor_centavos
-    else row.despesas += movement.valor_centavos
+    else row.despesas += expenseAmount(movement)
     row.resultado += signedAmount(movement)
   }
   return months.map((month) => totals.get(month)!)
@@ -317,7 +336,7 @@ export type BudgetState = 'ok' | 'alerta' | 'excedido'
 
 export type BudgetStatus = {
   limite: number
-  /** Σ despesas da categoria no mês */
+  /** Σ despesas − Σ estornos da categoria no mês */
   gasto: number
   /** limite − gasto (negativo = ultrapassado) */
   restante: number

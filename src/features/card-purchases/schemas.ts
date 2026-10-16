@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { MAX_DATE, MAX_PARCELAS, MIN_DATE } from '@/lib/credit-card'
-import { isIsoDate } from '@/lib/dates'
+import { isIsoDate, todayIso } from '@/lib/dates'
 import { moneyField } from '@/lib/money-schema'
 
 // Mesmas regras da base de dados (compras_cartao): valor ≥ 1 centavo por parcela, 1 a 48 parcelas,
@@ -67,3 +67,36 @@ export const purchaseFormSchema = z
 
 export type PurchaseFormInput = z.input<typeof purchaseFormSchema>
 export type PurchaseFormValues = z.output<typeof purchaseFormSchema>
+
+/**
+ * Estorno de uma compra (C8). Mesmas regras da base de dados: valor > 0 e até ao que ainda falta
+ * estornar (`maxCentavos`), data entre a da compra e hoje (sem data futura, como os pagamentos),
+ * descrição até 120 caracteres.
+ */
+export function refundFormSchema({
+  maxCentavos,
+  dataCompra,
+}: {
+  maxCentavos: number
+  dataCompra: string
+}) {
+  return z.object({
+    valor: moneyField({ positive: true }).refine((valor) => valor <= maxCentavos, {
+      error: 'O estorno não pode passar do que falta estornar desta compra.',
+    }),
+    data: z
+      .string()
+      .refine((data) => isIsoDate(data) && data >= MIN_DATE, { error: 'Indica uma data válida.' })
+      .refine((data) => data >= dataCompra, {
+        error: 'O estorno não pode ser anterior à data da compra.',
+      })
+      .refine((data) => data <= todayIso(), { error: 'Um estorno não pode ter data futura.' }),
+    descricao: z
+      .string()
+      .trim()
+      .max(120, { error: 'A descrição pode ter no máximo 120 caracteres.' }),
+  })
+}
+
+export type RefundFormInput = z.input<ReturnType<typeof refundFormSchema>>
+export type RefundFormValues = z.output<ReturnType<typeof refundFormSchema>>

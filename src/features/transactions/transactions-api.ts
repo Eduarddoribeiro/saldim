@@ -72,10 +72,11 @@ export async function listBalanceMovements(): Promise<LedgerMovement[]> {
   return data
 }
 
-/** Parcela de uma compra no cartão, com o que a página de faturas precisa. */
+/** Parcela ou estorno (C8) de uma compra no cartão, com o que a página de faturas precisa. */
 export type InvoiceItem = Pick<
   Transaction,
   | 'id'
+  | 'tipo'
   | 'fatura_id'
   | 'compra_id'
   | 'parcela_numero'
@@ -85,13 +86,13 @@ export type InvoiceItem = Pick<
   | 'category_id'
 >
 
-/** TODAS as parcelas (transações com fatura), para os totais das faturas. Paginado com ordem total. */
+/** TODAS as parcelas e estornos (transações com fatura), para os totais das faturas. Paginado. */
 export async function listInvoiceItems(): Promise<InvoiceItem[]> {
   const { data, error } = await fetchAllPages((start, end) =>
     supabase
       .from('transactions')
       .select(
-        'id, fatura_id, compra_id, parcela_numero, valor_centavos, data, descricao, category_id',
+        'id, tipo, fatura_id, compra_id, parcela_numero, valor_centavos, data, descricao, category_id',
       )
       .not('fatura_id', 'is', null)
       .order('data')

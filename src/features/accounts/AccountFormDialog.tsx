@@ -14,12 +14,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { validateCardConfig } from '@/lib/credit-card'
+import { invoiceMonth, shortDate } from '@/features/invoices/invoice-options'
+import { useInvoices } from '@/features/invoices/hooks'
+import { previewDaysChange, validateCardConfig, type CardConfig } from '@/lib/credit-card'
+import { todayIso } from '@/lib/dates'
 import { centsToInput } from '@/lib/money'
 import { MONEY_EXAMPLE } from '@/lib/money-schema'
 import { isCreditCard, TIPO_CONTA_OPTIONS, TIPOS_CONTA } from './account-options'
 import { accountRow, type Account } from './accounts-api'
-import { useAccounts, useCreateAccount, useDeleteAccount, useUpdateAccount } from './hooks'
+import { cardConfig, historyFor } from './card-days'
+import {
+  useAccounts,
+  useCardDaysHistory,
+  useCreateAccount,
+  useDeleteAccount,
+  useUpdateAccount,
+} from './hooks'
 import { accountFormSchema, type AccountFormInput, type AccountFormValues } from './schemas'
 
 /** Dias do mês para o fechamento e o vencimento (o mês curto é tratado no cálculo das faturas). */
@@ -101,6 +111,13 @@ function AccountForm({ onOpenChange, account }: Props) {
         }).warnings[0]?.message
       : undefined
 
+  const daysChange = useDaysChangeNotice(
+    account,
+    isCard && diaFechamento !== '' && diaVencimento !== ''
+      ? { diaFechamento: Number(diaFechamento), diaVencimento: Number(diaVencimento) }
+      : null,
+  )
+
   const busy = isSubmitting || update.isPending || remove.isPending
 
   return (
@@ -162,6 +179,11 @@ function AccountForm({ onOpenChange, account }: Props) {
               {prazoWarning}
             </p>
           )}
+          {daysChange && (
+            <p role="status" className="-mt-2 rounded-lg bg-muted p-3 text-xs">
+              {daysChange}
+            </p>
+          )}
           <TextField
             id="conta-limite"
             label="Limite de crédito"
@@ -217,4 +239,34 @@ function AccountForm({ onOpenChange, account }: Props) {
       </DialogFooter>
     </form>
   )
+}
+
+/**
+ * Ao mudar os dias de um cartão que já tem faturas (C8, D14): explica, antes de guardar, a partir de
+ * que fatura valem os dias novos — ou porque é que a mudança vai ser recusada. Mesmo cálculo da base
+ * de dados (previewDaysChange); a base de dados volta a verificar tudo.
+ */
+function useDaysChangeNotice(account: Account | null | undefined, novos: CardConfig | null) {
+  const atuais = cardConfig(account ?? undefined)
+  // Só ao editar um cartão: nos outros casos, nada a pedir
+  const invoices = useInvoices({ enabled: atuais !== null })
+  const history = useCardDaysHistory({ enabled: atuais !== null })
+  if (!account || !atuais || !novos || !validateCardConfig({ ...novos, limiteCentavos: 1 }).ok) {
+    return null
+  }
+  if (
+    novos.diaFechamento === atuais.diaFechamento &&
+    novos.diaVencimento === atuais.diaVencimento
+  ) {
+    return null
+  }
+  // Sem faturas, os dias mudam livremente (não há nada a recalcular)
+  if (!invoices.data?.some((invoice) => invoice.account_id === account.id) || !history.data) {
+    return null
+  }
+  const preview = previewDaysChange(atuais, historyFor(history.data, account.id), novos, todayIso())
+  const mes = invoiceMonth(`${preview.mesReferencia}-01`).toLowerCase()
+  return preview.ok
+    ? `Os dias novos valem a partir da fatura de ${mes}, que passa a fechar a ${shortDate(preview.novas.fechamento)} e a vencer a ${shortDate(preview.novas.vencimento)} (com compras desde ${shortDate(preview.novas.inicioCiclo)}). As faturas já fechadas não mudam.`
+    : `Com estes dias, a fatura aberta (${mes}) fecharia a ${shortDate(preview.fechamento)}, que já passou. Escolhe outros dias ou espera que essa fatura feche.`
 }

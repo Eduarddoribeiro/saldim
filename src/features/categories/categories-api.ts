@@ -1,11 +1,13 @@
 import { dbErrorMessage, UserFacingError } from '@/lib/db-errors'
-import type { Tables } from '@/lib/database.types'
+import type { Enums, Tables } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
 import type { CategoryFormValues } from './schemas'
 
 // Único ponto de acesso à tabela categories. A RLS garante no servidor que só vemos/alteramos as nossas.
 
-export type Category = Tables<'categories'>
+/** Uma categoria é só de receita ou de despesa: o tipo `estorno` é das transações (CHECK `categories_tipo_check`). */
+export type TipoCategoria = Exclude<Enums<'tipo_movimento'>, 'estorno'>
+export type Category = Omit<Tables<'categories'>, 'tipo'> & { tipo: TipoCategoria }
 export type CategoryPatch = Partial<Pick<Category, 'nome' | 'cor' | 'icone' | 'arquivada'>>
 
 const MESSAGES = {
@@ -25,14 +27,15 @@ export function sortCategories(categories: Category[]): Category[] {
 export async function listCategories(): Promise<Category[]> {
   const { data, error } = await supabase.from('categories').select('*')
   if (error) fail(error)
-  return sortCategories(data)
+  // O CHECK categories_tipo_check garante que o tipo nunca é 'estorno'
+  return sortCategories(data as Category[])
 }
 
 export async function createCategory(values: CategoryFormValues): Promise<Category> {
   // user_id não é enviado: a base preenche-o com auth.uid() e a RLS confirma-o.
   const { data, error } = await supabase.from('categories').insert(values).select().single()
   if (error) fail(error)
-  return data
+  return data as Category
 }
 
 export async function updateCategory(id: string, patch: CategoryPatch): Promise<Category> {
@@ -43,7 +46,7 @@ export async function updateCategory(id: string, patch: CategoryPatch): Promise<
     .select()
     .single()
   if (error) fail(error)
-  return data
+  return data as Category
 }
 
 export async function deleteCategory(id: string): Promise<void> {

@@ -7,8 +7,17 @@ import type { PurchaseFormValues } from './schemas'
 // Único ponto de acesso às compras no cartão. Uma compra regista-se SEMPRE com a função
 // registar_compra_cartao (compra + faturas + parcelas numa só transação); as regras e a RLS estão na
 // base de dados (migration faturas_compras) e valem também para quem escreve diretamente.
+// Os estornos (C8) registam-se com registar_estorno_cartao e são transações do tipo `estorno`.
 
 export type CardPurchase = Tables<'compras_cartao'>
+
+/** Estorno de uma compra: crédito no cartão, na fatura da data do estorno (D11). */
+export type Refund = Pick<
+  Tables<'transactions'>,
+  'id' | 'compra_id' | 'fatura_id' | 'valor_centavos' | 'data' | 'descricao'
+>
+
+export type RefundValues = { compraId: string; valor: number; data: string; descricao: string }
 
 const MESSAGES = {
   '23503': 'O cartão ou a categoria escolhida já não existe. Atualiza a página e tenta de novo.',
@@ -21,9 +30,17 @@ const RULE_MESSAGES: Record<string, string> = {
   compras_cartao_categoria_check: 'Uma compra no cartão tem de usar uma categoria de despesa.',
   compras_cartao_valor_check: 'O valor tem de chegar para todas as parcelas (1 centavo cada).',
   compras_cartao_parcelas_check: 'O número de parcelas não é válido.',
-  // D6 (migration transferencias): o histórico pago não se apaga; a correção será um estorno (C8)
+  // D6 (migration transferencias): o histórico pago não se apaga; corrige-se com um estorno
   compras_cartao_fatura_paga_check:
-    'Esta compra tem parcelas em faturas com pagamentos, por isso não pode ser apagada.',
+    'Esta compra tem parcelas ou estornos em faturas com pagamentos, por isso não pode ser apagada. Para a corrigir, regista um estorno.',
+  // Estornos (migration estornos_dias_cartao)
+  transactions_estorno_valor_check: 'Os estornos desta compra não podem passar do valor da compra.',
+  transactions_estorno_futuro_check: 'Um estorno não pode ter data futura.',
+  transactions_estorno_data_check: 'O estorno não pode ser anterior à data da compra.',
+  transactions_estorno_fatura_paga_check:
+    'Este estorno está numa fatura com pagamentos, por isso não pode ser apagado.',
+  transactions_estorno_compra_check:
+    'Esta compra já não existe. Atualiza a página e tenta de novo.',
   faturas_mes_check: 'As parcelas passariam do ano 2999. Confirma a data da compra.',
   faturas_datas_check: 'As parcelas passariam do ano 2999. Confirma a data da compra.',
 }
@@ -63,6 +80,39 @@ export async function registerPurchase(values: PurchaseFormValues): Promise<stri
   })
   if (error) fail(error)
   return data
+}
+
+/** Todos os estornos do utilizador (poucos), para o detalhe das compras. */
+export async function listRefunds(): Promise<Refund[]> {
+  const { data, error } = await fetchAllPages((start, end) =>
+    supabase
+      .from('transactions')
+      .select('id, compra_id, fatura_id, valor_centavos, data, descricao')
+      .eq('tipo', 'estorno')
+      .order('data')
+      .order('id')
+      .range(start, end),
+  )
+  if (error) fail(error)
+  return data
+}
+
+/** Regista um estorno (e a fatura da sua data, se faltar); devolve o id do estorno. */
+export async function registerRefund(values: RefundValues): Promise<string> {
+  const { data, error } = await supabase.rpc('registar_estorno_cartao', {
+    p_compra_id: values.compraId,
+    p_data: values.data,
+    p_valor_centavos: values.valor,
+    p_descricao: values.descricao,
+  })
+  if (error) fail(error)
+  return data
+}
+
+/** Apaga um estorno (é a forma de o corrigir), se a fatura ainda não tiver pagamentos. */
+export async function deleteRefund(id: string): Promise<void> {
+  const { error } = await supabase.from('transactions').delete().eq('id', id)
+  if (error) fail(error)
 }
 
 /** Apaga a compra; as parcelas vão com ela (cascata na base de dados). */

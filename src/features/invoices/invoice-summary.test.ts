@@ -6,7 +6,16 @@ const fatura = (id: string, fechamento: string, vencimento: string) => ({
   data_fechamento: fechamento,
   data_vencimento: vencimento,
 })
-const parcela = (fatura_id: string, valor_centavos: number) => ({ fatura_id, valor_centavos })
+const parcela = (fatura_id: string, valor_centavos: number) => ({
+  fatura_id,
+  valor_centavos,
+  tipo: 'despesa',
+})
+const estorno = (fatura_id: string, valor_centavos: number) => ({
+  fatura_id,
+  valor_centavos,
+  tipo: 'estorno',
+})
 const pagamento = (fatura_id: string, valor_centavos: number) => ({ fatura_id, valor_centavos })
 
 describe('summarizeInvoices', () => {
@@ -49,10 +58,33 @@ describe('summarizeInvoices', () => {
     ])
   })
 
+  it('estornos (C8) descontam do total; só estornos dá crédito a favor', () => {
+    const resumo = summarizeInvoices(
+      faturas,
+      [parcela('out', 10000), estorno('out', 4000), estorno('nov', 3000)],
+      [pagamento('out', 6000)],
+      '2026-11-10',
+    )
+    expect(resumo.map((f) => [f.id, f.totalCentavos, f.emAbertoCentavos, f.estado])).toEqual([
+      ['out', 6000, 0, 'paga'],
+      ['nov', -3000, -3000, 'com_credito'],
+      ['dez', 0, 0, 'aberta'],
+    ])
+    // Compra estornada por inteiro numa fatura fechada: nada a pagar → paga (não "sem compras")
+    const zerada = summarizeInvoices(
+      [faturas[0]],
+      [parcela('out', 5000), estorno('out', 5000)],
+      [],
+      '2026-11-10',
+    )
+    expect(zerada.map((f) => [f.totalCentavos, f.estado])).toEqual([[0, 'paga']])
+    expect(isToPay(zerada[0])).toBe(false)
+  })
+
   it('ignora linhas sem fatura e faturas sem nada', () => {
     const resumo = summarizeInvoices(
       [faturas[1]],
-      [{ fatura_id: null, valor_centavos: 999 }],
+      [{ fatura_id: null, valor_centavos: 999, tipo: 'despesa' }],
       [],
       '2026-10-01',
     )

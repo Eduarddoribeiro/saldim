@@ -90,6 +90,45 @@ export type Database = {
           },
         ]
       }
+      cartao_dias_anteriores: {
+        Row: {
+          account_id: string
+          ate_mes: string
+          created_at: string
+          dia_fechamento: number
+          dia_vencimento: number
+          id: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          account_id: string
+          ate_mes: string
+          created_at?: string
+          dia_fechamento: number
+          dia_vencimento: number
+          id?: string
+          user_id?: string
+        }
+        Update: {
+          account_id?: string
+          ate_mes?: string
+          created_at?: string
+          dia_fechamento?: number
+          dia_vencimento?: number
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'cartao_dias_anteriores_account_fk'
+            columns: ['account_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
+      }
       categories: {
         Row: {
           arquivada: boolean
@@ -384,9 +423,35 @@ export type Database = {
         Args: { dia_fechamento: number; dia_vencimento: number; mes_referencia: string }
         Returns: Record<string, unknown>
       }
+      cartao_datas_fatura_conta: {
+        Args: { p_account_id: string; p_mes: string }
+        Returns: Record<string, unknown>
+      }
+      cartao_datas_fatura_hist: {
+        Args: {
+          p_account_id: string
+          p_dia_fechamento: number
+          p_dia_vencimento: number
+          p_mes: string
+        }
+        Returns: Record<string, unknown>
+      }
       cartao_dia_no_mes: { Args: { dia: number; mes: string }; Returns: string }
       cartao_fatura_da_compra: {
         Args: { data_compra: string; dia_fechamento: number; dia_vencimento: number }
+        Returns: string
+      }
+      cartao_fatura_da_compra_conta: {
+        Args: { p_account_id: string; p_data: string }
+        Returns: string
+      }
+      cartao_fatura_da_data_hist: {
+        Args: {
+          p_account_id: string
+          p_data: string
+          p_dia_fechamento: number
+          p_dia_vencimento: number
+        }
         Returns: string
       }
       cartao_valor_parcela: {
@@ -405,10 +470,19 @@ export type Database = {
         }
         Returns: string
       }
+      registar_estorno_cartao: {
+        Args: {
+          p_compra_id: string
+          p_data: string
+          p_descricao?: string
+          p_valor_centavos: number
+        }
+        Returns: string
+      }
     }
     Enums: {
       tipo_conta: 'corrente' | 'poupanca' | 'dinheiro' | 'investimento' | 'outra' | 'cartao_credito'
-      tipo_movimento: 'receita' | 'despesa'
+      tipo_movimento: 'receita' | 'despesa' | 'estorno'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -521,7 +595,7 @@ export const Constants = {
   public: {
     Enums: {
       tipo_conta: ['corrente', 'poupanca', 'dinheiro', 'investimento', 'outra', 'cartao_credito'],
-      tipo_movimento: ['receita', 'despesa'],
+      tipo_movimento: ['receita', 'despesa', 'estorno'],
     },
   },
 } as const

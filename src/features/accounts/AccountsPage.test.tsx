@@ -1,11 +1,25 @@
 // @vitest-environment jsdom
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Invoice } from '@/features/invoices/invoices-api'
 import { renderApp } from '@/test/render-app'
 import type { Account } from './accounts-api'
+import type { CardDaysRow } from './card-days-api'
 
-const store = vi.hoisted(() => ({ accounts: [] as Account[], moeda: 'BRL' }))
+const store = vi.hoisted(() => ({
+  accounts: [] as Account[],
+  moeda: 'BRL',
+  invoices: [] as Invoice[],
+  cardDays: [] as CardDaysRow[],
+}))
+
+vi.mock('@/features/invoices/invoices-api', () => ({
+  listInvoices: vi.fn(async () => store.invoices),
+}))
+vi.mock('./card-days-api', () => ({
+  listCardDaysHistory: vi.fn(async () => store.cardDays),
+}))
 
 vi.mock('@/features/profile/profile-api', () => ({
   getProfile: vi.fn(async () => ({ id: 'u', nome: 'Ana', moeda: store.moeda, created_at: '' })),
@@ -55,6 +69,8 @@ const plain = (text: string | null | undefined) => (text ?? '').replace(/[\u00a0
 
 beforeEach(() => {
   store.moeda = 'BRL'
+  store.invoices = []
+  store.cardDays = []
   store.accounts = [
     makeAccount({ id: 'a1', nome: 'Conta principal', saldo_inicial_centavos: 123456 }),
     makeAccount({ id: 'a2', nome: 'Carteira', tipo: 'dinheiro', saldo_inicial_centavos: -500 }),
@@ -228,6 +244,63 @@ describe('página de contas', () => {
         .getAllByRole('option')
         .map((option) => option.textContent)
       expect(options).toEqual(['Escolhe a conta', 'Carteira', 'Conta principal'])
+    })
+
+    describe('mudar os dias de um cartão com faturas (C8)', () => {
+      beforeEach(() => {
+        vi.useFakeTimers({ toFake: ['Date'] })
+        vi.setSystemTime(new Date(2026, 9, 16, 12, 0))
+        store.accounts.push(cartao())
+        store.invoices = [
+          {
+            id: 'f',
+            account_id: 'c1',
+            mes_referencia: '2026-11-01',
+            data_fechamento: '2026-10-25',
+            data_vencimento: '2026-11-05',
+          },
+        ]
+      })
+      afterEach(() => vi.useRealTimers())
+
+      async function editarDias(fechamento: string, vencimento: string) {
+        renderApp('/configuracoes/contas')
+        await userEvent.click(await screen.findByRole('button', { name: /Visa/ }))
+        const dialog = await screen.findByRole('dialog', { name: 'Editar conta' })
+        await userEvent.selectOptions(
+          within(dialog).getByLabelText('Dia de fechamento'),
+          fechamento,
+        )
+        await userEvent.selectOptions(
+          within(dialog).getByLabelText('Dia de vencimento'),
+          vencimento,
+        )
+        return dialog
+      }
+
+      it('explica a partir de que fatura valem os dias novos', async () => {
+        const dialog = await editarDias('10', '20')
+        expect(
+          await within(dialog).findByText(
+            'Os dias novos valem a partir da fatura de novembro de 2026, que passa a fechar a 10/11/2026 e a vencer a 20/11/2026 (com compras desde 25/09/2026). As faturas já fechadas não mudam.',
+          ),
+        ).toBeInTheDocument()
+      })
+
+      it('avisa quando a fatura aberta fecharia antes de hoje', async () => {
+        const dialog = await editarDias('15', '5')
+        expect(
+          await within(dialog).findByText(
+            'Com estes dias, a fatura aberta (novembro de 2026) fecharia a 15/10/2026, que já passou. Escolhe outros dias ou espera que essa fatura feche.',
+          ),
+        ).toBeInTheDocument()
+      })
+
+      it('sem faturas, os dias mudam sem aviso', async () => {
+        store.invoices = []
+        const dialog = await editarDias('10', '20')
+        expect(within(dialog).queryByText(/Os dias novos valem/)).not.toBeInTheDocument()
+      })
     })
 
     it('na lista, o cartão mostra os dias da fatura e o limite', async () => {

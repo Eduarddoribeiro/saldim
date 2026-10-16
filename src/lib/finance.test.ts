@@ -528,3 +528,66 @@ describe('transferências e pagamentos de fatura (sem dupla contagem)', () => {
     ).toBe(490000)
   })
 })
+
+describe('estornos (C8, D11): somam no saldo e abatem às despesas no mês do estorno', () => {
+  const hoje = { today: '2026-10-16' }
+  const cartao = { id: 'visa', saldo_inicial_centavos: 0 }
+  // Compra de 300,00 em setembro (Moradia); estorno de 100,00 em outubro
+  const movimentos = [
+    tx({ account_id: 'visa', category_id: 'casa', valor_centavos: 30000, data: '2026-09-20' }),
+    tx({ account_id: 'visa', category_id: 'alim', valor_centavos: 5000, data: '2026-10-02' }),
+    tx({ account_id: 'visa', category_id: 'casa', valor_centavos: 2000, data: '2026-10-03' }),
+    tx({
+      tipo: 'estorno',
+      account_id: 'visa',
+      category_id: 'casa',
+      valor_centavos: 10000,
+      data: '2026-10-10',
+    }),
+  ]
+
+  it('o estorno soma no saldo do cartão (é um crédito)', () => {
+    expect(signedAmount(movimentos[3])).toBe(10000)
+    expect(accountBalance(cartao, movimentos, hoje)).toBe(-30000 - 5000 - 2000 + 10000)
+  })
+
+  it('o estorno não é receita: abate às despesas do mês do estorno; setembro não muda', () => {
+    expect(monthSummary(movimentos, '2026-10')).toEqual({
+      receitas: 0,
+      despesas: 5000 + 2000 - 10000,
+      resultado: -5000 - 2000 + 10000,
+    })
+    expect(monthSummary(movimentos, '2026-09').despesas).toBe(30000)
+  })
+
+  it('a série mensal usa as mesmas regras que monthSummary', () => {
+    const [setembro, outubro] = monthlySeries(movimentos, ['2026-09', '2026-10'])
+    expect(setembro).toEqual({ month: '2026-09', ...monthSummary(movimentos, '2026-09') })
+    expect(outubro).toEqual({ month: '2026-10', ...monthSummary(movimentos, '2026-10') })
+  })
+
+  it('por categoria: o estorno desconta; uma categoria com mais estornos do que gastos não aparece', () => {
+    // Moradia em outubro: 20,00 − 100,00 < 0 → fora; Alimentação fica com 100 %
+    expect(spendingByCategory(movimentos, '2026-10')).toEqual([
+      { categoryId: 'alim', total: 5000, percent: 100 },
+    ])
+    // Estorno parcial: 200,00 − 100,00 = 100,00
+    const parcial = [
+      ...movimentos,
+      tx({ category_id: 'casa', valor_centavos: 18000, data: '2026-10-04' }),
+    ]
+    expect(spendingByCategory(parcial, '2026-10')).toEqual([
+      { categoryId: 'casa', total: 10000, percent: 67 },
+      { categoryId: 'alim', total: 5000, percent: 33 },
+    ])
+  })
+
+  it('o orçamento usa o gasto líquido (por isso um estorno devolve margem ao orçamento)', () => {
+    const parcial = [
+      ...movimentos,
+      tx({ category_id: 'casa', valor_centavos: 18000, data: '2026-10-04' }),
+    ]
+    const gasto = spendingByCategory(parcial, '2026-10').find((row) => row.categoryId === 'casa')!
+    expect(budgetStatus(15000, gasto.total)).toMatchObject({ gasto: 10000, restante: 5000 })
+  })
+})

@@ -19,7 +19,7 @@ import { useTransactions } from './hooks'
 import { groupByDay } from './group-by-day'
 import { TransactionFormDialog } from './TransactionFormDialog'
 import { TransactionRow } from './TransactionRow'
-import type { Transaction } from './transactions-api'
+import { isPlainTransaction, type PlainTransaction } from './transaction-kind'
 
 export function TransactionsPage() {
   const [month, setMonth] = useMonthParam()
@@ -28,7 +28,7 @@ export function TransactionsPage() {
   const accounts = useAccounts()
   const purchases = usePurchases()
   const currency = useCurrency()
-  const [dialog, setDialog] = useState<{ open: boolean; transaction: Transaction | null }>({
+  const [dialog, setDialog] = useState<{ open: boolean; transaction: PlainTransaction | null }>({
     open: false,
     transaction: null,
   })
@@ -122,11 +122,12 @@ export function TransactionsPage() {
                           ? purchasesById.get(transaction.compra_id)?.parcelas
                           : undefined
                       }
-                      onSelect={() =>
-                        transaction.compra_id
-                          ? setDetails({ open: true, purchaseId: transaction.compra_id })
-                          : setDialog({ open: true, transaction })
-                      }
+                      onSelect={() => {
+                        // Parcelas e estornos abrem a compra; o resto edita-se no formulário
+                        if (isPlainTransaction(transaction)) setDialog({ open: true, transaction })
+                        else if (transaction.compra_id)
+                          setDetails({ open: true, purchaseId: transaction.compra_id })
+                      }}
                     />
                   </li>
                 ))}

@@ -1,13 +1,18 @@
+import { historyFor } from '@/features/accounts/card-days'
+import { useCardDaysHistory } from '@/features/accounts/hooks'
 import {
   installmentSchedule,
-  invoiceDates,
+  invoiceDatesWithHistory,
   splitInstallments,
   type CardConfig,
+  type CardDaysChange,
 } from '@/lib/credit-card'
 import { formatMonthShort, type IsoDate, type MonthKey } from '@/lib/dates'
 import { formatMoney, type Currency } from '@/lib/money'
 
 export type PreviewInput = {
+  /** O cartão: os seus dias antigos (C8) entram no cálculo das faturas */
+  accountId: string
   config: CardConfig
   dataCompra: IsoDate
   totalCentavos: number
@@ -25,7 +30,7 @@ function shortDate(date: IsoDate): string {
 const monthLabel = (month: MonthKey) => `${formatMonthShort(month)} ${month.slice(0, 4)}`
 
 /** Parcelas que a compra vai criar, ou null se os dados ainda não estiverem completos/válidos. */
-function previewSchedule(input: PreviewInput) {
+function previewSchedule(input: PreviewInput, history: CardDaysChange[]) {
   try {
     const { parcelas, restanteCentavos } = installmentSchedule({
       dataCompra: input.dataCompra,
@@ -33,12 +38,13 @@ function previewSchedule(input: PreviewInput) {
       numeroParcelas: input.numeroParcelas,
       parcelaInicial: input.parcelaInicial,
       config: input.config,
+      history,
     })
     return {
       restanteCentavos,
       parcelas: parcelas.map((parcela) => ({
         ...parcela,
-        vencimento: invoiceDates(input.config, parcela.mesFatura).vencimento,
+        vencimento: invoiceDatesWithHistory(input.config, history, parcela.mesFatura).vencimento,
       })),
     }
   } catch {
@@ -60,7 +66,17 @@ export function InstallmentPreview({
   currency: Currency
   title?: string
 }) {
-  const schedule = input ? previewSchedule(input) : null
+  // Os dias antigos dos cartões: sem eles, um cartão cujos dias mudaram mostraria faturas erradas
+  const history = useCardDaysHistory()
+  if (input && history.error) {
+    return (
+      <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
+        Não foi possível calcular as faturas. Atualiza a página e tenta de novo.
+      </p>
+    )
+  }
+  const schedule =
+    input && history.data ? previewSchedule(input, historyFor(history.data, input.accountId)) : null
   if (!input || !schedule) {
     return (
       <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">

@@ -6,9 +6,16 @@ import { formatMoney, type Currency } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import type { Transaction } from './transactions-api'
 
+/** Como se lê cada tipo (nome acessível e texto escondido antes do valor). */
+const TIPO_LABELS: Record<Transaction['tipo'], string> = {
+  receita: 'receita',
+  despesa: 'despesa',
+  estorno: 'estorno',
+}
+
 /**
- * Linha de uma transação: categoria, descrição, conta e valor com sinal (+ receita, − despesa).
- * Uma parcela de uma compra no cartão mostra também "Parcela k/n".
+ * Linha de uma transação: categoria, descrição, conta e valor com sinal (+ receita ou estorno,
+ * − despesa). Uma parcela de uma compra no cartão mostra também "Parcela k/n"; um estorno, "Estorno".
  */
 export function TransactionRow({
   transaction,
@@ -26,18 +33,23 @@ export function TransactionRow({
   totalParcelas?: number
   onSelect?: () => void
 }) {
-  const isIncome = transaction.tipo === 'receita'
+  // Receitas e estornos são créditos (+); despesas e parcelas, débitos (−)
+  const isCredit = transaction.tipo !== 'despesa'
+  const tipoLabel = TIPO_LABELS[transaction.tipo]
   const categoryName = category?.nome ?? 'Sem categoria'
   const title = transaction.descricao || categoryName
-  const installment =
-    transaction.parcela_numero !== null
-      ? `Parcela ${transaction.parcela_numero}/${totalParcelas ?? '?'}`
-      : null
-  const subtitle = [transaction.descricao ? categoryName : null, account?.nome, installment]
+  const cardItem =
+    transaction.tipo === 'estorno'
+      ? 'Estorno'
+      : transaction.parcela_numero !== null
+        ? `Parcela ${transaction.parcela_numero}/${totalParcelas ?? '?'}`
+        : null
+  // "Estorno"/"Parcela k/n" primeiro: no telemóvel o fim da linha é cortado
+  const subtitle = [cardItem, transaction.descricao ? categoryName : null, account?.nome]
     .filter(Boolean)
     .join(' · ')
   // Valor guardado sempre positivo; o sinal só aparece na apresentação
-  const signed = isIncome ? transaction.valor_centavos : -transaction.valor_centavos
+  const signed = isCredit ? transaction.valor_centavos : -transaction.valor_centavos
   const amount = formatMoney(signed, currency, { signDisplay: 'always' })
 
   const content = (
@@ -52,10 +64,12 @@ export function TransactionRow({
       <span
         className={cn(
           'shrink-0 text-right font-medium tabular-nums',
-          isIncome ? 'text-emerald-700 dark:text-emerald-400' : 'text-foreground',
+          isCredit ? 'text-emerald-700 dark:text-emerald-400' : 'text-foreground',
         )}
       >
-        <span className="sr-only">{isIncome ? 'Receita de ' : 'Despesa de '}</span>
+        <span className="sr-only">
+          {tipoLabel.charAt(0).toUpperCase() + tipoLabel.slice(1)} de{' '}
+        </span>
         {amount}
       </span>
     </>
@@ -69,7 +83,7 @@ export function TransactionRow({
       type="button"
       onClick={onSelect}
       // Nome explícito e bem pontuado para leitores de ecrã (texto sr-only solto fica colado ao resto)
-      aria-label={`${title}: ${isIncome ? 'receita' : 'despesa'} de ${formatMoney(transaction.valor_centavos, currency)}${subtitle ? `, ${subtitle}` : ''}. ${installment ? 'Ver compra' : 'Editar'}`}
+      aria-label={`${title}: ${tipoLabel} de ${formatMoney(transaction.valor_centavos, currency)}${subtitle ? `, ${subtitle}` : ''}. ${cardItem ? 'Ver compra' : 'Editar'}`}
       className="flex min-h-16 w-full items-center gap-3 px-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none"
     >
       {content}

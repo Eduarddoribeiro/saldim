@@ -1,21 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { ConfirmDeleteButton } from '@/components/form/ConfirmDeleteButton'
 import { FormAlert } from '@/components/form/FormAlert'
 import { SelectField } from '@/components/form/SelectField'
 import { TextField } from '@/components/form/TextField'
 import { useServerAction } from '@/components/form/use-server-action'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -96,6 +86,10 @@ function Summary({
   const purchasesById = new Map(purchases.map((purchase) => [purchase.id, purchase]))
   const { serverError, run } = useServerAction(() => {})
   const remove = useDeletePayment()
+  const compras = invoice.parcelas.filter((item) => item.tipo !== 'estorno')
+  const estornos = invoice.parcelas.filter((item) => item.tipo === 'estorno')
+  const itemName = (item: InvoiceItem) =>
+    item.descricao || categoriesById.get(item.category_id)?.nome || 'Compra'
 
   const details: [string, string][] = [
     ['Fechamento', shortDate(invoice.data_fechamento)],
@@ -138,19 +132,18 @@ function Summary({
 
       <section aria-labelledby="fatura-compras" className="grid gap-1.5">
         <h3 id="fatura-compras" className="text-sm font-medium">
-          Compras ({invoice.parcelas.length})
+          Compras ({compras.length})
         </h3>
-        {invoice.parcelas.length === 0 ? (
+        {compras.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhuma compra nesta fatura.</p>
         ) : (
           <ul aria-label="Compras da fatura" className="divide-y rounded-lg border text-sm">
-            {invoice.parcelas.map((item) => {
+            {compras.map((item) => {
               const purchase = item.compra_id ? purchasesById.get(item.compra_id) : undefined
-              const name = item.descricao || categoriesById.get(item.category_id)?.nome || 'Compra'
               return (
                 <li key={item.id} className="flex items-baseline justify-between gap-3 px-3 py-2">
                   <span className="min-w-0">
-                    <span className="block truncate">{name}</span>
+                    <span className="block truncate">{itemName(item)}</span>
                     <span className="block text-xs text-muted-foreground">
                       {shortDate(item.data)}
                       {purchase && purchase.parcelas > 1
@@ -165,6 +158,29 @@ function Summary({
           </ul>
         )}
       </section>
+
+      {estornos.length > 0 && (
+        <section aria-labelledby="fatura-estornos" className="grid gap-1.5">
+          <h3 id="fatura-estornos" className="text-sm font-medium">
+            Estornos ({estornos.length})
+          </h3>
+          <ul aria-label="Estornos da fatura" className="divide-y rounded-lg border text-sm">
+            {estornos.map((item) => (
+              <li key={item.id} className="flex items-baseline justify-between gap-3 px-3 py-2">
+                <span className="min-w-0">
+                  <span className="block truncate">{itemName(item)}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {shortDate(item.data)} · estorno
+                  </span>
+                </span>
+                <span className="shrink-0 text-emerald-700 tabular-nums dark:text-emerald-400">
+                  {money(-item.valor_centavos)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section aria-labelledby="fatura-pagamentos" className="grid gap-1.5">
         <h3 id="fatura-pagamentos" className="text-sm font-medium">
@@ -187,8 +203,9 @@ function Summary({
                 </span>
                 <span className="flex shrink-0 items-center gap-1">
                   <span className="tabular-nums">{money(payment.valor_centavos)}</span>
-                  <DeletePaymentButton
-                    label={`${money(payment.valor_centavos)} de ${shortDate(payment.data)}`}
+                  <ConfirmDeleteButton
+                    what={`o pagamento de ${money(payment.valor_centavos)} de ${shortDate(payment.data)}`}
+                    consequence="O dinheiro volta a contar na conta de origem e a fatura fica outra vez em aberto."
                     disabled={remove.isPending}
                     onConfirm={() => run(() => remove.mutateAsync(payment.id))}
                   />
@@ -210,54 +227,6 @@ function Summary({
         )}
       </DialogFooter>
     </div>
-  )
-}
-
-function DeletePaymentButton({
-  label,
-  disabled,
-  onConfirm,
-}: {
-  label: string
-  disabled: boolean
-  onConfirm: () => void
-}) {
-  const [confirming, setConfirming] = useState(false)
-  return (
-    <>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        disabled={disabled}
-        aria-label={`Apagar o pagamento de ${label}`}
-        onClick={() => setConfirming(true)}
-      >
-        <Trash2 aria-hidden />
-      </Button>
-      <AlertDialog open={confirming} onOpenChange={setConfirming}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Apagar o pagamento de {label}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              O dinheiro volta a contar na conta de origem e a fatura fica outra vez em aberto.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={() => {
-                setConfirming(false)
-                onConfirm()
-              }}
-            >
-              Apagar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
   )
 }
 

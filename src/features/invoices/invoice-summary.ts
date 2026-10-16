@@ -1,17 +1,19 @@
 import { invoiceStatus, type InvoiceState } from '@/lib/credit-card'
 import type { IsoDate } from '@/lib/dates'
 
-// Totais e estado de cada fatura, calculados a partir das parcelas e dos pagamentos (o estado nunca é
-// guardado, para nunca ficar desatualizado). Função pura: os testes não precisam de base de dados.
+// Totais e estado de cada fatura, calculados a partir das parcelas, dos estornos e dos pagamentos (o
+// estado nunca é guardado, para nunca ficar desatualizado). Função pura: os testes não precisam de base
+// de dados.
 
 type InvoiceLike = { id: string; data_fechamento: IsoDate; data_vencimento: IsoDate }
-type ItemLike = { fatura_id: string | null; valor_centavos: number }
+/** Parcela (soma ao total) ou estorno (C8: desconta do total) */
+type ItemLike = { fatura_id: string | null; valor_centavos: number; tipo: string }
 type PaymentLike = { fatura_id: string | null; valor_centavos: number }
 
 export type InvoiceSummary<I, P, Pay> = I & {
   parcelas: P[]
   pagamentos: Pay[]
-  /** Σ parcelas */
+  /** Σ parcelas − Σ estornos (negativo = só estornos: crédito a favor) */
   totalCentavos: number
   /** Σ pagamentos */
   pagoCentavos: number
@@ -30,9 +32,13 @@ export function summarizeInvoices<
   return invoices.map((invoice) => {
     const parcelas = itemsByInvoice.get(invoice.id) ?? []
     const pagamentos = paymentsByInvoice.get(invoice.id) ?? []
-    const totalCentavos = sum(parcelas)
+    const totalCentavos = parcelas.reduce(
+      (total, item) =>
+        total + (item.tipo === 'estorno' ? -item.valor_centavos : item.valor_centavos),
+      0,
+    )
     const pagoCentavos = sum(pagamentos)
-    const { estado, emAbertoCentavos } = invoiceStatus(
+    const status = invoiceStatus(
       {
         fechamento: invoice.data_fechamento,
         vencimento: invoice.data_vencimento,
@@ -41,6 +47,9 @@ export function summarizeInvoices<
       },
       hoje,
     )
+    const { emAbertoCentavos } = status
+    // Total 0 com compras = estornadas por inteiro (C8): nada a pagar, não "sem compras"
+    const estado = status.estado === 'sem_compras' && parcelas.length > 0 ? 'paga' : status.estado
     return {
       ...invoice,
       parcelas,
