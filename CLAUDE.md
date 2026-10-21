@@ -232,14 +232,19 @@ Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etap
 - Uma etapa de cada vez; dentro da etapa, agrupar tarefas relacionadas e não antecipar trabalho de etapas futuras.
 - No fim da etapa, correr todas as verificações (secção Comandos) e, quando há UI, confirmar visualmente em largura de telemóvel e de desktop.
 - Explicar as decisões técnicas importantes em linguagem acessível — o utilizador está a aprender. Responder em português.
-- **Aguardar aprovação explícita** antes de cada commit e antes de avançar para a etapa seguinte. Mensagens de commit no formato `Etapa N: descrição`.
+- **Aguardar aprovação explícita** antes de cada commit e antes de avançar para a etapa seguinte. Mensagens de commit: ver secção Commits.
 - Não marcar etapas como concluídas sem verificar o código e as verificações.
 
 ## Git e GitHub
 
 - Repositório remoto **privado**: `origin` → https://github.com/Eduarddoribeiro/saldo (ramo `main`). O `gh` está instalado em `C:\Program Files\GitHub CLI\gh.exe` e autenticado.
-- **Nunca fazer `git push` sem autorização explícita do utilizador.** Commits locais são permitidos quando todas as verificações passam e o conteúdo preparado foi revisto.
+- **Nunca fazer `git push` sem autorização explícita do utilizador.**
 - `.githooks/post-commit` (versionado) só mostra o commit criado e quantos commits faltam enviar — sem operações de rede. Está **inativo**; ativar só com aprovação: `git config core.hooksPath .githooks`.
+
+## Commits
+
+- Sempre que for fazer commit, usar a skill `commit-semantico`.
+- **Não fazer commit nem push sem aprovação explícita do utilizador**, de cada vez. Antes de pedir aprovação: `npm run verify` a passar e conteúdo preparado revisto (ver Segurança).
 
 ## Gestão deste documento
 
