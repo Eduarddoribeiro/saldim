@@ -154,6 +154,37 @@ afterEach(() => {
 })
 
 describe('A receber', () => {
+  it('próximas faturas: o mês que vem, quanto falta para ficar em dia e as compras do mês', async () => {
+    // Mais uma compra da mãe noutro cartão, em dezembro, para ver os cartões e os meses
+    store.invoices.push(invoice('dez', '2026-12-10'))
+    store.movements.push({ ...parcela('mae', 4500, 'dez', 'c2', 'nubank'), data: '2026-11-20' })
+    store.purchases.push({
+      ...store.purchases[0],
+      id: 'c2',
+      account_id: 'nubank',
+      descricao: 'Gás',
+      parcelas: 1,
+    })
+    renderApp('/a-receber')
+    const mae = await screen.findByRole('region', { name: 'Mãe' })
+    const proximas = within(mae).getByRole('region', { name: 'Próximas faturas' })
+    // Já vencido 70,00 (100,00 − 30,00 devolvidos) + novembro 200,00
+    expect(plain(mae.textContent)).toContain('Para ficar em dia até 10/11: R$ 270,00')
+    expect(
+      within(proximas)
+        .getAllByRole('group')
+        .map((month) => plain(month.querySelector('summary')?.textContent)),
+    ).toEqual(['novembroR$ 200,00', 'dezembroR$ 45,00'])
+    // Abrir novembro mostra as compras por cartão, com a parcela
+    await userEvent.click(within(proximas).getByText('novembro'))
+    const visa = within(proximas).getByRole('list', { name: 'Compras no Visa' })
+    expect(plain(visa.textContent)).toBe('Sofáparcela 2/2R$ 200,00')
+    // Quem não tem parcelas futuras não mostra a secção
+    expect(
+      within(screen.getByRole('region', { name: 'Primo' })).queryByText('Próximas faturas'),
+    ).not.toBeInTheDocument()
+  })
+
   it('mostra quanto cada pessoa deve, o que já venceu, as compras e os pagamentos', async () => {
     renderApp('/a-receber')
     const mae = await screen.findByRole('region', { name: 'Mãe' })

@@ -1,6 +1,6 @@
 # Próximas faturas por pessoa
 
-**Status:** Em andamento (fase 2 de 2)
+**Status:** Concluído
 **Projeto:** Saldo · **Branch:** feat/proximas-faturas · **Criado em:** 2026-10-21
 
 ## Contexto
@@ -67,10 +67,10 @@ Nenhuma. Sem migration nem mudança de RLS.
 
 ### Fase 2 — Mostrar no cartão da pessoa
 
-- [ ] `UpcomingInvoices.tsx` no `PersonCard`
-- [ ] Teste de componente em `ReceivablesPage.test.tsx` (meses, valores, abrir um mês)
-- [ ] E2E em `e2e/third-parties.spec.ts`: compra 3× para a mãe → "Para ficar em dia até…" e os meses aparecem; sem scroll horizontal
-- [ ] Capturas a 360px (claro e escuro) com o utilizador demo
+- [x] `UpcomingInvoices.tsx` no `PersonCard`
+- [x] Teste de componente em `ReceivablesPage.test.tsx` (meses, valores, abrir um mês)
+- [x] E2E em `e2e/third-parties.spec.ts`: compra 3× para a mãe → "Para ficar em dia até…" e os meses aparecem; sem scroll horizontal
+- [x] Capturas a 360px (claro e escuro) com o utilizador demo
 - **Pronto quando:** `npm run verify` passa e as capturas mostram a secção legível no telemóvel
 
 ## Reversão
@@ -87,5 +87,6 @@ Só código de interface e funções puras: `git revert` do commit da fase. Nada
 
 ## Registro de execução
 
+- 2026-10-21 — Fase 2 concluída. Desvio: nas capturas a 360px, abrir um mês com um cartão de nome longo alargava a página (grelhas sem `min-w-0`); corrigido em todos os níveis da secção e da lista de pessoas, e o E2E passou a abrir um mês e verificar que não há scroll horizontal. `useReceivables` expõe `invoices`.
 - 2026-10-21 — Fase 1 concluída. Decisão: o número da parcela (k de n) é calculado pela ordem das datas das parcelas da compra a partir de `parcela_inicial`, sem mudar a consulta de `listBalanceMovements`; `DetailMovement` não mudou (novo tipo `UpcomingSource`).
 - 2026-10-21 — Plano criado com o utilizador (agrupamento por mês com cartões juntos, 3 meses + "depois", "para ficar em dia até" no próximo mês, sempre visível no cartão da pessoa).

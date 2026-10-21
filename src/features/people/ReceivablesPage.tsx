@@ -20,8 +20,8 @@ import { useDeleteReimbursement, usePeople } from './hooks'
 import type { Person, Reimbursement } from './people-api'
 import { PersonDebtDetails } from './PersonDebtDetails'
 import { PersonFormDialog } from './PersonFormDialog'
-import type { DetailMovement } from './receivable-details'
 import { ReimbursementFormDialog } from './ReimbursementFormDialog'
+import { UpcomingInvoices, type PersonMovement } from './UpcomingInvoices'
 import { useReceivables } from './use-receivables'
 
 const shortDate = (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}/${date.slice(0, 4)}`
@@ -92,7 +92,7 @@ export function ReceivablesPage() {
           description="Ao registrar uma compra no cartão, escolha de quem ela é em “De quem é a compra?”."
         />
       ) : (
-        <div className="grid gap-4">
+        <div className="grid min-w-0 gap-4 *:min-w-0">
           {visible.map((person) => (
             <PersonCard
               key={person.id}
@@ -106,6 +106,7 @@ export function ReceivablesPage() {
               accounts={accounts.data ?? []}
               movements={receivables.movements}
               dueInvoiceIds={receivables.dueInvoiceIds}
+              invoices={receivables.invoices}
               currency={currency}
               onEdit={() => setPersonDialog({ open: true, person })}
               onPay={(suggested) => setPayDialog({ open: true, person, suggested })}
@@ -160,6 +161,7 @@ function PersonCard({
   accounts,
   movements,
   dueInvoiceIds,
+  invoices,
   currency,
   onEdit,
   onPay,
@@ -170,8 +172,9 @@ function PersonCard({
   reimbursements: Reimbursement[]
   accountName: (id: string) => string | undefined
   accounts: Account[]
-  movements: DetailMovement[]
+  movements: PersonMovement[]
   dueInvoiceIds: ReadonlySet<string>
+  invoices: { id: string; data_vencimento: string }[]
   currency: Currency
   onEdit: () => void
   onPay: (suggested: number) => void
@@ -228,6 +231,18 @@ function PersonCard({
           </Button>
         </div>
       </div>
+
+      <UpcomingInvoices
+        personId={person.id}
+        vencido={vencido}
+        futuro={futuro}
+        movements={movements}
+        purchases={purchases}
+        invoices={invoices}
+        accounts={accounts}
+        categories={categories.data ?? []}
+        currency={currency}
+      />
 
       {serverError && (
         <div className="mt-3">

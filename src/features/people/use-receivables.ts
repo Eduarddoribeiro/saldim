@@ -32,6 +32,8 @@ export function useReceivables() {
     /** Para o detalhe por compra e por cartão (receivable-details) */
     movements: movements.data ?? [],
     dueInvoiceIds,
+    /** Datas de vencimento das faturas (próximas faturas por mês) */
+    invoices: invoices.data ?? [],
     /** Σ do que todas as pessoas devem, incluindo parcelas futuras (quadro "A receber", líquido previsto) */
     total: data.reduce((sum, row) => sum + row.total, 0),
     /** Σ do que devem só com parcelas até hoje: o corte da dívida dos cartões (líquido de hoje, D20) */

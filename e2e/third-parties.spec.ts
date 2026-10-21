@@ -55,6 +55,16 @@ test('compra da mãe: fora dos gastos, a receber no Início, pagamento recebido'
   await tile('A receber').getByRole('link', { name: 'Ver quem deve' }).click()
   const mae = page.getByRole('region', { name: 'Mãe' })
   await expect(mae).toContainText(money('Deve R$ 300,00'))
+  // Próximas faturas: as 3 parcelas ainda não venceram, uma por mês
+  const proximas = mae.getByRole('region', { name: 'Próximas faturas' })
+  await expect(proximas.locator('summary')).toHaveCount(3)
+  for (const summary of await proximas.locator('summary').all())
+    await expect(summary).toContainText(money('R$ 100,00'))
+  await expect(mae).toContainText(/Para ficar em dia até \d{2}\/\d{2}:/)
+  // Abrir um mês mostra a compra e não alarga a página (nomes longos de cartão encolhem)
+  await proximas.locator('summary').first().click()
+  await expect(proximas.getByRole('list', { name: 'Compras no Visa' })).toContainText('Sofá')
+  await expectNoHorizontalScroll(page)
   await mae.getByRole('button', { name: 'Recebi de Mãe' }).click()
   const pagamento = page.getByRole('dialog', { name: 'Pagamento de Mãe' })
   await pagamento.getByLabel('Valor').fill('100')
@@ -62,6 +72,8 @@ test('compra da mãe: fora dos gastos, a receber no Início, pagamento recebido'
   await pagamento.getByRole('button', { name: 'Registrar pagamento' }).click()
   await expect(pagamento).toBeHidden()
   await expect(mae).toContainText(money('Deve R$ 200,00'))
+  // O pagamento a mais (nada tinha vencido) abate o mês mais próximo: ficam 2 meses
+  await expect(proximas.locator('summary')).toHaveCount(2)
   await expectNoHorizontalScroll(page)
 
   // O dinheiro entrou na conta, sem contar como receita; o líquido não muda
