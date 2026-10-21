@@ -162,7 +162,7 @@ describe('início (dashboard)', () => {
     await screen.findByText('Saldo atual')
     // 1000,00 + 50,00 (arquivada) + 5000 − 1500 − 500 − 999 (setembro) = 3051,00 ; futura −200 → 2851,00
     expect(tile(/^Saldo atual$/)).toContain('R$ 3.051,00')
-    expect(tile(/^Saldo atual$/)).toContain('Previsto com transações futuras: R$ 2.851,00')
+    expect(tile(/^Saldo atual$/)).toContain('Com os lançamentos futuros: R$ 2.851,00')
   })
 
   it('pagamento de fatura: o banco desce, o cartão sobe, o saldo líquido e as despesas não mudam', async () => {
@@ -220,13 +220,15 @@ describe('início (dashboard)', () => {
     expect(screen.queryByText('Saldo atual')).not.toBeInTheDocument()
     // Só as contas de dinheiro: 3051,00 (a futura de 200,00 fica no previsto)
     expect(tile(/^Dinheiro disponível$/)).toContain('R$ 3.051,00')
-    expect(tile(/^Dinheiro disponível$/)).toContain('Previsto com transações futuras: R$ 2.851,00')
+    expect(tile(/^Dinheiro disponível$/)).toContain('Com os lançamentos futuros: R$ 2.851,00')
     // Dívida: só a parcela até hoje (D1a); as futuras aparecem à parte
     expect(tile(/^Dívida nos cartões$/)).toContain('R$ 100,00')
     expect(tile(/^Dívida nos cartões$/)).toContain('Com as parcelas futuras: R$ 300,00')
     // Líquido = 3051,00 − 100,00; previsto = 2851,00 − 300,00
     expect(tile(/^Saldo líquido$/)).toContain('R$ 2.951,00')
     expect(tile(/^Saldo líquido$/)).toContain('Previsto: R$ 2.551,00')
+    // A explicação continua visível quando há previsão
+    expect(tile(/^Saldo líquido$/)).toContain('O que sobra se você pagar os cartões.')
     // A parcela nas últimas transações mostra o total de parcelas da compra
     expect(
       within(screen.getByRole('region', { name: 'Últimas transações' })).getByText(/Parcela 1\/3/),
@@ -296,6 +298,9 @@ describe('início (dashboard)', () => {
     expect(tile(/^A receber$/)).toContain('Já vencido: R$ 50,00')
     // Líquido = 3101,00 − 100,00 + 250,00 (D20)
     expect(tile(/^Saldo líquido$/)).toContain('R$ 3.251,00')
+    expect(tile(/^Saldo líquido$/)).toContain(
+      'O que sobra se você pagar os cartões e receber o que te devem.',
+    )
     expect(
       within(screen.getByRole('region', { name: 'Últimas transações' })).getByText(
         /Para Mãe · Parcela 1\/3/,
@@ -356,16 +361,14 @@ describe('início (dashboard)', () => {
     expect(linhas).toEqual([
       // Setembro: Moradia 999,00 → +501,00 (+50 %); Alimentação sem gastos em setembro
       'MoradiaR$ 1.500,0068%+R$ 501,00 (+50%) em relação a setembro',
-      'AlimentaçãoR$ 700,0032%+R$ 700,00 em relação a setembro (sem valor anterior)',
+      'AlimentaçãoR$ 700,0032%nada em setembro',
     ])
   })
 
   it('compara receitas, despesas e resultado com o mês anterior', async () => {
     renderApp('/')
     await screen.findByText('Saldo atual')
-    expect(tile(/^Receitas · este mês$/)).toContain(
-      '+R$ 5.000,00 em relação a setembro (sem valor anterior)',
-    )
+    expect(tile(/^Receitas · este mês$/)).toContain('nada em setembro')
     // 2.200,00 − 999,00 = +1.201,00 (+120 %)
     expect(tile(/^Despesas · este mês$/)).toContain('+R$ 1.201,00 (+120%) em relação a setembro')
     // +2.800,00 − (−999,00) = +3.799,00; % sobre |−999,00| = +380 %
@@ -375,9 +378,9 @@ describe('início (dashboard)', () => {
   it('categorias que deixaram de ter gastos aparecem em uma nota (não desaparecem em silêncio)', async () => {
     renderApp('/?mes=2026-11')
     const painel = await screen.findByRole('region', { name: 'Gastos por categoria' })
-    expect(within(painel).getByText('Sem despesas em novembro de 2026.')).toBeInTheDocument()
+    expect(within(painel).getByText('Nenhuma despesa em novembro de 2026.')).toBeInTheDocument()
     expect(plain(painel.textContent)).toContain(
-      'Sem gastos neste mês, mas com gastos em outubro: Moradia (R$ 1.500,00), Alimentação (R$ 700,00).',
+      'Só em outubro: Moradia (R$ 1.500,00), Alimentação (R$ 700,00).',
     )
   })
 
@@ -441,7 +444,7 @@ describe('início (dashboard)', () => {
     renderApp('/?mes=2025-01')
     const painel = await screen.findByRole('region', { name: 'Receitas e despesas' })
     expect(painel).toHaveTextContent(
-      'Sem receitas nem despesas de agosto de 2024 a janeiro de 2025.',
+      'Nenhuma receita ou despesa de agosto de 2024 a janeiro de 2025.',
     )
     expect(within(painel).queryByRole('img')).not.toBeInTheDocument()
   })
@@ -450,7 +453,7 @@ describe('início (dashboard)', () => {
     store.accounts = []
     renderApp('/')
     const painel = await screen.findByRole('region', { name: 'Evolução do saldo' })
-    expect(painel).toHaveTextContent('Sem contas para mostrar o saldo.')
+    expect(painel).toHaveTextContent('Crie uma conta para ver a evolução do saldo. Criar conta')
   })
 
   it('últimas transações do mês, mais recentes primeiro, com ligação para a lista do mês', async () => {
@@ -495,8 +498,8 @@ describe('início (dashboard)', () => {
     renderApp('/?mes=2026-01')
     await screen.findByText('Saldo atual')
     expect(tile(/^Resultado · janeiro de 2026$/)).toContain('R$ 0,00')
-    expect(screen.getByText('Sem despesas em janeiro de 2026.')).toBeInTheDocument()
-    expect(screen.getByText(/Sem transações em janeiro de 2026\./)).toBeInTheDocument()
+    expect(screen.getByText('Nenhuma despesa em janeiro de 2026.')).toBeInTheDocument()
+    expect(screen.getByText(/Nenhuma transação em janeiro de 2026\./)).toBeInTheDocument()
   })
 
   it('o seletor de mês muda os números', async () => {

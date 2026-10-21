@@ -1,4 +1,5 @@
 import { Component, lazy, Suspense, type ReactNode } from 'react'
+import { Link } from 'react-router'
 import { formatMonth, formatMonthShort, lastDayOfMonth, type MonthKey } from '@/lib/dates'
 import type { BalancePoint, MonthlyTotals } from '@/lib/finance'
 import { formatMoney, type Currency } from '@/lib/money'
@@ -152,7 +153,7 @@ export function MonthlyComparisonPanel({
   return (
     <Panel title="Receitas e despesas">
       {isEmpty ? (
-        <p className="text-sm text-muted-foreground">Sem receitas nem despesas de {range}.</p>
+        <p className="text-sm text-muted-foreground">Nenhuma receita ou despesa de {range}.</p>
       ) : (
         <>
           <ul className="mb-2 flex gap-4 text-xs text-muted-foreground">
@@ -209,7 +210,15 @@ export function BalanceEvolutionPanel({
   return (
     <Panel title="Evolução do saldo">
       {!hasAccounts ? (
-        <p className="text-sm text-muted-foreground">Sem contas para mostrar o saldo.</p>
+        <p className="text-sm text-muted-foreground">
+          Crie uma conta para ver a evolução do saldo.{' '}
+          <Link
+            to="/configuracoes/contas"
+            className="font-medium text-foreground underline underline-offset-4"
+          >
+            Criar conta
+          </Link>
+        </p>
       ) : (
         <>
           <ul className="mb-2 flex gap-4 text-xs text-muted-foreground">

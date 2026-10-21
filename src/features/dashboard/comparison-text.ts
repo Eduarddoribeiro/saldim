@@ -11,7 +11,7 @@ export function previousMonthLabel(previous: MonthKey, reference: MonthKey): str
 /**
  * Texto da variação face ao mês anterior. Só descreve números (sem juízos de "bom" ou "mau"):
  * mais despesas e mais receitas aparecem da mesma forma, com sinal e valor.
- *   '+R$ 120,00 (+8%) face a setembro' · 'igual a setembro' · '+R$ 50,00 face a setembro (sem valor anterior)'
+ *   '+R$ 120,00 (+8%) em relação a setembro' · 'igual a setembro' · 'nada em setembro'
  */
 export function comparisonText(
   comparison: Comparison,
@@ -20,8 +20,8 @@ export function comparisonText(
 ): string {
   if (comparison.diferenca === 0) return `igual a ${previousLabel}`
   const value = formatMoney(comparison.diferenca, currency, { signDisplay: 'always' })
-  if (comparison.percent === null)
-    return `${value} em relação a ${previousLabel} (sem valor anterior)`
+  // Mês anterior a zero: a diferença é o próprio valor (já mostrado ao lado), por isso basta dizê-lo
+  if (comparison.percent === null) return `nada em ${previousLabel}`
   const percent = `${comparison.percent > 0 ? '+' : ''}${comparison.percent}%`
   return `${value} (${percent}) em relação a ${previousLabel}`
 }

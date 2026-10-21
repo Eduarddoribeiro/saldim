@@ -48,7 +48,7 @@ test('compra da mãe: fora dos gastos, a receber no Início, pagamento recebido'
   await expect(tile('Saldo líquido')).toContainText(money('R$ 200,00'))
 
   // A mãe devolve 100,00 por Pix
-  await tile('A receber').getByRole('link', { name: 'Ver detalhes' }).click()
+  await tile('A receber').getByRole('link', { name: 'Ver quem deve' }).click()
   const mae = page.getByRole('region', { name: 'Mãe' })
   await expect(mae).toContainText(money('Deve R$ 300,00'))
   await mae.getByRole('button', { name: 'Recebi' }).click()

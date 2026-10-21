@@ -84,7 +84,7 @@ export function CategorySpendingList({
       )}
       {dropped.length > 0 && (
         <p className={cn('text-xs text-muted-foreground', rows.length > 0 && 'mt-4')}>
-          Sem gastos neste mês, mas com gastos em {previousLabel}:{' '}
+          Só em {previousLabel}:{' '}
           {dropped
             .map(
               ([categoryId, total]) =>

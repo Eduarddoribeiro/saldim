@@ -188,7 +188,7 @@ export function DashboardPage() {
             value={formatMoney(position.disponivel, currency)}
             hint={
               positionPrevista.disponivel !== position.disponivel
-                ? `Previsto com transações futuras: ${formatMoney(positionPrevista.disponivel, currency)}`
+                ? `Com os lançamentos futuros: ${formatMoney(positionPrevista.disponivel, currency)}`
                 : 'Nas suas contas, sem os cartões, até hoje.'
             }
             className="col-span-2"
@@ -208,11 +208,16 @@ export function DashboardPage() {
             icon={Landmark}
             value={formatMoney(position.liquido, currency)}
             hint={
-              positionPrevista.liquido !== position.liquido
-                ? `Previsto: ${formatMoney(positionPrevista.liquido, currency)}`
-                : aReceber !== 0
-                  ? 'Dinheiro − dívida dos cartões + a receber.'
-                  : 'Dinheiro menos a dívida dos cartões.'
+              <>
+                <p>
+                  {aReceber !== 0
+                    ? 'O que sobra se você pagar os cartões e receber o que te devem.'
+                    : 'O que sobra se você pagar os cartões.'}
+                </p>
+                {positionPrevista.liquido !== position.liquido && (
+                  <p>Previsto: {formatMoney(positionPrevista.liquido, currency)}</p>
+                )}
+              </>
             }
           />
           {receivables.data.length > 0 && (
@@ -232,7 +237,7 @@ export function DashboardPage() {
                   </p>
                   {vencidoTotal > 0 && <p>Já vencido: {formatMoney(vencidoTotal, currency)}</p>}
                   <Link to="/a-receber" className="font-medium underline underline-offset-4">
-                    Ver detalhes
+                    Ver quem deve
                   </Link>
                 </>
               }
@@ -251,7 +256,7 @@ export function DashboardPage() {
             value={formatMoney(saldoAtual, currency)}
             hint={
               saldoPrevisto !== saldoAtual
-                ? `Previsto com transações futuras: ${formatMoney(saldoPrevisto, currency)}`
+                ? `Com os lançamentos futuros: ${formatMoney(saldoPrevisto, currency)}`
                 : 'Soma de todas as contas, até hoje.'
             }
             className="col-span-2 sm:col-span-3"
@@ -295,7 +300,7 @@ export function DashboardPage() {
         <Panel title="Gastos por categoria">
           {spending.length === 0 && (
             <p className="mb-2 text-sm text-muted-foreground">
-              Sem despesas em {formatMonth(month)}.
+              Nenhuma despesa em {formatMonth(month)}.
             </p>
           )}
           <CategorySpendingList
@@ -321,12 +326,12 @@ export function DashboardPage() {
         >
           {transactions.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Sem transações em {formatMonth(month)}.{' '}
+              Nenhuma transação em {formatMonth(month)}.{' '}
               <Link
                 to={transactionsLink}
                 className="font-medium text-foreground underline underline-offset-4"
               >
-                Registrar
+                Registrar transação
               </Link>
             </p>
           ) : (
@@ -360,7 +365,7 @@ export function DashboardPage() {
               to="/configuracoes/contas"
               className="inline-flex items-center gap-0.5 text-sm text-muted-foreground hover:text-foreground"
             >
-              Gerir
+              Gerenciar
               <ChevronRight className="size-4" aria-hidden />
             </Link>
           }

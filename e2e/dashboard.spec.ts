@@ -48,10 +48,8 @@ test('início: saldo, resumo do mês, gastos por categoria e contas batem com o 
   await expect(page.getByRole('region', { name: 'Contas' })).toContainText(money('R$ 2.499,50'))
 
   // Comparação com o mês anterior (conta nova: no mês anterior não há nada)
-  await expect(tile('Receitas · este mês')).toContainText(/em relação a .+ \(sem valor anterior\)/)
-  await expect(gastos.getByRole('listitem').first()).toContainText(
-    /em relação a .+ \(sem valor anterior\)/,
-  )
+  await expect(tile('Receitas · este mês')).toContainText(/nada em /)
+  await expect(gastos.getByRole('listitem').first()).toContainText(/nada em /)
 
   // Receitas e despesas: gráfico real (Recharts, carregado à parte) com as barras do mês atual
   const barras = page.getByRole('region', { name: 'Receitas e despesas' })

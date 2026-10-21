@@ -25,9 +25,9 @@ describe('comparisonText', () => {
     expect(comparisonText(compareAmounts(0, 0), 'BRL', 'setembro')).toBe('igual a setembro')
   })
 
-  it('sem valor anterior: mostra a diferença, sem inventar percentagem', () => {
+  it('sem valor anterior: diz que não houve nada, sem inventar percentagem', () => {
     expect(plain(comparisonText(compareAmounts(5000, 0), 'EUR', 'setembro'))).toBe(
-      '+50,00 € em relação a setembro (sem valor anterior)',
+      'nada em setembro',
     )
   })
 })
