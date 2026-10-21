@@ -72,7 +72,7 @@ export function ReceivablesPage() {
 
       {isPending ? (
         <p className="text-sm text-muted-foreground" role="status">
-          Carregando…
+          Carregando o que te devem…
         </p>
       ) : error ? (
         <div className="grid gap-3">
@@ -89,7 +89,7 @@ export function ReceivablesPage() {
         <EmptyState
           icon={HandCoins}
           title="Ninguém te deve nada"
-          description='Ao registrar uma compra no cartão, em "De quem é a compra?" escolha a pessoa (ou "Outra pessoa…").'
+          description="Ao registrar uma compra no cartão, escolha de quem ela é em “De quem é a compra?”."
         />
       ) : (
         <div className="grid gap-4">
@@ -117,7 +117,7 @@ export function ReceivablesPage() {
       {archived.length > 0 && (
         <details className="mt-6">
           <summary className="cursor-pointer text-sm font-medium text-muted-foreground select-none">
-            Arquivadas ({archived.length})
+            Pessoas arquivadas ({archived.length})
           </summary>
           <ul className="mt-2 divide-y rounded-xl border opacity-70">
             {archived.map((person) => (
@@ -215,7 +215,11 @@ function PersonCard({
           <Button variant="outline" size="lg" onClick={onEdit} aria-label={`Editar ${person.nome}`}>
             <Pencil aria-hidden />
           </Button>
-          <Button size="lg" onClick={() => onPay(vencido > 0 ? vencido : Math.max(total, 0))}>
+          <Button
+            size="lg"
+            onClick={() => onPay(vencido > 0 ? vencido : Math.max(total, 0))}
+            aria-label={`Recebi de ${person.nome}`}
+          >
             <HandCoins aria-hidden />
             Recebi
           </Button>
@@ -230,7 +234,10 @@ function PersonCard({
 
       <details className="mt-3">
         <summary className="cursor-pointer text-sm font-medium text-muted-foreground select-none">
-          Ver detalhes: {purchases.length} compras e {reimbursements.length} pagamentos
+          Ver detalhes: {purchases.length === 1 ? '1 compra' : `${purchases.length} compras`} ·{' '}
+          {reimbursements.length === 1
+            ? '1 pagamento recebido'
+            : `${reimbursements.length} pagamentos recebidos`}
         </summary>
         {person.divida_anterior_centavos > 0 && (
           <p className="mt-2 text-sm">

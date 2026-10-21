@@ -115,7 +115,7 @@ function PersonForm({ onOpenChange, person }: Props) {
           Cancelar
         </Button>
         <Button type="submit" size="lg" disabled={busy}>
-          {isSubmitting ? 'Salvando…' : person ? 'Salvar' : 'Criar'}
+          {isSubmitting ? 'Salvando…' : person ? 'Salvar' : 'Criar pessoa'}
         </Button>
       </DialogFooter>
     </form>

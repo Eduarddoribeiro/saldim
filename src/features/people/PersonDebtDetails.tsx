@@ -100,7 +100,7 @@ export function PersonDebtDetails({
             ))}
             <tr className="border-t font-medium">
               <th scope="row" className="py-1.5 pr-2 text-left">
-                Todos
+                Todos os cartões
               </th>
               <td className="py-1.5 pr-2 text-right">{money(total.vencido)}</td>
               <td className="py-1.5 pr-2 text-right">{money(total.futuro)}</td>
@@ -141,7 +141,9 @@ export function PersonDebtDetails({
       <div>
         <p className="mb-1 text-xs text-muted-foreground" role="status">
           {shown.length === debts.length
-            ? `${debts.length} compras`
+            ? debts.length === 1
+              ? '1 compra'
+              : `${debts.length} compras`
             : `${shown.length} de ${debts.length} compras`}
           {' · faturas vencidas '}
           {money(shown.reduce((sum, debt) => sum + debt.vencido, 0))}
