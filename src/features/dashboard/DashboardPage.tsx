@@ -136,9 +136,16 @@ export function DashboardPage() {
   const balances = balancesByAccount(allAccounts, balanceMovements, { today })
   // D4a: com cartões, o número principal é o dinheiro disponível (sem a dívida dos cartões)
   const hasCards = allAccounts.some(isCreditCard)
-  // D20: o líquido soma o que outras pessoas devem (as compras delas estão na dívida dos cartões)
+  // D20: o líquido soma o que outras pessoas devem (as compras delas estão na dívida dos cartões).
+  // Hoje, só com as parcelas até hoje: o mesmo corte da dívida, senão contava a receber parcelas que
+  // ainda nem foram cobradas. No previsto, tudo (a dívida prevista também inclui as parcelas futuras).
   const aReceber = receivables.total
-  const position = netPosition(allAccounts, balanceMovements, { today }, aReceber)
+  const position = netPosition(
+    allAccounts,
+    balanceMovements,
+    { today },
+    receivables.totalUntilToday,
+  )
   const positionPrevista = netPosition(
     allAccounts,
     balanceMovements,
@@ -215,7 +222,7 @@ export function DashboardPage() {
               <>
                 <p>
                   {aReceber !== 0
-                    ? 'O que sobra se você pagar os cartões e receber o que te devem.'
+                    ? 'O que sobra se você pagar os cartões e receber o que já te devem.'
                     : 'O que sobra se você pagar os cartões.'}
                 </p>
                 {positionPrevista.liquido !== position.liquido && (

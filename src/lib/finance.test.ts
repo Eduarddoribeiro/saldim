@@ -12,6 +12,7 @@ import {
   monthSummary,
   netPosition,
   receivables,
+  receivablesTotal,
   reimbursementMovements,
   signedAmount,
   spendingByCategory,
@@ -686,5 +687,57 @@ describe('compras de outras pessoas (T1, D19–D22)', () => {
     expect(position.aReceber).toBe(aReceber)
     expect(position.liquido).toBe(position.disponivel - position.dividaCartoes + aReceber)
     expect(position.liquido).toBe(totalBalance(contas, saldos, { today }) + aReceber)
+  })
+
+  describe('receivablesTotal: a receber com o corte de datas da dívida (D20)', () => {
+    const hoje = '2026-10-14'
+    // A mãe comprou 300,00 em 3×: só a 1.ª parcela tem data até hoje
+    const parcelas = [
+      { pessoa_id: 'mae', tipo: 'despesa' as const, valor_centavos: 10000, data: '2026-10-08' },
+      { pessoa_id: 'mae', tipo: 'despesa' as const, valor_centavos: 10000, data: '2026-11-08' },
+      { pessoa_id: 'mae', tipo: 'despesa' as const, valor_centavos: 10000, data: '2026-12-08' },
+    ]
+    const devolveu = [{ pessoa_id: 'mae', valor_centavos: 5000, data: '2026-10-12' }]
+    const anterior = [{ id: 'mae', divida_anterior_centavos: 40000 }]
+
+    it('hoje: só as parcelas até hoje, menos os reembolsos, mais a dívida anterior', () => {
+      // 100,00 − 50,00 + 400,00
+      expect(receivablesTotal(parcelas, devolveu, anterior, { today: hoje })).toBe(45000)
+    })
+
+    it('previsto: tudo, igual à soma dos totais de cada pessoa', () => {
+      const previsto = receivablesTotal(parcelas, devolveu, anterior, {
+        today: hoje,
+        includeFuture: true,
+      })
+      expect(previsto).toBe(65000)
+      expect(previsto).toBe(
+        receivables(parcelas, devolveu, new Set(), anterior).reduce((s, r) => s + r.total, 0),
+      )
+    })
+
+    it('o líquido de hoje não conta parcelas que ainda não estão na dívida do cartão', () => {
+      const contasCartao = [
+        { id: 'banco', saldo_inicial_centavos: 100000, tipo: 'corrente' },
+        { id: 'visa', saldo_inicial_centavos: 0, tipo: 'cartao_credito' },
+      ]
+      // As parcelas da mãe saem do cartão (dívida); o reembolso entra no banco
+      const saldos = [
+        ...parcelas.map((p) => ({ ...p, account_id: 'visa' })),
+        ...reimbursementMovements(devolveu.map((r) => ({ ...r, account_id: 'banco' }))),
+      ]
+      const hojeOpts = { today: hoje }
+      const position = netPosition(
+        contasCartao,
+        saldos,
+        hojeOpts,
+        receivablesTotal(parcelas, devolveu, [], hojeOpts),
+      )
+      // Banco 1000,00 + 50,00; dívida 100,00 (só a 1.ª parcela); a receber 100,00 − 50,00
+      expect(position.dividaCartoes).toBe(10000)
+      expect(position.liquido).toBe(105000 - 10000 + 5000)
+      // O cartão só pago pela mãe deixa o líquido igual ao banco sem a compra: 1000,00
+      expect(position.liquido).toBe(100000)
+    })
   })
 })

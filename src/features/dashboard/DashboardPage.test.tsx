@@ -303,10 +303,11 @@ describe('início (dashboard)', () => {
     expect(tile(/^A receber$/)).toContain('R$ 250,00')
     expect(tile(/^A receber$/)).toContain('Mãe: R$ 250,00')
     expect(tile(/^A receber$/)).toContain('Já vencido: R$ 50,00')
-    // Líquido = 3101,00 − 100,00 + 250,00 (D20)
-    expect(tile(/^Saldo líquido$/)).toContain('R$ 3.251,00')
+    // Líquido de hoje = 3101,00 − 100,00 + 50,00: do que a mãe deve, só a parcela até hoje (100,00)
+    // menos o que devolveu, o mesmo corte da dívida do cartão (D20). Previsto: com as 3 parcelas
+    expect(tile(/^Saldo líquido$/)).toContain('R$ 3.051,00')
     expect(tile(/^Saldo líquido$/)).toContain(
-      'O que sobra se você pagar os cartões e receber o que te devem.',
+      'O que sobra se você pagar os cartões e receber o que já te devem.',
     )
     expect(
       within(screen.getByRole('region', { name: 'Últimas transações' })).getByText(

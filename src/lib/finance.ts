@@ -219,6 +219,26 @@ export function netPosition(
   }
 }
 
+/**
+ * Σ do que as pessoas devem com o MESMO corte dos saldos (D20): sem `includeFuture`, só as parcelas e
+ * estornos com data até hoje e os reembolsos até hoje; com `includeFuture`, tudo (= Σ dos totais).
+ * Assim o líquido de hoje não conta a receber parcelas que ainda não entraram na dívida dos cartões.
+ * A dívida anterior (D23) conta sempre: é de antes de as compras estarem na app.
+ */
+export function receivablesTotal(
+  items: (ThirdPartyItem & { data: IsoDate })[],
+  reimbursements: Pick<Reimbursement, 'pessoa_id' | 'valor_centavos' | 'data'>[],
+  priorDebts: { id: string; divida_anterior_centavos: number }[],
+  { today, includeFuture = false }: BalanceOptions,
+): number {
+  const upToCut = <T extends { data: IsoDate }>(rows: T[]) =>
+    includeFuture ? rows : rows.filter((row) => row.data <= today)
+  return receivables(upToCut(items), upToCut(reimbursements), new Set(), priorDebts).reduce(
+    (sum, row) => sum + row.total,
+    0,
+  )
+}
+
 /** Parcela ou estorno com a pessoa da compra e a fatura (para saber se já venceu). */
 export type ThirdPartyItem = {
   pessoa_id?: string | null

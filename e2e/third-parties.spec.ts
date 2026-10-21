@@ -47,8 +47,9 @@ test('compra da mãe: fora dos gastos, a receber no Início, pagamento recebido'
   await expect(monthTile('Despesas')).toContainText(money('R$ 0,00'))
   await expect(tile('Dívida nos cartões')).toContainText(money('R$ 100,00'))
   await expect(tile('A receber')).toContainText(money('Mãe: R$ 300,00'))
-  // Líquido = 0,00 − 100,00 + 300,00
-  await expect(tile('Saldo líquido')).toContainText(money('R$ 200,00'))
+  // Líquido = 0,00 − 100,00 + 100,00: hoje, do que a mãe deve, só conta a parcela que já está na
+  // dívida do cartão (D20); a compra não é minha, por isso o líquido não muda
+  await expect(tile('Saldo líquido')).toContainText(money('R$ 0,00'))
 
   // A mãe devolve 100,00 por Pix
   await tile('A receber').getByRole('link', { name: 'Ver quem deve' }).click()
@@ -68,5 +69,6 @@ test('compra da mãe: fora dos gastos, a receber no Início, pagamento recebido'
   await expect(tile('Dinheiro disponível')).toContainText(money('R$ 100,00'))
   await expect(monthTile('Receitas')).toContainText(money('R$ 0,00'))
   await expect(tile('A receber')).toContainText(money('Mãe: R$ 200,00'))
-  await expect(tile('Saldo líquido')).toContainText(money('R$ 200,00'))
+  // 100,00 − 100,00 + (100,00 − 100,00 devolvidos)
+  await expect(tile('Saldo líquido')).toContainText(money('R$ 0,00'))
 })

@@ -1,7 +1,7 @@
 import { useInvoices } from '@/features/invoices/hooks'
 import { useBalanceMovements } from '@/features/transactions/hooks'
 import { todayIso } from '@/lib/dates'
-import { receivables, type Receivable } from '@/lib/finance'
+import { receivables, receivablesTotal, type Receivable } from '@/lib/finance'
 import { usePeople, useReimbursements } from './hooks'
 
 /**
@@ -32,8 +32,17 @@ export function useReceivables() {
     /** Para o detalhe por compra e por cartão (receivable-details) */
     movements: movements.data ?? [],
     dueInvoiceIds,
-    /** Σ do que todas as pessoas devem (entra no saldo líquido, D20) */
+    /** Σ do que todas as pessoas devem, incluindo parcelas futuras (quadro "A receber", líquido previsto) */
     total: data.reduce((sum, row) => sum + row.total, 0),
+    /** Σ do que devem só com parcelas até hoje: o corte da dívida dos cartões (líquido de hoje, D20) */
+    totalUntilToday: receivablesTotal(
+      movements.data ?? [],
+      reimbursements.data ?? [],
+      people.data ?? [],
+      {
+        today,
+      },
+    ),
     reimbursements,
     isPending: queries.some((query) => query.isPending),
     error: queries.find((query) => query.error)?.error ?? null,
