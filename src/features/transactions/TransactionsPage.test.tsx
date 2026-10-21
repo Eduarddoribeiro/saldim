@@ -72,6 +72,7 @@ function transaction(overrides: Partial<Transaction>): Transaction {
     compra_id: null,
     parcela_numero: null,
     recorrencia_id: null,
+    pessoa_id: null,
     ...overrides,
   }
 }

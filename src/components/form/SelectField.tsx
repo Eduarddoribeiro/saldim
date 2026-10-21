@@ -7,6 +7,8 @@ type SelectFieldProps = ComponentProps<'select'> & {
   id: string
   label: string
   error?: string
+  /** Texto de ajuda por baixo (como no TextField) */
+  hint?: string
   options: { value: string; label: string }[]
   /** Primeira opção vazia (ex.: "Escolhe uma categoria"): obriga a uma escolha consciente. */
   placeholder?: string
@@ -20,12 +22,15 @@ export function SelectField({
   id,
   label,
   error,
+  hint,
   options,
   placeholder,
   className,
   ...selectProps
 }: SelectFieldProps) {
+  const hintId = hint ? `${id}-dica` : undefined
   const errorId = error ? `${id}-erro` : undefined
+  const describedBy = [hintId, errorId].filter(Boolean).join(' ') || undefined
   return (
     <div className="grid gap-1.5">
       <Label htmlFor={id}>{label}</Label>
@@ -33,7 +38,7 @@ export function SelectField({
         <select
           id={id}
           aria-invalid={error ? true : undefined}
-          aria-describedby={errorId}
+          aria-describedby={describedBy}
           className={cn(
             'h-10 w-full appearance-none rounded-lg border border-input bg-transparent pr-9 pl-2.5 text-base outline-none md:text-sm',
             'focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
@@ -58,6 +63,11 @@ export function SelectField({
           className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground"
         />
       </div>
+      {hint && (
+        <p id={hintId} className="text-xs text-muted-foreground">
+          {hint}
+        </p>
+      )}
       {error && (
         <p id={errorId} className="text-sm text-destructive">
           {error}

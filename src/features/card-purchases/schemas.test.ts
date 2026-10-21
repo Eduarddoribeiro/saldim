@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { purchaseFormSchema, type PurchaseFormInput } from './schemas'
+import { NEW_PERSON, purchaseFormSchema, type PurchaseFormInput } from './schemas'
 
 const base: PurchaseFormInput = {
   cardId: 'c1',
@@ -10,6 +10,8 @@ const base: PurchaseFormInput = {
   descricao: '  Televisão ',
   emCurso: false,
   parcelaInicial: '2',
+  pessoaId: '',
+  novaPessoa: '',
 }
 
 const errorsOf = (input: PurchaseFormInput) => {
@@ -29,6 +31,8 @@ describe('purchaseFormSchema', () => {
       categoryId: 'alim',
       descricao: 'Televisão',
       parcelaInicial: 1,
+      pessoaId: '',
+      novaPessoa: '',
     })
   })
 
@@ -59,5 +63,18 @@ describe('purchaseFormSchema', () => {
     expect(errorsOf({ ...base, cardId: '' })).toEqual({ cardId: 'Escolhe o cartão.' })
     expect(errorsOf({ ...base, categoryId: '' })).toEqual({ categoryId: 'Escolhe uma categoria.' })
     expect(errorsOf({ ...base, descricao: 'x'.repeat(121) })).toHaveProperty('descricao')
+  })
+
+  it('T1: uma pessoa nova precisa do nome; a pessoa passa para o resultado', () => {
+    expect(errorsOf({ ...base, pessoaId: NEW_PERSON })).toEqual({
+      novaPessoa: 'Indica o nome da pessoa.',
+    })
+    expect(
+      purchaseFormSchema.parse({ ...base, pessoaId: NEW_PERSON, novaPessoa: ' Mãe ' }),
+    ).toMatchObject({
+      pessoaId: NEW_PERSON,
+      novaPessoa: 'Mãe',
+    })
+    expect(purchaseFormSchema.parse({ ...base, pessoaId: 'p1' }).pessoaId).toBe('p1')
   })
 })

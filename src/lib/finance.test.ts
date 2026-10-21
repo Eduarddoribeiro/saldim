@@ -11,6 +11,8 @@ import {
   monthlySeries,
   monthSummary,
   netPosition,
+  receivables,
+  reimbursementMovements,
   signedAmount,
   spendingByCategory,
   totalBalance,
@@ -146,6 +148,7 @@ describe('posição do Início: disponível, dívida nos cartões e líquido (D4
     expect(netPosition(contas, movimentos, { today })).toEqual({
       disponivel: 100000 + 5000 - 2000 - 5000,
       dividaCartoes: 10000 - 5000,
+      aReceber: 0,
       liquido: 98000 - 5000,
     })
   })
@@ -589,5 +592,99 @@ describe('estornos (C8, D11): somam no saldo e abatem às despesas no mês do es
     ]
     const gasto = spendingByCategory(parcial, '2026-10').find((row) => row.categoryId === 'casa')!
     expect(budgetStatus(15000, gasto.total)).toMatchObject({ gasto: 10000, restante: 5000 })
+  })
+})
+
+describe('compras de outras pessoas (T1, D19–D22)', () => {
+  const today = '2026-10-14'
+  const contas = [
+    { id: 'banco', saldo_inicial_centavos: 100000, tipo: 'corrente' },
+    { id: 'visa', saldo_inicial_centavos: 0, tipo: 'cartao_credito' },
+  ]
+  // A mãe comprou 300,00 em 3× (fatura de outubro já venceu; novembro e dezembro não) e devolveu 50,00.
+  // Também há uma compra minha de 80,00 e um estorno de 30,00 numa compra da mãe.
+  const mae = (overrides: Partial<Tx>) =>
+    tx({ account_id: 'visa', category_id: 'casa', pessoa_id: 'mae', ...overrides })
+  const movimentos: (Tx & { fatura_id?: string | null })[] = [
+    { ...mae({ valor_centavos: 10000, data: '2026-10-01' }), fatura_id: 'out' },
+    { ...mae({ valor_centavos: 10000, data: '2026-11-01' }), fatura_id: 'nov' },
+    { ...mae({ valor_centavos: 10000, data: '2026-12-01' }), fatura_id: 'dez' },
+    { ...mae({ tipo: 'estorno', valor_centavos: 3000, data: '2026-10-05' }), fatura_id: 'nov' },
+    { ...tx({ account_id: 'visa', valor_centavos: 8000, data: '2026-10-03' }), fatura_id: 'out' },
+  ]
+  const reembolsos = [
+    { pessoa_id: 'mae', account_id: 'banco', valor_centavos: 5000, data: '2026-10-10' },
+  ]
+  const vencidas = new Set(['out'])
+
+  it('não contam nas receitas, despesas, categorias nem séries de quem usa a app', () => {
+    expect(monthSummary(movimentos, '2026-10')).toEqual({
+      receitas: 0,
+      despesas: 8000,
+      resultado: -8000,
+    })
+    expect(spendingByCategory(movimentos, '2026-10')).toEqual([
+      { categoryId: 'alim', total: 8000, percent: 100 },
+    ])
+    expect(monthlySeries(movimentos, ['2026-11'])).toEqual([
+      { month: '2026-11', receitas: 0, despesas: 0, resultado: 0 },
+    ])
+  })
+
+  it('contam na dívida do cartão; o reembolso entra no banco sem ser receita', () => {
+    const saldos = [...movimentos, ...reimbursementMovements(reembolsos)]
+    const balances = balancesByAccount(contas, saldos, { today })
+    // Até hoje: parcela de 100,00 da mãe + 80,00 meus − estorno de 30,00
+    expect(balances.get('visa')).toBe(-(10000 + 8000 - 3000))
+    expect(balances.get('banco')).toBe(100000 + 5000)
+    expect(monthSummary(saldos, '2026-10').receitas).toBe(0)
+  })
+
+  it('a receber: tudo o que comprou − estornos − o que devolveu; vencido = faturas vencidas − devolvido', () => {
+    expect(receivables(movimentos, reembolsos, vencidas)).toEqual([
+      { pessoaId: 'mae', total: 30000 - 3000 - 5000, vencido: 10000 - 5000 },
+    ])
+  })
+
+  it('o vencido fica entre 0 e o total; quem pagou a mais fica com total negativo', () => {
+    const pagouTudo = [{ pessoa_id: 'mae', valor_centavos: 30000 }]
+    expect(receivables(movimentos, pagouTudo, vencidas)).toEqual([
+      { pessoaId: 'mae', total: -3000, vencido: 0 },
+    ])
+    expect(receivables(movimentos, [], new Set(['out', 'nov', 'dez']))).toEqual([
+      { pessoaId: 'mae', total: 27000, vencido: 27000 },
+    ])
+  })
+
+  it('separa as pessoas e ordena pelo maior total', () => {
+    const primo = {
+      ...tx({ account_id: 'visa', pessoa_id: 'primo', valor_centavos: 50000 }),
+      fatura_id: 'nov',
+    }
+    expect(
+      receivables([...movimentos, primo], reembolsos, vencidas).map((r) => r.pessoaId),
+    ).toEqual(['primo', 'mae'])
+  })
+
+  it('dívida anterior (D23): soma ao total, conta como vencida e é abatida primeiro', () => {
+    const anterior = [{ id: 'mae', divida_anterior_centavos: 40000 }]
+    // 220,00 + 400,00 = 620,00; vencido = 100,00 + 400,00 − 50,00
+    expect(receivables(movimentos, reembolsos, vencidas, anterior)).toEqual([
+      { pessoaId: 'mae', total: 62000, vencido: 45000 },
+    ])
+    // Só com dívida anterior (sem compras ainda) também aparece; 0 não conta
+    expect(receivables([], [], new Set(), [{ id: 'tia', divida_anterior_centavos: 1000 }])).toEqual(
+      [{ pessoaId: 'tia', total: 1000, vencido: 1000 }],
+    )
+    expect(receivables([], [], new Set(), [{ id: 'tio', divida_anterior_centavos: 0 }])).toEqual([])
+  })
+
+  it('o líquido soma o que as pessoas devem (D20)', () => {
+    const saldos = [...movimentos, ...reimbursementMovements(reembolsos)]
+    const aReceber = 22000
+    const position = netPosition(contas, saldos, { today }, aReceber)
+    expect(position.aReceber).toBe(aReceber)
+    expect(position.liquido).toBe(position.disponivel - position.dividaCartoes + aReceber)
+    expect(position.liquido).toBe(totalBalance(contas, saldos, { today }) + aReceber)
   })
 })

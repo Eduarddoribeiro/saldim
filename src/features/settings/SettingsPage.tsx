@@ -1,4 +1,4 @@
-import { ChevronRight, Landmark, Repeat, Tags, type LucideIcon } from 'lucide-react'
+import { ChevronRight, HandCoins, Landmark, Repeat, Tags, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -66,6 +66,7 @@ export function SettingsPage() {
             <SettingsLink to="/configuracoes/contas" icon={Landmark} label="Contas" />
             <SettingsLink to="/configuracoes/categorias" icon={Tags} label="Categorias" />
             <SettingsLink to="/configuracoes/recorrentes" icon={Repeat} label="Recorrentes" />
+            <SettingsLink to="/a-receber" icon={HandCoins} label="Pessoas e a receber" />
           </ul>
         </SettingsSection>
 

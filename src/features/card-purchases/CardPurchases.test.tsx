@@ -6,6 +6,7 @@ import type { Account } from '@/features/accounts/accounts-api'
 import type { Category } from '@/features/categories/categories-api'
 import type { Transaction } from '@/features/transactions/transactions-api'
 import { UserFacingError } from '@/lib/db-errors'
+import { createPerson } from '@/features/people/people-api'
 import { renderApp } from '@/test/render-app'
 import type { CardDaysRow } from '@/features/accounts/card-days-api'
 import type { CardPurchase, Refund } from './purchases-api'
@@ -38,6 +39,19 @@ vi.mock('@/features/transactions/transactions-api', () => ({
   listTransactions: vi.fn(async (month: string) =>
     store.transactions.filter((t) => t.data.startsWith(month)),
   ),
+}))
+// T1: pessoas a quem pertence a compra ("Mãe" já existe; criar uma nova devolve o id "nova-pessoa")
+vi.mock('@/features/people/people-api', () => ({
+  listPeople: vi.fn(async () => [
+    { id: 'mae', user_id: 'u', nome: 'Mãe', arquivada: false, created_at: '' },
+  ]),
+  createPerson: vi.fn(async (nome: string) => ({
+    id: 'nova-pessoa',
+    user_id: 'u',
+    nome,
+    arquivada: false,
+    created_at: '',
+  })),
 }))
 vi.mock('./purchases-api', () => ({
   listPurchases: vi.fn(async () => store.purchases),
@@ -132,6 +146,7 @@ beforeEach(() => {
       valor_total_centavos: 10000,
       parcelas: 3,
       parcela_inicial: 1,
+      pessoa_id: null,
       created_at: '',
     },
   ]
@@ -150,6 +165,7 @@ beforeEach(() => {
       compra_id: 'tv',
       parcela_numero: 2,
       recorrencia_id: null,
+      pessoa_id: null,
     },
   ]
   vi.mocked(registerPurchase).mockClear()
@@ -167,6 +183,28 @@ async function openPurchaseForm() {
 }
 
 describe('compras no cartão', () => {
+  it('T1: compra de outra pessoa — escolhe uma existente ou cria uma nova ao registar', async () => {
+    const dialog = await openPurchaseForm()
+    const pessoa = within(dialog).getByLabelText('De quem é a compra?')
+    expect(pessoa).toHaveValue('')
+    await within(dialog).findByRole('option', { name: 'Mãe' })
+    await userEvent.selectOptions(pessoa, 'Outra pessoa…')
+    expect(within(dialog).getByText(/não nos teus gastos/)).toBeInTheDocument()
+    await userEvent.type(within(dialog).getByLabelText('Valor total'), '50')
+    await userEvent.selectOptions(within(dialog).getByLabelText('Categoria'), 'alim')
+    // Sem o nome não regista
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Registar compra' }))
+    expect(await within(dialog).findByText('Indica o nome da pessoa.')).toBeInTheDocument()
+    await userEvent.type(within(dialog).getByLabelText('Nome da pessoa'), 'Primo')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Registar compra' }))
+    await waitFor(() => expect(createPerson).toHaveBeenCalledWith('Primo'))
+    await waitFor(() =>
+      expect(registerPurchase).toHaveBeenCalledWith(
+        expect.objectContaining({ valor: 5000, pessoaId: 'nova-pessoa' }),
+      ),
+    )
+  })
+
   it('o botão só aparece com um cartão ativo', async () => {
     store.accounts = [account({}), { ...visa(), arquivada: true }]
     renderApp('/transacoes')
@@ -216,6 +254,8 @@ describe('compras no cartão', () => {
       valor: 10000,
       parcelas: 3,
       parcelaInicial: 1,
+      pessoaId: '',
+      novaPessoa: '',
       data: '2026-10-25',
       categoryId: 'alim',
       descricao: 'Sofá',
@@ -401,6 +441,7 @@ describe('estornos (C8)', () => {
       data: '2026-10-12',
       parcela_numero: null,
       recorrencia_id: null,
+      pessoa_id: null,
       descricao: 'Devolução',
     })
     store.refunds = [estorno(2500, '2026-10-12', 'Devolução')]

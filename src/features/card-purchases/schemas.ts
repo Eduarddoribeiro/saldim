@@ -7,6 +7,9 @@ import { moneyField } from '@/lib/money-schema'
 // parcela inicial entre 1 e o total, data entre 1900 e 2999, descrição até 120 caracteres.
 // A base de dados volta a verificar tudo: isto só dá mensagens claras antes de enviar.
 
+/** Valor do campo "De quem é a compra?" que pede o nome de uma pessoa nova (T1). */
+export const NEW_PERSON = '__nova__'
+
 /** Inteiro vindo de um <select> (texto). */
 const wholeNumber = z.string().transform((text, ctx) => {
   const value = Number(text)
@@ -33,8 +36,14 @@ export const purchaseFormSchema = z
     /** Compra feita antes de começar a usar a app, com parcelas já pagas (D5a) */
     emCurso: z.boolean(),
     parcelaInicial: wholeNumber,
+    /** T1: '' = minha; id de uma pessoa; NEW_PERSON = pessoa nova com o nome em `novaPessoa` */
+    pessoaId: z.string(),
+    novaPessoa: z.string().trim().max(60, { error: 'O nome pode ter no máximo 60 caracteres.' }),
   })
   .superRefine((values, ctx) => {
+    if (values.pessoaId === NEW_PERSON && values.novaPessoa === '') {
+      ctx.addIssue({ code: 'custom', path: ['novaPessoa'], message: 'Indica o nome da pessoa.' })
+    }
     if (values.parcelas < 1 || values.parcelas > MAX_PARCELAS) {
       ctx.addIssue({
         code: 'custom',

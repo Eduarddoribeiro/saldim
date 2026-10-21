@@ -39,6 +39,7 @@ const RULE_MESSAGES: Record<string, string> = {
   transactions_estorno_data_check: 'O estorno não pode ser anterior à data da compra.',
   transactions_estorno_fatura_paga_check:
     'Este estorno está numa fatura com pagamentos, por isso não pode ser apagado.',
+  compras_cartao_pessoa_fk: 'A pessoa escolhida já não existe. Atualiza a página e tenta de novo.',
   transactions_estorno_compra_check:
     'Esta compra já não existe. Atualiza a página e tenta de novo.',
   faturas_mes_check: 'As parcelas passariam do ano 2999. Confirma a data da compra.',
@@ -77,6 +78,8 @@ export async function registerPurchase(values: PurchaseFormValues): Promise<stri
     p_parcelas: values.parcelas,
     p_parcela_inicial: values.parcelaInicial,
     p_descricao: values.descricao,
+    // T1: compra de outra pessoa ('' = minha). NEW_PERSON já foi trocado pelo id no formulário.
+    ...(values.pessoaId ? { p_pessoa_id: values.pessoaId } : {}),
   })
   if (error) fail(error)
   return data

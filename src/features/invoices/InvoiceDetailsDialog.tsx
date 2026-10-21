@@ -19,6 +19,7 @@ import { isCreditCard } from '@/features/accounts/account-options'
 import type { Account } from '@/features/accounts/accounts-api'
 import type { CardPurchase } from '@/features/card-purchases/purchases-api'
 import type { Category } from '@/features/categories/categories-api'
+import { usePeople } from '@/features/people/hooks'
 import { useCurrency } from '@/features/profile/hooks'
 import type { InvoiceItem } from '@/features/transactions/transactions-api'
 import type { InvoicePayment } from '@/features/transfers/transfers-api'
@@ -84,6 +85,9 @@ function Summary({
   const accountsById = new Map(accounts.map((account) => [account.id, account]))
   const categoriesById = new Map(categories.map((category) => [category.id, category]))
   const purchasesById = new Map(purchases.map((purchase) => [purchase.id, purchase]))
+  const people = usePeople()
+  const personName = (id: string) =>
+    people.data?.find((person) => person.id === id)?.nome ?? 'outra pessoa'
   const { serverError, run } = useServerAction(() => {})
   const remove = useDeletePayment()
   const compras = invoice.parcelas.filter((item) => item.tipo !== 'estorno')
@@ -149,6 +153,7 @@ function Summary({
                       {purchase && purchase.parcelas > 1
                         ? ` · parcela ${item.parcela_numero}/${purchase.parcelas}`
                         : ''}
+                      {item.pessoa_id ? ` · para ${personName(item.pessoa_id)}` : ''}
                     </span>
                   </span>
                   <span className="shrink-0 tabular-nums">{money(item.valor_centavos)}</span>

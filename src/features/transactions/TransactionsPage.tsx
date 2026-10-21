@@ -13,6 +13,7 @@ import { usePurchases } from '@/features/card-purchases/hooks'
 import { PurchaseDetailsDialog } from '@/features/card-purchases/PurchaseDetailsDialog'
 import { PurchaseFormDialog } from '@/features/card-purchases/PurchaseFormDialog'
 import { useCategories } from '@/features/categories/hooks'
+import { usePeople } from '@/features/people/hooks'
 import { useCurrency } from '@/features/profile/hooks'
 import { formatDay, formatMonth } from '@/lib/dates'
 import { errorMessage } from '@/lib/db-errors'
@@ -29,6 +30,7 @@ export function TransactionsPage() {
   const categories = useCategories()
   const accounts = useAccounts()
   const purchases = usePurchases()
+  const people = usePeople()
   const currency = useCurrency()
   const [dialog, setDialog] = useState<{ open: boolean; transaction: PlainTransaction | null }>({
     open: false,
@@ -132,6 +134,9 @@ export function TransactionsPage() {
                         transaction.compra_id
                           ? purchasesById.get(transaction.compra_id)?.parcelas
                           : undefined
+                      }
+                      personName={
+                        people.data?.find((person) => person.id === transaction.pessoa_id)?.nome
                       }
                       onSelect={() => {
                         // Parcelas e estornos abrem a compra; o resto edita-se no formulário

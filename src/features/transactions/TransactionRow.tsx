@@ -16,7 +16,8 @@ const TIPO_LABELS: Record<Transaction['tipo'], string> = {
 /**
  * Linha de uma transação: categoria, descrição, conta e valor com sinal (+ receita ou estorno,
  * − despesa). Uma parcela de uma compra no cartão mostra também "Parcela k/n"; um estorno, "Estorno";
- * um lançamento criado por uma recorrência (R1), "Recorrente".
+ * um lançamento criado por uma recorrência (R1), "Recorrente"; uma compra de outra pessoa (T1),
+ * "Para <nome>" (não conta nos gastos de quem usa a app).
  */
 export function TransactionRow({
   transaction,
@@ -24,6 +25,7 @@ export function TransactionRow({
   account,
   currency,
   totalParcelas,
+  personName,
   onSelect,
 }: {
   transaction: Transaction
@@ -32,6 +34,8 @@ export function TransactionRow({
   currency: Currency
   /** Número total de parcelas da compra (só para parcelas) */
   totalParcelas?: number
+  /** Nome da pessoa a quem pertence a compra (T1), se não for de quem usa a app */
+  personName?: string
   onSelect?: () => void
 }) {
   // Receitas e estornos são créditos (+); despesas e parcelas, débitos (−)
@@ -48,7 +52,9 @@ export function TransactionRow({
   // Uma compra à vista criada por uma recorrência mostra só "Recorrente" (não "Parcela 1/1")
   const recurringItem = transaction.recorrencia_id ? 'Recorrente' : null
   // "Estorno"/"Parcela k/n"/"Recorrente" primeiro: no telemóvel o fim da linha é cortado
+  const personItem = transaction.pessoa_id ? `Para ${personName ?? 'outra pessoa'}` : null
   const subtitle = [
+    personItem,
     cardItem,
     recurringItem,
     transaction.descricao ? categoryName : null,

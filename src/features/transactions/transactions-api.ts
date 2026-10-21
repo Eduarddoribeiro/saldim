@@ -51,8 +51,13 @@ export async function listTransactions(month: MonthKey): Promise<Transaction[]> 
   return data
 }
 
-/** Movimento sem texto nem datas de registo: só o necessário para os cálculos de src/lib/finance.ts. */
-export type LedgerMovement = AccountMovement & CategoryMovement
+/**
+ * Movimento sem texto nem datas de registo: só o necessário para os cálculos de src/lib/finance.ts.
+ * `pessoa_id`, `fatura_id` e `compra_id` (T1): compras de outras pessoas e o que delas já venceu.
+ */
+export type LedgerMovement = AccountMovement &
+  CategoryMovement &
+  Pick<Transaction, 'pessoa_id' | 'fatura_id' | 'compra_id'>
 
 /**
  * TODAS as transações (só as colunas necessárias) para os saldos, as séries mensais e as comparações
@@ -63,7 +68,9 @@ export async function listBalanceMovements(): Promise<LedgerMovement[]> {
   const { data, error } = await fetchAllPages((start, end) =>
     supabase
       .from('transactions')
-      .select('account_id, category_id, tipo, valor_centavos, data')
+      .select(
+        'account_id, category_id, tipo, valor_centavos, data, pessoa_id, fatura_id, compra_id',
+      )
       .order('data')
       .order('id')
       .range(start, end),
@@ -84,6 +91,7 @@ export type InvoiceItem = Pick<
   | 'data'
   | 'descricao'
   | 'category_id'
+  | 'pessoa_id'
 >
 
 /** TODAS as parcelas e estornos (transações com fatura), para os totais das faturas. Paginado. */
@@ -92,7 +100,7 @@ export async function listInvoiceItems(): Promise<InvoiceItem[]> {
     supabase
       .from('transactions')
       .select(
-        'id, tipo, fatura_id, compra_id, parcela_numero, valor_centavos, data, descricao, category_id',
+        'id, tipo, fatura_id, compra_id, parcela_numero, valor_centavos, data, descricao, category_id, pessoa_id',
       )
       .not('fatura_id', 'is', null)
       .order('data')

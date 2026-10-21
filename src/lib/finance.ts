@@ -18,6 +18,11 @@ export type Movement = {
   tipo: 'receita' | 'despesa' | 'estorno'
   valor_centavos: number
   data: IsoDate
+  /**
+   * T1 (D19): parcela ou estorno de uma compra de OUTRA pessoa. Conta nos saldos (é dívida real do
+   * cartão) mas não nas receitas, despesas, categorias nem orçamentos: não é consumo de quem usa a app.
+   */
+  pessoa_id?: string | null
 }
 export type AccountMovement = Movement & { account_id: string }
 export type CategoryMovement = Movement & { category_id: string }
@@ -51,6 +56,34 @@ export function transferMovements(transfers: Transfer[]): AccountMovement[] {
       data: transfer.data,
     },
   ])
+}
+
+/** Reembolso (T1, D21): dinheiro que uma pessoa devolve; entra numa conta de dinheiro. */
+export type Reimbursement = {
+  pessoa_id: string
+  account_id: string
+  valor_centavos: number
+  data: IsoDate
+}
+
+/**
+ * Reembolsos como movimentos de SALDO (entrada na conta), como as transferências: nunca contam nas
+ * receitas, despesas ou categorias — devolver dinheiro emprestado não é rendimento.
+ */
+export function reimbursementMovements(reimbursements: Reimbursement[]): AccountMovement[] {
+  return reimbursements.map((reimbursement) => ({
+    account_id: reimbursement.account_id,
+    tipo: 'receita' as const,
+    valor_centavos: reimbursement.valor_centavos,
+    data: reimbursement.data,
+    // Com a pessoa: mesmo que entre por engano num relatório, isOwn deixa-o de fora
+    pessoa_id: reimbursement.pessoa_id,
+  }))
+}
+
+/** O movimento é de quem usa a app (não de uma compra de outra pessoa): conta nos relatórios. */
+function isOwn(movement: Movement): boolean {
+  return !movement.pessoa_id
 }
 
 /** Movimento com sinal: receitas e estornos somam, despesas subtraem. */
@@ -88,7 +121,7 @@ export function monthSummary(movements: Movement[], month: MonthKey): MonthSumma
   let receitas = 0
   let despesas = 0
   for (const movement of movements) {
-    if (!isInMonth(movement.data, month)) continue
+    if (!isOwn(movement) || !isInMonth(movement.data, month)) continue
     if (movement.tipo === 'receita') receitas += movement.valor_centavos
     else despesas += expenseAmount(movement)
   }
@@ -151,19 +184,23 @@ export type NetPosition = {
   disponivel: number
   /** O que se deve nos cartões: −Σ saldos dos cartões (negativo = crédito a favor) */
   dividaCartoes: number
-  /** disponivel − dividaCartoes = Σ saldos de todas as contas (= totalBalance) */
+  /** O que outras pessoas devem (T1, D20; negativo = é quem usa a app que lhes deve) */
+  aReceber: number
+  /** disponivel − dividaCartoes + aReceber (sem a receber: = totalBalance) */
   liquido: number
 }
 
 /**
  * Posição do Início (D4a): dinheiro disponível, dívida nos cartões e saldo líquido. Todas as contas
  * contam, incluindo as arquivadas (como em totalBalance). Com `includeFuture`, a dívida inclui as
- * parcelas futuras (D1a: cada parcela conta na sua data).
+ * parcelas futuras (D1a: cada parcela conta na sua data). D20: a dívida dos cartões inclui as compras
+ * de outras pessoas, por isso o líquido soma o que elas devem (`aReceber`, total de `receivables`).
  */
 export function netPosition(
   accounts: { id: string; saldo_inicial_centavos: number; tipo: string }[],
   movements: AccountMovement[],
   options: BalanceOptions,
+  aReceber = 0,
 ): NetPosition {
   const balances = balancesByAccount(accounts, movements, options)
   let disponivel = 0
@@ -174,7 +211,75 @@ export function netPosition(
     else disponivel += balance
   }
   // `|| 0`: sem cartões, −0 apareceria como "-R$ 0,00"
-  return { disponivel, dividaCartoes: -cartoes || 0, liquido: disponivel + cartoes }
+  return {
+    disponivel,
+    dividaCartoes: -cartoes || 0,
+    aReceber,
+    liquido: disponivel + cartoes + aReceber,
+  }
+}
+
+/** Parcela ou estorno com a pessoa da compra e a fatura (para saber se já venceu). */
+export type ThirdPartyItem = {
+  pessoa_id?: string | null
+  tipo: Movement['tipo']
+  valor_centavos: number
+  fatura_id?: string | null
+}
+
+export type Receivable = {
+  pessoaId: string
+  /** Dívida anterior + Σ parcelas − Σ estornos − Σ reembolsos (negativo = a pessoa pagou a mais) */
+  total: number
+  /** A parte do total que já está em faturas vencidas (0 a total) */
+  vencido: number
+}
+
+/**
+ * O que cada pessoa deve (T1, D22): TODAS as parcelas registadas das suas compras (também as de
+ * faturas futuras), menos os estornos dessas compras, menos o que já devolveu. `vencido` é a parte
+ * em faturas que já venceram (`dueInvoiceIds`) menos o que devolveu, entre 0 e o total. Os reembolsos
+ * abatem primeiro ao que já venceu (paga-se o mais antigo primeiro). Ordem: maior total primeiro.
+ * D23: a dívida anterior de cada pessoa (`priorDebts`) soma ao total e conta como já vencida.
+ */
+export function receivables(
+  items: ThirdPartyItem[],
+  reimbursements: Pick<Reimbursement, 'pessoa_id' | 'valor_centavos'>[],
+  dueInvoiceIds: ReadonlySet<string>,
+  priorDebts: { id: string; divida_anterior_centavos: number }[] = [],
+): Receivable[] {
+  const totals = new Map<string, { compras: number; vencidas: number; devolvido: number }>()
+  const row = (pessoaId: string) => {
+    let current = totals.get(pessoaId)
+    if (!current) totals.set(pessoaId, (current = { compras: 0, vencidas: 0, devolvido: 0 }))
+    return current
+  }
+  for (const item of items) {
+    if (!item.pessoa_id || item.tipo === 'receita') continue
+    const current = row(item.pessoa_id)
+    const amount = expenseAmount(item as Movement)
+    current.compras += amount
+    if (item.fatura_id && dueInvoiceIds.has(item.fatura_id)) current.vencidas += amount
+  }
+  for (const reimbursement of reimbursements) {
+    row(reimbursement.pessoa_id).devolvido += reimbursement.valor_centavos
+  }
+  for (const { id, divida_anterior_centavos: anterior } of priorDebts) {
+    if (anterior === 0) continue
+    const current = row(id)
+    current.compras += anterior
+    current.vencidas += anterior
+  }
+  return [...totals]
+    .map(([pessoaId, { compras, vencidas, devolvido }]) => {
+      const total = compras - devolvido
+      return {
+        pessoaId,
+        total,
+        vencido: Math.min(Math.max(vencidas - devolvido, 0), Math.max(total, 0)),
+      }
+    })
+    .sort((a, b) => b.total - a.total || a.pessoaId.localeCompare(b.pessoaId))
 }
 
 /**
@@ -208,7 +313,8 @@ export function spendingByCategory(
   const totals = new Map<string, number>()
   let all = 0
   for (const movement of movements) {
-    if (movement.tipo === 'receita' || !isInMonth(movement.data, month)) continue
+    if (!isOwn(movement) || movement.tipo === 'receita' || !isInMonth(movement.data, month))
+      continue
     totals.set(
       movement.category_id,
       (totals.get(movement.category_id) ?? 0) + expenseAmount(movement),
@@ -258,7 +364,7 @@ export function monthlySeries(movements: Movement[], months: MonthKey[]): Monthl
   )
   for (const movement of movements) {
     const row = totals.get(monthOf(movement.data))
-    if (!row) continue
+    if (!row || !isOwn(movement)) continue
     if (movement.tipo === 'receita') row.receitas += movement.valor_centavos
     else row.despesas += expenseAmount(movement)
     row.resultado += signedAmount(movement)

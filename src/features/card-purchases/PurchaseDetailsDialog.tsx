@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog'
 import type { Account } from '@/features/accounts/accounts-api'
 import type { Category } from '@/features/categories/categories-api'
+import { usePeople } from '@/features/people/hooks'
 import { useCurrency } from '@/features/profile/hooks'
 import { formatDay, todayIso } from '@/lib/dates'
 import { centsToInput, formatMoney } from '@/lib/money'
@@ -97,10 +98,20 @@ function Summary({
   const deleteRefund = useServerAction(() => {})
   const remove = useDeletePurchase()
   const removeRefund = useDeleteRefund()
+  const people = usePeople()
   const name = purchase.descricao || category?.nome || 'Compra no cartão'
   const registadas = purchase.parcelas - purchase.parcela_inicial + 1
 
+  const person = people.data?.find((item) => item.id === purchase.pessoa_id)
   const details: [string, string][] = [
+    ...(purchase.pessoa_id
+      ? [
+          ['De quem', `${person?.nome ?? 'Outra pessoa'} (não conta nos teus gastos)`] as [
+            string,
+            string,
+          ],
+        ]
+      : []),
     ['Cartão', card?.nome ?? '—'],
     ['Categoria', category?.nome ?? 'Sem categoria'],
     ['Data da compra', formatDay(purchase.data_compra)],

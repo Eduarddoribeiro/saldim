@@ -17,6 +17,7 @@ import {
 import { isCreditCard } from '@/features/accounts/account-options'
 import type { Account } from '@/features/accounts/accounts-api'
 import type { Category } from '@/features/categories/categories-api'
+import { useCreatePerson, usePeople } from '@/features/people/hooks'
 import { useCurrency } from '@/features/profile/hooks'
 import { MAX_PARCELAS } from '@/lib/credit-card'
 import { todayIso } from '@/lib/dates'
@@ -24,7 +25,12 @@ import { parseMoney } from '@/lib/money'
 import { MONEY_EXAMPLE } from '@/lib/money-schema'
 import { useRegisterPurchase } from './hooks'
 import { InstallmentPreview, type PreviewInput } from './InstallmentPreview'
-import { purchaseFormSchema, type PurchaseFormInput, type PurchaseFormValues } from './schemas'
+import {
+  NEW_PERSON,
+  purchaseFormSchema,
+  type PurchaseFormInput,
+  type PurchaseFormValues,
+} from './schemas'
 
 type Props = {
   open: boolean
@@ -55,6 +61,8 @@ function PurchaseForm({ onOpenChange, categories, accounts }: Props) {
   const currency = useCurrency()
   const { serverError, run } = useServerAction(() => onOpenChange(false))
   const registerPurchase = useRegisterPurchase()
+  const createPerson = useCreatePerson()
+  const people = usePeople()
   const cards = accounts.filter((account) => isCreditCard(account) && !account.arquivada)
 
   const {
@@ -75,12 +83,14 @@ function PurchaseForm({ onOpenChange, categories, accounts }: Props) {
       descricao: '',
       emCurso: false,
       parcelaInicial: '2',
+      pessoaId: '',
+      novaPessoa: '',
     },
   })
 
-  const [cardId, valor, parcelasText, data, emCurso, parcelaInicialText] = useWatch({
+  const [cardId, valor, parcelasText, data, emCurso, parcelaInicialText, pessoaId] = useWatch({
     control,
-    name: ['cardId', 'valor', 'parcelas', 'data', 'emCurso', 'parcelaInicial'],
+    name: ['cardId', 'valor', 'parcelas', 'data', 'emCurso', 'parcelaInicial', 'pessoaId'],
   })
   const parcelas = Number(parcelasText)
   const card = cards.find((account) => account.id === cardId)
@@ -109,15 +119,34 @@ function PurchaseForm({ onOpenChange, categories, accounts }: Props) {
     .filter((category) => category.tipo === 'despesa' && !category.arquivada)
     .map((category) => ({ value: category.id, label: category.nome }))
 
-  const onSubmit = handleSubmit((values) => run(() => registerPurchase.mutateAsync(values)))
-  const busy = isSubmitting || registerPurchase.isPending
+  // T1: "Minha", as pessoas ativas e "Outra pessoa…" (cria a pessoa ao registar)
+  const personOptions = [
+    { value: '', label: 'Minha' },
+    ...(people.data ?? [])
+      .filter((person) => !person.arquivada)
+      .map((person) => ({ value: person.id, label: person.nome })),
+    { value: NEW_PERSON, label: 'Outra pessoa…' },
+  ]
+
+  const onSubmit = handleSubmit((values) =>
+    run(async () => {
+      const pessoaId =
+        values.pessoaId === NEW_PERSON
+          ? (await createPerson.mutateAsync(values.novaPessoa)).id
+          : values.pessoaId
+      await registerPurchase.mutateAsync({ ...values, pessoaId })
+    }),
+  )
+  const busy = isSubmitting || registerPurchase.isPending || createPerson.isPending
 
   return (
     <form onSubmit={onSubmit} noValidate className="grid gap-4">
       <DialogHeader>
         <DialogTitle>Compra no cartão</DialogTitle>
         <DialogDescription>
-          Cada parcela conta como despesa no seu mês e é cobrada na fatura do cartão.
+          {pessoaId
+            ? 'Cada parcela é cobrada na fatura do cartão e fica no que esta pessoa te deve.'
+            : 'Cada parcela conta como despesa no seu mês e é cobrada na fatura do cartão.'}
         </DialogDescription>
       </DialogHeader>
 
@@ -152,6 +181,29 @@ function PurchaseForm({ onOpenChange, categories, accounts }: Props) {
           {...register('parcelas')}
         />
       </div>
+
+      <SelectField
+        id="compra-pessoa"
+        label="De quem é a compra?"
+        options={personOptions}
+        hint={
+          pessoaId
+            ? 'Conta na fatura e no limite, mas não nos teus gastos: fica no que esta pessoa te deve.'
+            : undefined
+        }
+        {...register('pessoaId')}
+      />
+      {pessoaId === NEW_PERSON && (
+        <TextField
+          id="compra-nova-pessoa"
+          label="Nome da pessoa"
+          autoComplete="off"
+          maxLength={60}
+          placeholder="Ex.: Mãe"
+          error={errors.novaPessoa?.message}
+          {...register('novaPessoa')}
+        />
+      )}
 
       <TextField
         id="compra-descricao"

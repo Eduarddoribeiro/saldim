@@ -3,6 +3,7 @@ import {
   ArrowUpRight,
   ChevronRight,
   CreditCard,
+  HandCoins,
   Landmark,
   Scale,
   Wallet,
@@ -17,6 +18,8 @@ import { isCreditCard, TIPO_CONTA_OPTIONS } from '@/features/accounts/account-op
 import { useAccounts } from '@/features/accounts/hooks'
 import { usePurchases } from '@/features/card-purchases/hooks'
 import { useCategories } from '@/features/categories/hooks'
+import { usePeople } from '@/features/people/hooks'
+import { useReceivables } from '@/features/people/use-receivables'
 import { useProfile } from '@/features/profile/hooks'
 import { useBalanceMovements, useTransactions } from '@/features/transactions/hooks'
 import { useTransfers } from '@/features/transfers/hooks'
@@ -32,6 +35,7 @@ import {
   monthlySeries,
   monthSummary,
   netPosition,
+  reimbursementMovements,
   spendingByCategory,
   totalBalance,
   transferMovements,
@@ -55,8 +59,18 @@ export function DashboardPage() {
   const movements = useBalanceMovements()
   const transfers = useTransfers()
   const purchases = usePurchases()
+  const people = usePeople()
+  const receivables = useReceivables()
 
-  const queries = [accounts, categories, monthTransactions, movements, transfers, purchases]
+  const queries = [
+    accounts,
+    categories,
+    monthTransactions,
+    movements,
+    transfers,
+    purchases,
+    receivables,
+  ]
   const isPending = queries.some((query) => query.isPending)
   const error = queries.find((query) => query.error)?.error
   const currency = profile.data?.moeda === 'EUR' ? 'EUR' : 'BRL'
@@ -111,17 +125,28 @@ export function DashboardPage() {
   const allMovements = movements.data ?? []
   // Saldos = transações + transferências (pagamentos de fatura). As transferências NÃO entram nos
   // números do mês (receitas, despesas, categorias): não são consumo nem rendimento.
-  const balanceMovements = [...allMovements, ...transferMovements(transfers.data ?? [])]
+  // Os reembolsos (T1) também: dinheiro que entra numa conta, sem ser receita
+  const balanceMovements = [
+    ...allMovements,
+    ...transferMovements(transfers.data ?? []),
+    ...reimbursementMovements(receivables.reimbursements.data ?? []),
+  ]
   const saldoAtual = totalBalance(allAccounts, balanceMovements, { today })
   const saldoPrevisto = totalBalance(allAccounts, balanceMovements, { today, includeFuture: true })
   const balances = balancesByAccount(allAccounts, balanceMovements, { today })
   // D4a: com cartões, o número principal é o dinheiro disponível (sem a dívida dos cartões)
   const hasCards = allAccounts.some(isCreditCard)
-  const position = netPosition(allAccounts, balanceMovements, { today })
-  const positionPrevista = netPosition(allAccounts, balanceMovements, {
-    today,
-    includeFuture: true,
-  })
+  // D20: o líquido soma o que outras pessoas devem (as compras delas estão na dívida dos cartões)
+  const aReceber = receivables.total
+  const position = netPosition(allAccounts, balanceMovements, { today }, aReceber)
+  const positionPrevista = netPosition(
+    allAccounts,
+    balanceMovements,
+    { today, includeFuture: true },
+    aReceber,
+  )
+  const vencidoTotal = receivables.data.reduce((sum, row) => sum + row.vencido, 0)
+  const peopleById = new Map((people.data ?? []).map((person) => [person.id, person.nome]))
   const balancesPrevistos = balancesByAccount(allAccounts, balanceMovements, {
     today,
     includeFuture: true,
@@ -185,9 +210,35 @@ export function DashboardPage() {
             hint={
               positionPrevista.liquido !== position.liquido
                 ? `Previsto: ${formatMoney(positionPrevista.liquido, currency)}`
-                : 'Dinheiro menos a dívida dos cartões.'
+                : aReceber !== 0
+                  ? 'Dinheiro − dívida dos cartões + a receber.'
+                  : 'Dinheiro menos a dívida dos cartões.'
             }
           />
+          {receivables.data.length > 0 && (
+            <StatTile
+              label="A receber"
+              icon={HandCoins}
+              value={formatMoney(aReceber, currency)}
+              hint={
+                <>
+                  <p>
+                    {receivables.data
+                      .map(
+                        (row) =>
+                          `${peopleById.get(row.pessoaId) ?? 'Outra pessoa'}: ${formatMoney(row.total, currency)}`,
+                      )
+                      .join(' · ')}
+                  </p>
+                  {vencidoTotal > 0 && <p>Já vencido: {formatMoney(vencidoTotal, currency)}</p>}
+                  <Link to="/a-receber" className="font-medium underline underline-offset-4">
+                    Ver detalhe
+                  </Link>
+                </>
+              }
+              className="col-span-2"
+            />
+          )}
         </div>
       )}
 
@@ -290,6 +341,9 @@ export function DashboardPage() {
                       transaction.compra_id
                         ? parcelasByPurchase.get(transaction.compra_id)
                         : undefined
+                    }
+                    personName={
+                      transaction.pessoa_id ? peopleById.get(transaction.pessoa_id) : undefined
                     }
                     currency={currency}
                   />

@@ -29,6 +29,7 @@ const SettingsPage = page(() => import('@/features/settings/SettingsPage'), 'Set
 const CategoriesPage = page(() => import('@/features/categories/CategoriesPage'), 'CategoriesPage')
 const AccountsPage = page(() => import('@/features/accounts/AccountsPage'), 'AccountsPage')
 const RecurringPage = page(() => import('@/features/recurring/RecurringPage'), 'RecurringPage')
+const ReceivablesPage = page(() => import('@/features/people/ReceivablesPage'), 'ReceivablesPage')
 
 // As rotas ficam separadas do router para os testes as poderem usar com um router em memória
 export const routes: RouteObject[] = [
@@ -66,6 +67,7 @@ export const routes: RouteObject[] = [
           { path: 'configuracoes/categorias', element: <CategoriesPage /> },
           { path: 'configuracoes/contas', element: <AccountsPage /> },
           { path: 'configuracoes/recorrentes', element: <RecurringPage /> },
+          { path: 'a-receber', element: <ReceivablesPage /> },
           { path: '*', element: <NotFoundPage /> },
         ],
       },

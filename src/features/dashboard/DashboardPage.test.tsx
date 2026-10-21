@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Account } from '@/features/accounts/accounts-api'
 import type { Category } from '@/features/categories/categories-api'
+import type { Invoice } from '@/features/invoices/invoices-api'
+import type { Person, Reimbursement } from '@/features/people/people-api'
 import type { Transaction } from '@/features/transactions/transactions-api'
 import type { Transfer } from '@/lib/finance'
 import { renderApp } from '@/test/render-app'
@@ -13,6 +15,9 @@ const store = vi.hoisted(() => ({
   categories: [] as Category[],
   accounts: [] as Account[],
   transfers: [] as Transfer[],
+  people: [] as Person[],
+  reimbursements: [] as Reimbursement[],
+  invoices: [] as Invoice[],
 }))
 
 vi.mock('@/features/profile/profile-api', () => ({
@@ -44,12 +49,20 @@ vi.mock('@/features/card-purchases/purchases-api', () => ({
       valor_total_centavos: 30000,
       parcelas: 3,
       parcela_inicial: 1,
+      pessoa_id: null,
       created_at: '',
     },
   ]),
 }))
 vi.mock('@/features/transfers/transfers-api', () => ({
   listTransfers: vi.fn(async () => store.transfers),
+}))
+vi.mock('@/features/people/people-api', () => ({
+  listPeople: vi.fn(async () => store.people),
+  listReimbursements: vi.fn(async () => store.reimbursements),
+}))
+vi.mock('@/features/invoices/invoices-api', () => ({
+  listInvoices: vi.fn(async () => store.invoices),
 }))
 // O Recharts precisa de um browser real para medir o espaço (testado nos E2E). Aqui o módulo dos
 // gráficos é substituído por um marcador; os números verificam-se nas tabelas alternativas.
@@ -107,6 +120,7 @@ const tx = (overrides: Partial<Transaction>): Transaction => ({
   compra_id: null,
   parcela_numero: null,
   recorrencia_id: null,
+  pessoa_id: null,
   ...overrides,
 })
 
@@ -123,6 +137,9 @@ beforeEach(() => {
   ]
   store.accounts = [account('banco', 'Banco', 100000), account('velha', 'Conta antiga', 5000, true)]
   store.transfers = []
+  store.people = []
+  store.reimbursements = []
+  store.invoices = []
   store.transactions = [
     tx({ tipo: 'receita', category_id: 'sal', valor_centavos: 500000, data: '2026-10-05' }),
     tx({ category_id: 'casa', valor_centavos: 150000, data: '2026-10-06', descricao: 'Renda' }),
@@ -192,6 +209,7 @@ describe('início (dashboard)', () => {
         compra_id: 'c',
         parcela_numero: 1,
         recorrencia_id: null,
+        pessoa_id: null,
         descricao: 'Televisão',
       }),
       tx({ account_id: 'visa', valor_centavos: 10000, data: '2026-11-08', compra_id: 'c' }),
@@ -218,6 +236,71 @@ describe('início (dashboard)', () => {
     expect(plain(within(contas).getByText('Visa').closest('li')?.textContent)).toBe(
       'VisaCartão de créditoLimite disponível: R$ 4.700,00-R$ 100,00',
     )
+  })
+
+  it('compras da mãe (T1): fora das despesas, na dívida, e o que ela deve soma ao líquido', async () => {
+    store.accounts.push(visa())
+    store.people = [
+      {
+        id: 'mae',
+        user_id: 'u',
+        nome: 'Mãe',
+        arquivada: false,
+        divida_anterior_centavos: 0,
+        created_at: '',
+      },
+    ]
+    const invoice = (id: string, vencimento: string): Invoice => ({
+      id,
+      account_id: 'visa',
+      mes_referencia: `${vencimento.slice(0, 7)}-01`,
+      data_fechamento: vencimento,
+      data_vencimento: vencimento,
+    })
+    store.invoices = [
+      invoice('f1', '2026-10-10'),
+      invoice('f2', '2026-11-10'),
+      invoice('f3', '2026-12-10'),
+    ]
+    // A mãe comprou 300,00 em 3× no Visa; a fatura da 1.ª parcela já venceu
+    const daMae = { account_id: 'visa', compra_id: 'c', pessoa_id: 'mae', valor_centavos: 10000 }
+    store.transactions.push(
+      tx({ ...daMae, data: '2026-10-08', fatura_id: 'f1', parcela_numero: 1, descricao: 'Sofá' }),
+      tx({ ...daMae, data: '2026-11-08', fatura_id: 'f2', parcela_numero: 2 }),
+      tx({ ...daMae, data: '2026-12-08', fatura_id: 'f3', parcela_numero: 3 }),
+    )
+    // Devolveu 50,00 para o banco
+    store.reimbursements = [
+      {
+        id: 'r1',
+        user_id: 'u',
+        pessoa_id: 'mae',
+        account_id: 'banco',
+        valor_centavos: 5000,
+        data: '2026-10-12',
+        descricao: '',
+        created_at: '',
+      },
+    ]
+    renderApp('/')
+    await screen.findByText('A receber')
+    // As despesas do mês não incluem a parcela da mãe (as mesmas 2200,00 de sempre)
+    expect(tile(/^Despesas · este mês$/)).toContain('R$ 2.200,00')
+    // O reembolso entra no banco: 3051,00 + 50,00
+    expect(tile(/^Dinheiro disponível$/)).toContain('R$ 3.101,00')
+    // A dívida do cartão inclui a parcela da mãe (é dívida real)
+    expect(tile(/^Dívida nos cartões$/)).toContain('R$ 100,00')
+    // Deve 300,00 − 50,00; já vencido 100,00 − 50,00
+    expect(tile(/^A receber$/)).toContain('R$ 250,00')
+    expect(tile(/^A receber$/)).toContain('Mãe: R$ 250,00')
+    expect(tile(/^A receber$/)).toContain('Já vencido: R$ 50,00')
+    // Líquido = 3101,00 − 100,00 + 250,00 (D20)
+    expect(tile(/^Saldo líquido$/)).toContain('R$ 3.251,00')
+    expect(
+      within(screen.getByRole('region', { name: 'Últimas transações' })).getByText(
+        /Para Mãe · Parcela 1\/3/,
+      ),
+    ).toBeInTheDocument()
   })
 
   it('pagar a mais dá crédito nos cartões, que soma ao limite disponível', async () => {

@@ -173,6 +173,7 @@ export type Database = {
           id: string
           parcela_inicial: number
           parcelas: number
+          pessoa_id: string | null
           user_id: string
           valor_total_centavos: number
         }
@@ -186,6 +187,7 @@ export type Database = {
           id?: string
           parcela_inicial?: number
           parcelas: number
+          pessoa_id?: string | null
           user_id?: string
           valor_total_centavos: number
         }
@@ -198,6 +200,7 @@ export type Database = {
           id?: string
           parcela_inicial?: number
           parcelas?: number
+          pessoa_id?: string | null
           user_id?: string
           valor_total_centavos?: number
         }
@@ -214,6 +217,13 @@ export type Database = {
             columns: ['category_id', 'user_id']
             isOneToOne: false
             referencedRelation: 'categories'
+            referencedColumns: ['id', 'user_id']
+          },
+          {
+            foreignKeyName: 'compras_cartao_pessoa_fk'
+            columns: ['pessoa_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'pessoas'
             referencedColumns: ['id', 'user_id']
           },
         ]
@@ -256,6 +266,34 @@ export type Database = {
             referencedColumns: ['id', 'user_id']
           },
         ]
+      }
+      pessoas: {
+        Row: {
+          arquivada: boolean
+          created_at: string
+          divida_anterior_centavos: number
+          id: string
+          nome: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          arquivada?: boolean
+          created_at?: string
+          divida_anterior_centavos?: number
+          id?: string
+          nome: string
+          user_id?: string
+        }
+        Update: {
+          arquivada?: boolean
+          created_at?: string
+          divida_anterior_centavos?: number
+          id?: string
+          nome?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -346,6 +384,55 @@ export type Database = {
           },
         ]
       }
+      reembolsos: {
+        Row: {
+          account_id: string
+          created_at: string
+          data: string
+          descricao: string
+          id: string
+          pessoa_id: string
+          user_id: string
+          valor_centavos: number
+        }
+        ComputedFields: never
+        Insert: {
+          account_id: string
+          created_at?: string
+          data: string
+          descricao?: string
+          id?: string
+          pessoa_id: string
+          user_id?: string
+          valor_centavos: number
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          data?: string
+          descricao?: string
+          id?: string
+          pessoa_id?: string
+          user_id?: string
+          valor_centavos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'reembolsos_account_fk'
+            columns: ['account_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id', 'user_id']
+          },
+          {
+            foreignKeyName: 'reembolsos_pessoa_fk'
+            columns: ['pessoa_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'pessoas'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
+      }
       transactions: {
         Row: {
           account_id: string
@@ -357,6 +444,7 @@ export type Database = {
           fatura_id: string | null
           id: string
           parcela_numero: number | null
+          pessoa_id: string | null
           recorrencia_id: string | null
           tipo: Database['public']['Enums']['tipo_movimento']
           user_id: string
@@ -373,6 +461,7 @@ export type Database = {
           fatura_id?: string | null
           id?: string
           parcela_numero?: number | null
+          pessoa_id?: string | null
           recorrencia_id?: string | null
           tipo: Database['public']['Enums']['tipo_movimento']
           user_id?: string
@@ -388,6 +477,7 @@ export type Database = {
           fatura_id?: string | null
           id?: string
           parcela_numero?: number | null
+          pessoa_id?: string | null
           recorrencia_id?: string | null
           tipo?: Database['public']['Enums']['tipo_movimento']
           user_id?: string
@@ -421,6 +511,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'faturas'
             referencedColumns: ['id', 'account_id', 'user_id']
+          },
+          {
+            foreignKeyName: 'transactions_pessoa_fk'
+            columns: ['pessoa_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'pessoas'
+            referencedColumns: ['id', 'user_id']
           },
           {
             foreignKeyName: 'transactions_recorrencia_fk'
@@ -548,6 +645,7 @@ export type Database = {
           p_descricao?: string
           p_parcela_inicial?: number
           p_parcelas: number
+          p_pessoa_id?: string
           p_valor_total_centavos: number
         }
         Returns: string

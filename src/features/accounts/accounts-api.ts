@@ -45,6 +45,9 @@ const RULE_MESSAGES: Record<string, string> = {
   accounts_cartao_campos_check:
     'Falta configurar o cartão (fechamento, vencimento, limite e conta).',
   // FK da migration recorrentes (ao apagar)
+  // FK da migration terceiros (ao apagar)
+  reembolsos_account_fk:
+    'Esta conta recebeu pagamentos de outras pessoas. Arquiva-a em vez de a apagar.',
   recorrencias_account_fk:
     'Esta conta é usada num lançamento recorrente. Muda-o de conta ou apaga-o primeiro (Configurações → Recorrentes).',
 }

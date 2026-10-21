@@ -67,6 +67,14 @@ Etapa R1 (migration `recorrentes`). Uma recorrência descreve um lançamento que
 - **D18 — Nada no passado:** a próxima data (ao criar, mudar ou retomar uma recorrência pausada) não pode ser anterior a hoje, para não duplicar o que já foi registado à mão. Retomar recomeça na próxima data da série a partir de hoje.
 - **Falhas:** se um lançamento for recusado (ex.: conta ou categoria arquivada), os outros continuam; a regra e a data ficam em `falha`/`falha_data` e a página mostra o aviso até a pessoa o dispensar. A data avança (o lançamento falhado regista-se à mão, se for preciso).
 
+### Compras de outras pessoas (etapa T1, migration `terceiros`)
+
+- **D19 — Compra de outra pessoa:** uma compra no cartão pode pertencer a uma pessoa (`compras_cartao.pessoa_id`; as parcelas e os estornos herdam-na em `transactions.pessoa_id`, copiada pela trigger). Conta na fatura, na dívida do cartão e no limite disponível (é dívida real do cartão), mas **não** nas receitas, despesas, gastos por categoria, orçamentos nem nos gráficos de receitas × despesas (`isOwn` em `finance.ts`).
+- **D20 — Saldo líquido:** com cartões, líquido = dinheiro disponível − dívida nos cartões + **a receber** (Σ do que as pessoas devem). O quadro "A receber" mostra cada pessoa. A evolução do saldo (gráfico) continua a ser só a soma das contas.
+- **D21 — Reembolsos:** o que uma pessoa devolve entra numa conta de dinheiro (tabela `reembolsos`, sem data futura, sem alterações: apaga-se e regista-se de novo). Soma ao saldo da conta (`reimbursementMovements`), não é receita e abate ao que a pessoa deve.
+- **D22 — A receber:** por pessoa = TODAS as parcelas registadas das suas compras (também as de faturas futuras) − estornos − reembolsos (`receivables`). "Já vencido" = a parte em faturas com vencimento até hoje − reembolsos (entre 0 e o total). Total negativo = a pessoa pagou a mais. Uma pessoa com compras ou reembolsos não se apaga (arquiva-se).
+- **D23 — Dívida anterior:** cada pessoa tem uma dívida anterior (`pessoas.divida_anterior_centavos`, 0 por omissão, nunca negativa): o que já devia antes de as suas compras estarem na app (faturas antigas pagas por quem usa a app e não registadas). Soma ao total e conta como já vencida, por isso é a primeira coisa que os pagamentos abatem.
+
 ## Modelo de dados
 
 | Tabela                   | Campos principais                                                                                                                                                                                                             |
@@ -80,6 +88,8 @@ Etapa R1 (migration `recorrentes`). Uma recorrência descreve um lançamento que
 | `cartao_dias_anteriores` | `id`, `user_id`, `account_id`, `ate_mes`, `dia_fechamento`, `dia_vencimento` (dias antigos de um cartão, C8)                                                                                                                  |
 | `transferencias`         | `id`, `user_id`, `conta_origem_id`, `conta_destino_id`, `valor_centavos`, `data`, `descricao`, `fatura_id` (pagamento de fatura)                                                                                              |
 | `budgets`                | `id`, `user_id`, `category_id`, `mes` (1.º dia do mês), `limite_centavos`                                                                                                                                                     |
+| `pessoas`                | `id`, `user_id`, `nome` (único por utilizador, sem maiúsculas), `arquivada`, `divida_anterior_centavos` (T1)                                                                                                                  |
+| `reembolsos`             | `id`, `user_id`, `pessoa_id`, `account_id` (conta de dinheiro), `valor_centavos`, `data`, `descricao` (T1)                                                                                                                    |
 | `recorrencias`           | `id`, `user_id`, `account_id`, `category_id`, `tipo` (receita, despesa), `valor_centavos`, `descricao`, `frequencia` (mensal, anual), `dia`, `proxima_data`, `ativa`, `falha`, `falha_data` (R1)                              |
 
 - Categorias/contas com transações não se apagam (FK `ON DELETE RESTRICT`); arquivam-se.
@@ -121,6 +131,10 @@ Etapa R1 (migration `recorrentes`). Uma recorrência descreve um lançamento que
 ### Fase C — Depois do MVP
 
 12. Orçamentos mensais (+ RLS + testes). Cartões e faturas em etapas C1–C8 (C1 cálculos, C2 configuração, C3 faturas e compras na base de dados, C4 compras na interface, C5 pagamentos, C6 página de faturas, C7 Início e relatórios, C8 estornos e alteração da configuração). 13. Filtros, pesquisa e relatórios. 14. Deploy (requer autorização: serviços externos). 15. Login Google, PWA, exportar/importar CSV, atualizações otimistas, metas. Lançamentos recorrentes: etapa R1 (D15–D18).
+
+**16. Importação automática via Open Finance** — puxar transações dos bancos através de um agregador (ex.: Pluggy, Belvo) em vez de as registar à mão. Requer autorização: serviço externo, credenciais, possíveis custos e dados bancários a sair da app. Por decidir: agregador, deduplicação com lançamentos manuais, mapeamento para categorias. Depende da 14 (deploy).
+
+**17. Claude sobre os dados da app** — ligar o Claude (ex.: por MCP) à base do Saldo para perguntas em linguagem natural sobre os dados já organizados. Requer autorização: acesso externo aos dados; só leitura e só os dados do próprio utilizador (respeitar RLS, nunca `service_role`).
 
 ## Verificação
 

@@ -47,6 +47,7 @@ vi.mock('@/features/card-purchases/purchases-api', () => ({
       valor_total_centavos: 60000,
       parcelas: 3,
       parcela_inicial: 1,
+      pessoa_id: null,
       created_at: '',
     },
   ]),
@@ -99,6 +100,7 @@ const parcela = (fatura_id: string, n: number, valor: number): InvoiceItem => ({
   data: '2026-09-20',
   descricao: 'Televisão',
   category_id: 'alim',
+  pessoa_id: null,
 })
 const pagamento = (id: string, fatura_id: string, valor: number): InvoicePayment => ({
   id,
