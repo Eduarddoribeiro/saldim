@@ -153,7 +153,7 @@ describe('página de faturas', () => {
     store.accounts = [account({})]
     renderApp('/faturas')
     expect(await screen.findByText('Você ainda não tem cartões de crédito')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Ir para as contas' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Criar cartão' })).toHaveAttribute(
       'href',
       '/configuracoes/contas',
     )
@@ -166,11 +166,20 @@ describe('página de faturas', () => {
       'Setembro de 2026Fecha 25/08 · vence 05/09VencidaR$ 300,00',
       'Novembro de 2026Fecha 25/10 · vence 05/11Abertafalta R$ 150,00R$ 200,00',
     ])
-    expect(plain(screen.getByText(/^Por pagar:/).textContent)).toBe('Por pagar: R$ 450,00')
+    expect(plain(screen.getByText(/^A pagar:/).textContent)).toBe('A pagar: R$ 450,00')
 
     await userEvent.click(screen.getByRole('button', { name: 'Pagas' }))
     expect(screen.getByRole('button', { name: 'Pagas' })).toHaveAttribute('aria-pressed', 'true')
     expect(rows()).toEqual(['Outubro de 2026Fecha 25/09 · vence 05/10PagaR$ 100,00'])
+  })
+
+  it('"Pagas" vazio diz que ainda não há faturas pagas (e não que o cartão não tem faturas)', async () => {
+    store.payments = store.payments.filter((payment) => payment.id !== 'p-out')
+    renderApp('/faturas')
+    await screen.findByRole('list', { name: 'Faturas' })
+    await userEvent.click(screen.getByRole('button', { name: 'Pagas' }))
+    expect(screen.getByText('Nenhuma fatura paga ainda')).toBeInTheDocument()
+    expect(screen.getByText('Quando você pagar uma fatura, ela aparece aqui.')).toBeInTheDocument()
   })
 
   it('o detalhe mostra as compras (parcela k/n) e os pagamentos', async () => {
@@ -194,10 +203,10 @@ describe('página de faturas', () => {
     await userEvent.click(await screen.findByRole('button', { name: /Fatura de novembro/ }))
     await userEvent.click(await screen.findByRole('button', { name: 'Pagar fatura' }))
     const form = await screen.findByRole('dialog', { name: 'Pagar fatura de novembro de 2026' })
-    expect(within(form).getByLabelText('Pagar a partir de')).toHaveValue('conta')
+    expect(within(form).getByLabelText('Pagar com a conta')).toHaveValue('conta')
     // Só contas de dinheiro: o cartão não aparece
     expect(
-      within(within(form).getByLabelText('Pagar a partir de'))
+      within(within(form).getByLabelText('Pagar com a conta'))
         .getAllByRole('option')
         .map((o) => o.textContent),
     ).toEqual(['Escolha a conta…', 'Conta principal', 'Poupança'])

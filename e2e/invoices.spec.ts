@@ -65,7 +65,7 @@ test('faturas: pagar em parte, pagar o resto e a fatura fica paga; o saldo não 
   await expect(pagar).toBeHidden()
   await expect(fatura).toContainText('Vencida')
   await expect(fatura).toContainText(money('falta R$ 200,00'))
-  await expect(page.getByText(/^Por pagar:/)).toContainText(money('R$ 200,00'))
+  await expect(page.getByText(/^A pagar:/)).toContainText(money('R$ 200,00'))
 
   // O resto (o valor sugerido já é o que falta)
   await fatura.click()

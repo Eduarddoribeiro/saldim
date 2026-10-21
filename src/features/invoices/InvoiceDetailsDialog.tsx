@@ -290,7 +290,7 @@ function PaymentForm({
 
       <SelectField
         id="pagamento-conta"
-        label="Pagar a partir de"
+        label="Pagar com a conta"
         placeholder="Escolha a conta…"
         options={sources.map((account) => ({ value: account.id, label: account.nome }))}
         error={errors.contaOrigemId?.message}

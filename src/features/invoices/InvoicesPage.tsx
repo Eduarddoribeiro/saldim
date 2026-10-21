@@ -31,6 +31,21 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: 'pagas', label: 'Pagas' },
   { value: 'todas', label: 'Todas' },
 ]
+// Cada filtro vazio diz porquê: "Pagas" vazio não quer dizer que o cartão não tem faturas
+const EMPTY_STATES: Record<Filter, { title: string; description: string }> = {
+  por_pagar: {
+    title: 'Nada a pagar',
+    description: 'As faturas deste cartão estão pagas. As compras novas aparecem aqui.',
+  },
+  pagas: {
+    title: 'Nenhuma fatura paga ainda',
+    description: 'Quando você pagar uma fatura, ela aparece aqui.',
+  },
+  todas: {
+    title: 'Nenhuma fatura ainda',
+    description: 'As faturas aparecem quando você registra uma compra no cartão.',
+  },
+}
 
 export function InvoicesPage() {
   const accounts = useAccounts()
@@ -123,13 +138,13 @@ export function InvoicesPage() {
         <EmptyState
           icon={CreditCard}
           title="Você ainda não tem cartões de crédito"
-          description="Crie um cartão em Configurações → Contas para registrar compras e ver as faturas."
+          description="Cadastre um cartão de crédito para registrar compras e acompanhar as faturas."
         />
         <Link
           to="/configuracoes/contas"
           className={cn(buttonVariants({ variant: 'outline' }), 'mt-4')}
         >
-          Ir para as contas
+          Criar cartão
         </Link>
       </>
     )
@@ -162,7 +177,7 @@ export function InvoicesPage() {
           <p className="font-medium">{card.nome}</p>
         )}
         <p className="text-sm text-muted-foreground">
-          Por pagar:{' '}
+          A pagar:{' '}
           <span className="font-medium text-foreground tabular-nums">
             {formatMoney(totalPorPagar, currency)}
           </span>
@@ -192,15 +207,7 @@ export function InvoicesPage() {
       </div>
 
       {visible.length === 0 ? (
-        <EmptyState
-          icon={ReceiptText}
-          title={filter === 'por_pagar' ? 'Nada a pagar' : 'Sem faturas'}
-          description={
-            filter === 'por_pagar'
-              ? 'As faturas deste cartão estão pagas. As compras novas aparecem aqui.'
-              : 'As faturas aparecem quando você registra uma compra no cartão.'
-          }
-        />
+        <EmptyState icon={ReceiptText} {...EMPTY_STATES[filter]} />
       ) : (
         <ul aria-label="Faturas" className="grid min-w-0 gap-2 *:min-w-0">
           {visible.map((invoice) => (
