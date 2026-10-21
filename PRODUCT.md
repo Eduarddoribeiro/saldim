@@ -42,7 +42,7 @@ Sucesso: a pessoa confia no número que vê. O saldo, a fatura e o que tem a rec
 ## Brand Commitments
 
 - Nome: **Saldo** (`AppLogo.tsx`, `<title>`).
-- **Idioma: português do Brasil.** Os textos atuais da interface ainda estão em português de Portugal ("Registar", "utilizador", "ecrã") e precisam ser convertidos. Essa conversão é uma tarefa separada.
+- **Idioma: português do Brasil**, tratando por "você" (Salvar, Excluir, Registrar). Toda a interface foi convertida de pt-PT para pt-BR.
 
 ## Evidence on Hand
 

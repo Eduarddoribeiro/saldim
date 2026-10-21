@@ -436,7 +436,7 @@ describe('installmentSchedule', () => {
     expect(falhas).toEqual([])
   })
 
-  describe('compra já em curso (parcela inicial k > 1)', () => {
+  describe('compra já em andamento (parcela inicial k > 1)', () => {
     it('k = 1 é igual a uma compra nova', () => {
       expect(schedule('2026-03-10', 10, 100000, 1)).toEqual(schedule('2026-03-10', 10, 100000))
     })
@@ -574,7 +574,7 @@ describe('mudança de dias (C8, D14): histórico de dias', () => {
   const atual = config(10, 20)
   const historico: CardDaysChange[] = [{ ateMes: '2026-11', config: config(25, 5) }]
 
-  it('cada fatura usa os dias do primeiro registo com ateMes depois dela, senão os atuais', () => {
+  it('cada fatura usa os dias do primeiro registro com ateMes depois dela, senão os atuais', () => {
     const tres: CardDaysChange[] = [
       { ateMes: '2026-11', config: config(25, 5) },
       { ateMes: '2026-06', config: config(1, 10) },

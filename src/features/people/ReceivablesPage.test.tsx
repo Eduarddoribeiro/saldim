@@ -217,7 +217,7 @@ describe('A receber', () => {
     expect(compras()).toEqual(['SofáVisa'])
 
     await userEvent.selectOptions(within(mae).getByLabelText('Tipo'), 'Todas')
-    await userEvent.selectOptions(within(mae).getByLabelText('Situação'), 'Já todas vencidas')
+    await userEvent.selectOptions(within(mae).getByLabelText('Situação'), 'Todas já vencidas')
     expect(compras()).toEqual(['GásNubank'])
   })
 
@@ -228,7 +228,7 @@ describe('A receber', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Pagamento de Mãe' })
     expect(within(dialog).getByLabelText('Valor')).toHaveValue('70,00')
     expect(within(dialog).getByLabelText('Conta onde entrou')).toHaveValue('picpay')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Registar pagamento' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar pagamento' }))
     await waitFor(() =>
       expect(createReimbursement).toHaveBeenCalledWith({
         pessoaId: 'mae',
@@ -248,7 +248,7 @@ describe('A receber', () => {
     const data = within(dialog).getByLabelText('Data')
     await userEvent.clear(data)
     await userEvent.type(data, '2026-10-25')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Registar pagamento' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar pagamento' }))
     expect(
       await within(dialog).findByText('Um pagamento recebido não pode ter data futura.'),
     ).toBeInTheDocument()
@@ -274,7 +274,7 @@ describe('A receber', () => {
     expect(campo).toHaveValue('0,00')
     await userEvent.clear(campo)
     await userEvent.type(campo, '412,30')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Salvar' }))
     await waitFor(() =>
       expect(updatePerson).toHaveBeenCalledWith('mae', {
         nome: 'Mãe',

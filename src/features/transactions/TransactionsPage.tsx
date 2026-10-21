@@ -59,7 +59,7 @@ export function TransactionsPage() {
   return (
     <>
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <PageHeader title="Transações" description="Receitas e despesas registadas." />
+        <PageHeader title="Transações" description="Receitas e despesas registradas." />
         <div className="flex flex-wrap gap-2">
           {/* Atalho para os lançamentos recorrentes (a página vive nas Configurações) */}
           <Link
@@ -87,7 +87,7 @@ export function TransactionsPage() {
 
       {isPending ? (
         <p role="status" className="text-sm text-muted-foreground">
-          A carregar transações…
+          Carregando transações…
         </p>
       ) : error ? (
         <div className="grid gap-3">
@@ -109,7 +109,7 @@ export function TransactionsPage() {
         <EmptyState
           icon={ArrowLeftRight}
           title={`Sem transações em ${formatMonth(month)}`}
-          description="Regista uma receita ou uma despesa para começar."
+          description="Registre uma receita ou uma despesa para começar."
         />
       ) : (
         <div className="grid min-w-0 gap-6 *:min-w-0">

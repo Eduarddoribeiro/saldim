@@ -36,7 +36,7 @@ describe('purchaseFormSchema', () => {
     })
   })
 
-  it('compra em curso: guarda a primeira parcela por pagar (2 a n)', () => {
+  it('compra em andamento: guarda a primeira parcela por pagar (2 a n)', () => {
     expect(purchaseFormSchema.parse({ ...base, emCurso: true, parcelaInicial: '3' })).toMatchObject(
       {
         parcelas: 3,
@@ -44,10 +44,10 @@ describe('purchaseFormSchema', () => {
       },
     )
     expect(errorsOf({ ...base, emCurso: true, parcelaInicial: '4' })).toEqual({
-      parcelaInicial: 'Escolhe uma parcela entre 2 e 3.',
+      parcelaInicial: 'Escolha uma parcela entre 2 e 3.',
     })
     expect(errorsOf({ ...base, parcelas: '1', emCurso: true })).toEqual({
-      parcelaInicial: 'Uma compra em curso tem pelo menos 2 parcelas.',
+      parcelaInicial: 'Uma compra em andamento tem pelo menos 2 parcelas.',
     })
   })
 
@@ -58,16 +58,16 @@ describe('purchaseFormSchema', () => {
     expect(errorsOf({ ...base, valor: '0' })).toHaveProperty('valor')
     expect(errorsOf({ ...base, parcelas: '49' })).toEqual({ parcelas: 'De 1 a 48 parcelas.' })
     expect(errorsOf({ ...base, parcelas: '0' })).toEqual({ parcelas: 'De 1 a 48 parcelas.' })
-    expect(errorsOf({ ...base, data: '3000-01-01' })).toEqual({ data: 'Indica uma data válida.' })
-    expect(errorsOf({ ...base, data: '' })).toEqual({ data: 'Indica uma data válida.' })
-    expect(errorsOf({ ...base, cardId: '' })).toEqual({ cardId: 'Escolhe o cartão.' })
-    expect(errorsOf({ ...base, categoryId: '' })).toEqual({ categoryId: 'Escolhe uma categoria.' })
+    expect(errorsOf({ ...base, data: '3000-01-01' })).toEqual({ data: 'Informe uma data válida.' })
+    expect(errorsOf({ ...base, data: '' })).toEqual({ data: 'Informe uma data válida.' })
+    expect(errorsOf({ ...base, cardId: '' })).toEqual({ cardId: 'Escolha o cartão.' })
+    expect(errorsOf({ ...base, categoryId: '' })).toEqual({ categoryId: 'Escolha uma categoria.' })
     expect(errorsOf({ ...base, descricao: 'x'.repeat(121) })).toHaveProperty('descricao')
   })
 
   it('T1: uma pessoa nova precisa do nome; a pessoa passa para o resultado', () => {
     expect(errorsOf({ ...base, pessoaId: NEW_PERSON })).toEqual({
-      novaPessoa: 'Indica o nome da pessoa.',
+      novaPessoa: 'Informe o nome da pessoa.',
     })
     expect(
       purchaseFormSchema.parse({ ...base, pessoaId: NEW_PERSON, novaPessoa: ' Mãe ' }),

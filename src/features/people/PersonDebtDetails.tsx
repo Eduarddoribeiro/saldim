@@ -24,8 +24,8 @@ const TIPO_OPTIONS = [
 
 const SITUACAO_OPTIONS = [
   { value: 'todas', label: 'Todas' },
-  { value: 'abertas', label: 'Com parcelas por vencer' },
-  { value: 'terminadas', label: 'Já todas vencidas' },
+  { value: 'abertas', label: 'Com parcelas a vencer' },
+  { value: 'terminadas', label: 'Todas já vencidas' },
 ]
 
 /**
@@ -61,7 +61,7 @@ export function PersonDebtDetails({
   const set = (patch: Partial<DebtFilters>) => setFilters((current) => ({ ...current, ...patch }))
 
   if (purchases.length === 0) {
-    return <p className="mt-2 text-sm text-muted-foreground">Ainda sem compras no cartão.</p>
+    return <p className="mt-2 text-sm text-muted-foreground">Nenhuma compra no cartão ainda.</p>
   }
 
   return (

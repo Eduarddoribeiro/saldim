@@ -415,7 +415,7 @@ describe('balanceSeries (evolução do saldo)', () => {
 })
 
 describe('categoryComparison (gastos por categoria vs mês anterior)', () => {
-  it('compara cada categoria com o mês anterior, incluindo as que só existem num deles', () => {
+  it('compara cada categoria com o mês anterior, incluindo as que só existem em um deles', () => {
     const linhas = categoryComparison(
       [
         tx({ category_id: 'alim', valor_centavos: 30000, data: '2026-10-02' }),

@@ -8,7 +8,7 @@ export function uniqueEmail(label: string): string {
 }
 
 export async function signUp(page: Page, email: string, nome = 'Pessoa Teste') {
-  await page.goto('/registar')
+  await page.goto('/cadastro')
   await page.getByLabel('Nome').fill(nome)
   await page.getByLabel('E-mail').fill(email)
   await page.getByLabel('Senha', { exact: true }).fill(PASSWORD)

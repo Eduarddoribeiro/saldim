@@ -47,7 +47,7 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <AuthCard title="Nova senha" description="Escolhe uma nova senha para a tua conta.">
+    <AuthCard title="Nova senha" description="Escolha uma nova senha para sua conta.">
       <form onSubmit={onSubmit} noValidate className="grid gap-4">
         {serverError && <FormAlert>{serverError}</FormAlert>}
         <TextField
@@ -68,7 +68,7 @@ export function ResetPasswordPage() {
           {...register('confirmPassword')}
         />
         <Button type="submit" size="lg" className="h-10" disabled={isSubmitting}>
-          {isSubmitting ? 'A guardar…' : 'Guardar nova senha'}
+          {isSubmitting ? 'Salvando…' : 'Salvar nova senha'}
         </Button>
       </form>
     </AuthCard>

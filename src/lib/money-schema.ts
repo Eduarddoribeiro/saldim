@@ -11,7 +11,7 @@ export const MONEY_EXAMPLE = 'Ex.: 1.234,56'
 export function moneyField(options: { allowNegative?: boolean; positive?: boolean } = {}) {
   return z.string().transform((text, ctx) => {
     if (text.trim() === '') {
-      ctx.addIssue({ code: 'custom', message: 'Indica o valor.' })
+      ctx.addIssue({ code: 'custom', message: 'Informe o valor.' })
       return z.NEVER
     }
     const cents = parseMoney(text, { allowNegative: options.allowNegative })
@@ -22,7 +22,7 @@ export function moneyField(options: { allowNegative?: boolean; positive?: boolea
       return z.NEVER
     }
     if (options.positive && cents <= 0) {
-      ctx.addIssue({ code: 'custom', message: 'O valor tem de ser maior que zero.' })
+      ctx.addIssue({ code: 'custom', message: 'O valor precisa ser maior que zero.' })
       return z.NEVER
     }
     return cents

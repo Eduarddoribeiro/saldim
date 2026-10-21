@@ -76,7 +76,7 @@ export function validateCardConfig({
   const warnings: CardConfigIssue[] = []
 
   if (!Number.isSafeInteger(limiteCentavos) || limiteCentavos < 1 || limiteCentavos > MAX_CENTS) {
-    errors.push({ field: 'limiteCentavos', message: 'Indica um limite de crédito válido.' })
+    errors.push({ field: 'limiteCentavos', message: 'Informe um limite de crédito válido.' })
   }
   if (errors.every((error) => error.field === 'limiteCentavos')) {
     const { min, max } = paymentWindowDays(diaFechamento, diaVencimento)
@@ -85,7 +85,7 @@ export function validateCardConfig({
       const prazo = min === max ? `é de ${dias(min)}` : `varia entre ${min} e ${dias(max)}`
       warnings.push({
         field: 'diaVencimento',
-        message: `O prazo entre o fechamento e o vencimento ${prazo}. Confirma com o teu banco.`,
+        message: `O prazo entre o fechamento e o vencimento ${prazo}. Confira com seu banco.`,
       })
     }
   }
@@ -99,26 +99,26 @@ function dayErrors({ diaFechamento, diaVencimento }: CardConfig): CardConfigIssu
   if (!isDay(diaFechamento)) {
     errors.push({
       field: 'diaFechamento',
-      message: 'O dia de fechamento tem de estar entre 1 e 31.',
+      message: 'O dia de fechamento precisa estar entre 1 e 31.',
     })
   }
   if (!isDay(diaVencimento)) {
     errors.push({
       field: 'diaVencimento',
-      message: 'O dia de vencimento tem de estar entre 1 e 31.',
+      message: 'O dia de vencimento precisa estar entre 1 e 31.',
     })
   }
   if (isDay(diaFechamento) && isDay(diaVencimento)) {
     if (diaFechamento === diaVencimento) {
       errors.push({
         field: 'diaVencimento',
-        message: 'O vencimento tem de ser num dia diferente do fechamento.',
+        message: 'O vencimento precisa ser em um dia diferente do fechamento.',
       })
     } else if (diaVencimento > diaFechamento && diaFechamento >= 28) {
       errors.push({
         field: 'diaFechamento',
         message:
-          'Com o fechamento no dia 28 ou depois, o vencimento tem de ser no mês seguinte (dia menor que o fechamento).',
+          'Com o fechamento no dia 28 ou depois, o vencimento precisa ser no mês seguinte (dia menor que o fechamento).',
       })
     }
   }
@@ -192,7 +192,7 @@ export function paymentWindowDays(
   diaVencimento: number,
 ): { min: number; max: number } {
   if (!isDay(diaFechamento) || !isDay(diaVencimento)) {
-    throw new RangeError('Os dias de fechamento e vencimento têm de estar entre 1 e 31.')
+    throw new RangeError('Os dias de fechamento e vencimento precisam estar entre 1 e 31.')
   }
   const prazos = WINDOW_MONTHS.map((month) => {
     const { fechamento, vencimento } = rawInvoiceDates({ diaFechamento, diaVencimento }, month)
@@ -432,7 +432,8 @@ export function invoiceStatus(
   for (const date of [fechamento, vencimento, hoje]) {
     if (!isIsoDate(date)) throw new RangeError(`Data inválida: ${date}`)
   }
-  if (fechamento >= vencimento) throw new RangeError('O fechamento tem de ser antes do vencimento.')
+  if (fechamento >= vencimento)
+    throw new RangeError('O fechamento precisa ser antes do vencimento.')
 
   const emAbertoCentavos = totalCentavos - pagoCentavos
   const estado: InvoiceState =

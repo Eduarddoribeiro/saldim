@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test'
 import { lastEmailLink, logIn, logOut, PASSWORD, signUp, uniqueEmail } from './helpers'
 
-test('registo → sessão persiste → sair → entrar', async ({ page }) => {
-  const email = uniqueEmail('registo')
+test('registro → sessão persiste → sair → entrar', async ({ page }) => {
+  const email = uniqueEmail('registro')
   await signUp(page, email)
 
   // A sessão sobrevive a um recarregamento da página
@@ -41,7 +41,7 @@ test('recuperar senha pelo link do e-mail', async ({ page }) => {
   await signUp(page, email)
   await logOut(page)
 
-  await page.getByRole('link', { name: 'Esqueci-me da senha' }).click()
+  await page.getByRole('link', { name: 'Esqueci a senha' }).click()
   await page.getByLabel('E-mail').fill(email)
   await page.getByRole('button', { name: 'Enviar link' }).click()
   await expect(page.getByRole('status')).toContainText('Se existir uma conta')
@@ -51,7 +51,7 @@ test('recuperar senha pelo link do e-mail', async ({ page }) => {
   const novaSenha = `${PASSWORD}-nova`
   await page.getByLabel('Nova senha', { exact: true }).fill(novaSenha)
   await page.getByLabel('Confirmar nova senha').fill(novaSenha)
-  await page.getByRole('button', { name: 'Guardar nova senha' }).click()
+  await page.getByRole('button', { name: 'Salvar nova senha' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Início' })).toBeVisible()
 
   // A senha antiga deixa de funcionar; a nova funciona

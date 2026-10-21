@@ -7,9 +7,9 @@ import { TIPOS } from '@/features/categories/schemas'
 export const transactionFormSchema = z.object({
   tipo: z.enum(TIPOS),
   valor: moneyField({ positive: true }),
-  data: z.string().refine(isIsoDate, { error: 'Indica uma data válida.' }),
-  categoryId: z.string().min(1, { error: 'Escolhe uma categoria.' }),
-  accountId: z.string().min(1, { error: 'Escolhe uma conta.' }),
+  data: z.string().refine(isIsoDate, { error: 'Informe uma data válida.' }),
+  categoryId: z.string().min(1, { error: 'Escolha uma categoria.' }),
+  accountId: z.string().min(1, { error: 'Escolha uma conta.' }),
   descricao: z
     .string()
     .trim()

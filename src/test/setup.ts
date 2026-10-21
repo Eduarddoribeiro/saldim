@@ -19,7 +19,7 @@ beforeEach(() => {
     vi.fn(async (input: RequestInfo | URL) => {
       const url = input instanceof Request ? input.url : String(input)
       realFetchCalls.push(url)
-      throw new TypeError(`Pedido de rede bloqueado num teste unitário: ${url}`)
+      throw new TypeError(`Pedido de rede bloqueado em um teste unitário: ${url}`)
     }),
   )
 })

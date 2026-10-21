@@ -195,12 +195,12 @@ describe('página de transações', () => {
     const opcoes = within(categoria)
       .getAllByRole('option')
       .map((o) => o.textContent)
-    expect(opcoes).toEqual(['Escolhe…', 'Alimentação', 'Moradia'])
+    expect(opcoes).toEqual(['Escolha…', 'Alimentação', 'Moradia'])
 
     await userEvent.type(within(dialog).getByLabelText('Valor'), '1.234,50')
     await userEvent.selectOptions(categoria, 'casa')
     await userEvent.type(within(dialog).getByLabelText('Descrição (opcional)'), 'Renda')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Registar' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar' }))
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(store.transactions.at(-1)).toMatchObject({
@@ -249,7 +249,7 @@ describe('página de transações', () => {
       within(categoria)
         .getAllByRole('option')
         .map((o) => o.textContent),
-    ).toEqual(['Escolhe…', 'Salário'])
+    ).toEqual(['Escolha…', 'Salário'])
   })
 
   it('pré-seleciona a conta mesmo que as contas cheguem depois de abrir o diálogo', async () => {
@@ -274,10 +274,10 @@ describe('página de transações', () => {
     await screen.findByText('Supermercado')
     await userEvent.click(newButton())
     const dialog = await screen.findByRole('dialog')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Registar' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar' }))
 
-    expect(within(dialog).getByText('Indica o valor.')).toBeInTheDocument()
-    expect(within(dialog).getByText('Escolhe uma categoria.')).toBeInTheDocument()
+    expect(within(dialog).getByText('Informe o valor.')).toBeInTheDocument()
+    expect(within(dialog).getByText('Escolha uma categoria.')).toBeInTheDocument()
     expect(api.createTransaction).not.toHaveBeenCalled()
   })
 
@@ -291,7 +291,7 @@ describe('página de transações', () => {
 
     await userEvent.clear(valor)
     await userEvent.type(valor, '99')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Salvar' }))
     await waitFor(() =>
       expect(store.transactions.find((t) => t.id === 't1')?.valor_centavos).toBe(9900),
     )
@@ -309,9 +309,9 @@ describe('página de transações', () => {
   it('apaga depois de confirmar', async () => {
     renderApp('/transacoes')
     await userEvent.click(await screen.findByRole('button', { name: /Supermercado/ }))
-    await userEvent.click(await screen.findByRole('button', { name: 'Apagar' }))
-    const confirm = await screen.findByRole('alertdialog', { name: 'Apagar “Supermercado”?' })
-    await userEvent.click(within(confirm).getByRole('button', { name: 'Apagar' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Excluir' }))
+    const confirm = await screen.findByRole('alertdialog', { name: 'Excluir “Supermercado”?' })
+    await userEvent.click(within(confirm).getByRole('button', { name: 'Excluir' }))
 
     await waitFor(() => expect(screen.queryByText('Supermercado')).not.toBeInTheDocument())
     expect(store.transactions.map((t) => t.id)).not.toContain('t1')

@@ -52,7 +52,7 @@ test('recorrente na conta e no cartão: criado no dia, sem duplicar', async ({ p
 
   await page.goto('/configuracoes')
   await page.getByRole('link', { name: 'Recorrentes' }).click()
-  await expect(page.getByText('Ainda sem recorrentes')).toBeVisible()
+  await expect(page.getByText('Nenhum recorrente ainda')).toBeVisible()
 
   await novoRecorrente(page, {
     nome: 'Ginásio',

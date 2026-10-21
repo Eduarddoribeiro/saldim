@@ -344,7 +344,7 @@ describe('início (dashboard)', () => {
     expect(tile(/^Receitas · este mês$/)).toContain('R$ 5.000,00')
     expect(tile(/^Despesas · este mês$/)).toContain('R$ 2.200,00')
     expect(tile(/^Resultado · este mês$/)).toContain('+R$ 2.800,00')
-    expect(tile(/^Resultado · este mês$/)).toContain('Ganhaste mais do que gastaste.')
+    expect(tile(/^Resultado · este mês$/)).toContain('Você ganhou mais do que gastou.')
   })
 
   it('gastos por categoria ordenados, com valor e percentagem escritos', async () => {
@@ -355,8 +355,8 @@ describe('início (dashboard)', () => {
       .map((li) => plain(li.textContent))
     expect(linhas).toEqual([
       // Setembro: Moradia 999,00 → +501,00 (+50 %); Alimentação sem gastos em setembro
-      'MoradiaR$ 1.500,0068%+R$ 501,00 (+50%) face a setembro',
-      'AlimentaçãoR$ 700,0032%+R$ 700,00 face a setembro (sem valor anterior)',
+      'MoradiaR$ 1.500,0068%+R$ 501,00 (+50%) em relação a setembro',
+      'AlimentaçãoR$ 700,0032%+R$ 700,00 em relação a setembro (sem valor anterior)',
     ])
   })
 
@@ -364,15 +364,15 @@ describe('início (dashboard)', () => {
     renderApp('/')
     await screen.findByText('Saldo atual')
     expect(tile(/^Receitas · este mês$/)).toContain(
-      '+R$ 5.000,00 face a setembro (sem valor anterior)',
+      '+R$ 5.000,00 em relação a setembro (sem valor anterior)',
     )
     // 2.200,00 − 999,00 = +1.201,00 (+120 %)
-    expect(tile(/^Despesas · este mês$/)).toContain('+R$ 1.201,00 (+120%) face a setembro')
+    expect(tile(/^Despesas · este mês$/)).toContain('+R$ 1.201,00 (+120%) em relação a setembro')
     // +2.800,00 − (−999,00) = +3.799,00; % sobre |−999,00| = +380 %
-    expect(tile(/^Resultado · este mês$/)).toContain('+R$ 3.799,00 (+380%) face a setembro')
+    expect(tile(/^Resultado · este mês$/)).toContain('+R$ 3.799,00 (+380%) em relação a setembro')
   })
 
-  it('categorias que deixaram de ter gastos aparecem numa nota (não desaparecem em silêncio)', async () => {
+  it('categorias que deixaram de ter gastos aparecem em uma nota (não desaparecem em silêncio)', async () => {
     renderApp('/?mes=2026-11')
     const painel = await screen.findByRole('region', { name: 'Gastos por categoria' })
     expect(within(painel).getByText('Sem despesas em novembro de 2026.')).toBeInTheDocument()
@@ -427,7 +427,7 @@ describe('início (dashboard)', () => {
     expect(within(painel).queryByText('Previsto')).not.toBeInTheDocument()
   })
 
-  it('num mês futuro, o saldo é uma previsão (com as transações agendadas)', async () => {
+  it('em um mês futuro, o saldo é uma previsão (com as transações agendadas)', async () => {
     renderApp('/?mes=2026-11')
     const painel = await screen.findByRole('region', { name: 'Evolução do saldo' })
     expect(within(painel).getByText('Previsto')).toBeInTheDocument()

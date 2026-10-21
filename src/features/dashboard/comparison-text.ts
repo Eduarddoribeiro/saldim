@@ -20,7 +20,8 @@ export function comparisonText(
 ): string {
   if (comparison.diferenca === 0) return `igual a ${previousLabel}`
   const value = formatMoney(comparison.diferenca, currency, { signDisplay: 'always' })
-  if (comparison.percent === null) return `${value} face a ${previousLabel} (sem valor anterior)`
+  if (comparison.percent === null)
+    return `${value} em relação a ${previousLabel} (sem valor anterior)`
   const percent = `${comparison.percent > 0 ? '+' : ''}${comparison.percent}%`
-  return `${value} (${percent}) face a ${previousLabel}`
+  return `${value} (${percent}) em relação a ${previousLabel}`
 }

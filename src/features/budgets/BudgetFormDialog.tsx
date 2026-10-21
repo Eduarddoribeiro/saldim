@@ -71,7 +71,7 @@ function BudgetForm({ onOpenChange, category, budget, month }: Props & { categor
       <DialogHeader>
         <DialogTitle>{budget ? 'Editar orçamento' : 'Definir orçamento'}</DialogTitle>
         <DialogDescription>
-          Quanto queres gastar no máximo em {formatMonth(month)}.
+          Quanto você quer gastar no máximo em {formatMonth(month)}.
         </DialogDescription>
       </DialogHeader>
 
@@ -106,7 +106,7 @@ function BudgetForm({ onOpenChange, category, budget, month }: Props & { categor
           Cancelar
         </Button>
         <Button type="submit" size="lg" disabled={isSubmitting || save.isPending}>
-          {isSubmitting ? 'A guardar…' : 'Guardar'}
+          {isSubmitting ? 'Salvando…' : 'Salvar'}
         </Button>
       </DialogFooter>
     </form>

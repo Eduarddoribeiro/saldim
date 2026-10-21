@@ -125,7 +125,7 @@ function AccountForm({ onOpenChange, account }: Props) {
       <DialogHeader>
         <DialogTitle>{account ? 'Editar conta' : 'Nova conta'}</DialogTitle>
         <DialogDescription>
-          Onde o teu dinheiro está (banco, poupança, carteira) ou um cartão de crédito.
+          Onde o seu dinheiro está (banco, poupança, carteira) ou um cartão de crédito.
         </DialogDescription>
       </DialogHeader>
 
@@ -160,7 +160,7 @@ function AccountForm({ onOpenChange, account }: Props) {
             <SelectField
               id="conta-dia-fechamento"
               label="Dia de fechamento"
-              placeholder="Escolhe"
+              placeholder="Escolha"
               options={DIAS}
               error={errors.diaFechamento?.message}
               {...register('diaFechamento')}
@@ -168,7 +168,7 @@ function AccountForm({ onOpenChange, account }: Props) {
             <SelectField
               id="conta-dia-vencimento"
               label="Dia de vencimento"
-              placeholder="Escolhe"
+              placeholder="Escolha"
               options={DIAS}
               error={errors.diaVencimento?.message}
               {...register('diaVencimento')}
@@ -196,7 +196,7 @@ function AccountForm({ onOpenChange, account }: Props) {
           <SelectField
             id="conta-pagamento"
             label="Conta de pagamento"
-            placeholder="Escolhe a conta"
+            placeholder="Escolha a conta"
             options={paymentOptions}
             error={errors.contaPagamentoId?.message}
             {...register('contaPagamentoId')}
@@ -208,7 +208,7 @@ function AccountForm({ onOpenChange, account }: Props) {
           label="Saldo inicial"
           inputMode="decimal"
           autoComplete="off"
-          hint={`Quanto tinha a conta quando começaste a usar o Saldo. Pode ser negativo. ${MONEY_EXAMPLE}`}
+          hint={`Quanto a conta tinha quando você começou a usar o Saldo. Pode ser negativo. ${MONEY_EXAMPLE}`}
           error={errors.saldoInicial?.message}
           {...register('saldoInicial')}
         />
@@ -219,7 +219,7 @@ function AccountForm({ onOpenChange, account }: Props) {
           itemName={account.nome}
           archived={account.arquivada}
           disabled={busy}
-          deleteHint="Se a conta já tiver transações, arquiva-a em vez de a apagar."
+          deleteHint="Se a conta já tiver transações, arquive em vez de excluir."
           onToggleArchive={() =>
             run(() =>
               update.mutateAsync({ id: account.id, patch: { arquivada: !account.arquivada } }),
@@ -234,7 +234,7 @@ function AccountForm({ onOpenChange, account }: Props) {
           Cancelar
         </Button>
         <Button type="submit" size="lg" disabled={busy}>
-          {isSubmitting ? 'A guardar…' : account ? 'Guardar' : 'Criar conta'}
+          {isSubmitting ? 'Salvando…' : account ? 'Salvar' : 'Criar conta'}
         </Button>
       </DialogFooter>
     </form>
@@ -267,6 +267,6 @@ function useDaysChangeNotice(account: Account | null | undefined, novos: CardCon
   const preview = previewDaysChange(atuais, historyFor(history.data, account.id), novos, todayIso())
   const mes = invoiceMonth(`${preview.mesReferencia}-01`).toLowerCase()
   return preview.ok
-    ? `Os dias novos valem a partir da fatura de ${mes}, que passa a fechar a ${shortDate(preview.novas.fechamento)} e a vencer a ${shortDate(preview.novas.vencimento)} (com compras desde ${shortDate(preview.novas.inicioCiclo)}). As faturas já fechadas não mudam.`
-    : `Com estes dias, a fatura aberta (${mes}) fecharia a ${shortDate(preview.fechamento)}, que já passou. Escolhe outros dias ou espera que essa fatura feche.`
+    ? `Os dias novos valem a partir da fatura de ${mes}, que passa a fechar em ${shortDate(preview.novas.fechamento)} e a vencer em ${shortDate(preview.novas.vencimento)} (com compras desde ${shortDate(preview.novas.inicioCiclo)}). As faturas já fechadas não mudam.`
+    : `Com estes dias, a fatura aberta (${mes}) fecharia em ${shortDate(preview.fechamento)}, que já passou. Escolha outros dias ou espere essa fatura fechar.`
 }

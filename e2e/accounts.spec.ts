@@ -32,7 +32,7 @@ test('contas: conta inicial, criar com saldo, editar, arquivar', async ({ page }
   const editar = page.getByRole('dialog', { name: 'Editar conta' })
   await expect(editar.getByLabel('Saldo inicial')).toHaveValue('1234,56')
   await editar.getByLabel('Saldo inicial').fill('-20')
-  await editar.getByRole('button', { name: 'Guardar' }).click()
+  await editar.getByRole('button', { name: 'Salvar' }).click()
   await expect(poupanca).toContainText(money('-R$ 20,00'))
 
   // Arquivar
@@ -72,8 +72,8 @@ test('cartão de crédito: configurar, ver na lista e não aparecer nas transaç
   // A conta que paga o cartão não pode ser apagada (mensagem clara)
   await page.getByRole('button', { name: /Conta principal/ }).click()
   const editar = page.getByRole('dialog', { name: 'Editar conta' })
-  await editar.getByRole('button', { name: 'Apagar' }).click()
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Apagar' }).click()
+  await editar.getByRole('button', { name: 'Excluir' }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Excluir' }).click()
   await expect(editar.getByText(/paga a fatura de um cartão/)).toBeVisible()
   await editar.getByRole('button', { name: 'Cancelar' }).click()
 

@@ -192,7 +192,7 @@ function Summary({
           Pagamentos ({invoice.pagamentos.length})
         </h3>
         {invoice.pagamentos.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Ainda sem pagamentos.</p>
+          <p className="text-sm text-muted-foreground">Nenhum pagamento ainda.</p>
         ) : (
           <ul aria-label="Pagamentos da fatura" className="divide-y rounded-lg border text-sm">
             {invoice.pagamentos.map((payment) => (
@@ -210,7 +210,7 @@ function Summary({
                   <span className="tabular-nums">{money(payment.valor_centavos)}</span>
                   <ConfirmDeleteButton
                     what={`o pagamento de ${money(payment.valor_centavos)} de ${shortDate(payment.data)}`}
-                    consequence="O dinheiro volta a contar na conta de origem e a fatura fica outra vez em aberto."
+                    consequence="O dinheiro volta a contar na conta de origem e a fatura volta a ficar em aberto."
                     disabled={remove.isPending}
                     onConfirm={() => run(() => remove.mutateAsync(payment.id))}
                   />
@@ -291,7 +291,7 @@ function PaymentForm({
       <SelectField
         id="pagamento-conta"
         label="Pagar a partir de"
-        placeholder="Escolhe a conta…"
+        placeholder="Escolha a conta…"
         options={sources.map((account) => ({ value: account.id, label: account.nome }))}
         error={errors.contaOrigemId?.message}
         {...register('contaOrigemId')}
@@ -332,7 +332,7 @@ function PaymentForm({
           Voltar
         </Button>
         <Button type="submit" size="lg" disabled={isSubmitting || create.isPending}>
-          {isSubmitting ? 'A registar…' : 'Registar pagamento'}
+          {isSubmitting ? 'Registrando…' : 'Registrar pagamento'}
         </Button>
       </DialogFooter>
     </form>

@@ -189,7 +189,7 @@ function RecurringForm({ onOpenChange, recurring, categories, accounts }: Props)
       {serverError && <FormAlert>{serverError}</FormAlert>}
       {recurring && !recurring.ativa && (
         <FormAlert variant="success">
-          Está pausado: não são criados lançamentos até o retomares.
+          Está pausado: nenhum lançamento é criado até você retomar.
         </FormAlert>
       )}
 
@@ -225,7 +225,7 @@ function RecurringForm({ onOpenChange, recurring, categories, accounts }: Props)
         <SelectField
           id="recorrente-conta"
           label={tipo === 'despesa' ? 'Conta ou cartão' : 'Conta'}
-          placeholder="Escolhe…"
+          placeholder="Escolha…"
           options={accountOptions}
           error={errors.accountId?.message}
           {...register('accountId')}
@@ -233,7 +233,7 @@ function RecurringForm({ onOpenChange, recurring, categories, accounts }: Props)
         <SelectField
           id="recorrente-categoria"
           label="Categoria"
-          placeholder="Escolhe…"
+          placeholder="Escolha…"
           options={categoryOptions}
           error={errors.categoryId?.message}
           {...register('categoryId')}
@@ -288,7 +288,7 @@ function RecurringForm({ onOpenChange, recurring, categories, accounts }: Props)
           Cancelar
         </Button>
         <Button type="submit" size="lg" disabled={busy}>
-          {isSubmitting ? 'A guardar…' : recurring ? 'Guardar' : 'Criar'}
+          {isSubmitting ? 'Salvando…' : recurring ? 'Salvar' : 'Criar'}
         </Button>
       </DialogFooter>
     </form>

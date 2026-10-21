@@ -140,7 +140,7 @@ describe('página de contas', () => {
 
     await userEvent.clear(saldo)
     await userEvent.type(saldo, '-10')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Salvar' }))
 
     await waitFor(() =>
       expect(store.accounts.find((a) => a.id === 'a1')?.saldo_inicial_centavos).toBe(-1000),
@@ -220,7 +220,9 @@ describe('página de contas', () => {
       await userEvent.selectOptions(within(dialog).getByLabelText('Dia de vencimento'), '27')
       await userEvent.click(within(dialog).getByRole('button', { name: 'Criar conta' }))
       expect(
-        await within(dialog).findByText('O vencimento tem de ser num dia diferente do fechamento.'),
+        await within(dialog).findByText(
+          'O vencimento precisa ser em um dia diferente do fechamento.',
+        ),
       ).toBeInTheDocument()
       expect(within(dialog).getByLabelText('Dia de vencimento')).toHaveAttribute(
         'aria-invalid',
@@ -243,7 +245,7 @@ describe('página de contas', () => {
       const options = within(pagamento)
         .getAllByRole('option')
         .map((option) => option.textContent)
-      expect(options).toEqual(['Escolhe a conta', 'Carteira', 'Conta principal'])
+      expect(options).toEqual(['Escolha a conta', 'Carteira', 'Conta principal'])
     })
 
     describe('mudar os dias de um cartão com faturas (C8)', () => {
@@ -282,7 +284,7 @@ describe('página de contas', () => {
         const dialog = await editarDias('10', '20')
         expect(
           await within(dialog).findByText(
-            'Os dias novos valem a partir da fatura de novembro de 2026, que passa a fechar a 10/11/2026 e a vencer a 20/11/2026 (com compras desde 25/09/2026). As faturas já fechadas não mudam.',
+            'Os dias novos valem a partir da fatura de novembro de 2026, que passa a fechar em 10/11/2026 e a vencer em 20/11/2026 (com compras desde 25/09/2026). As faturas já fechadas não mudam.',
           ),
         ).toBeInTheDocument()
       })
@@ -291,7 +293,7 @@ describe('página de contas', () => {
         const dialog = await editarDias('15', '5')
         expect(
           await within(dialog).findByText(
-            'Com estes dias, a fatura aberta (novembro de 2026) fecharia a 15/10/2026, que já passou. Escolhe outros dias ou espera que essa fatura feche.',
+            'Com estes dias, a fatura aberta (novembro de 2026) fecharia em 15/10/2026, que já passou. Escolha outros dias ou espere essa fatura fechar.',
           ),
         ).toBeInTheDocument()
       })

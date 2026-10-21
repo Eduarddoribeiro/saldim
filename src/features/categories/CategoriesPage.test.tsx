@@ -65,7 +65,7 @@ const activeNames = () =>
     .map((button) => button.textContent?.replace('Editar', '').trim())
 
 describe('página de categorias', () => {
-  it('lista as despesas ativas por ordem alfabética e esconde as arquivadas num grupo', async () => {
+  it('lista as despesas ativas por ordem alfabética e esconde as arquivadas em um grupo', async () => {
     renderApp('/configuracoes/categorias')
     await waitFor(() => expect(activeNames()).toEqual(['Alimentação', 'Moradia']))
     expect(screen.getByText('Arquivadas (1)')).toBeInTheDocument()
@@ -88,7 +88,7 @@ describe('página de categorias', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Nova categoria' })
     await userEvent.type(within(dialog).getByLabelText('Nome'), '  Ginásio ')
     await userEvent.click(within(dialog).getByRole('radio', { name: 'Violeta' }))
-    await userEvent.click(within(dialog).getByRole('radio', { name: 'Desporto' }))
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Esporte' }))
     await userEvent.click(within(dialog).getByRole('button', { name: 'Criar categoria' }))
 
     await waitFor(() => expect(activeNames()).toEqual(['Alimentação', 'Ginásio', 'Moradia']))
@@ -108,7 +108,7 @@ describe('página de categorias', () => {
     const dialog = await screen.findByRole('dialog')
 
     await userEvent.click(within(dialog).getByRole('button', { name: 'Criar categoria' }))
-    expect(within(dialog).getByText('Indica o nome da categoria.')).toBeInTheDocument()
+    expect(within(dialog).getByText('Informe o nome da categoria.')).toBeInTheDocument()
 
     await userEvent.type(within(dialog).getByLabelText('Nome'), 'moradia')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Criar categoria' }))
@@ -127,7 +127,7 @@ describe('página de categorias', () => {
     expect(nome).toHaveValue('Moradia')
     await userEvent.clear(nome)
     await userEvent.type(nome, 'Casa')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Salvar' }))
 
     await waitFor(() => expect(activeNames()).toEqual(['Alimentação', 'Casa']))
   })
@@ -144,10 +144,10 @@ describe('página de categorias', () => {
   it('apaga só depois de confirmar', async () => {
     renderApp('/configuracoes/categorias')
     await userEvent.click(await screen.findByRole('button', { name: /Alimentação/ }))
-    await userEvent.click(await screen.findByRole('button', { name: 'Apagar' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Excluir' }))
 
-    const confirm = await screen.findByRole('alertdialog', { name: 'Apagar “Alimentação”?' })
-    await userEvent.click(within(confirm).getByRole('button', { name: 'Apagar' }))
+    const confirm = await screen.findByRole('alertdialog', { name: 'Excluir “Alimentação”?' })
+    await userEvent.click(within(confirm).getByRole('button', { name: 'Excluir' }))
 
     await waitFor(() => expect(activeNames()).toEqual(['Moradia']))
   })

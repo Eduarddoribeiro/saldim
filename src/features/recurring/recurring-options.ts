@@ -17,11 +17,11 @@ export function formatShortDate(date: IsoDate): string {
 export function describeSchedule(frequency: Frequency, day: number, nextDate: IsoDate): string {
   if (frequency === 'anual') {
     const [year, month] = nextDate.split('-').map(Number)
-    const monthName = new Intl.DateTimeFormat('pt-PT', { month: 'long' }).format(
+    const monthName = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(
       new Date(year, month - 1, 1),
     )
     // 29 de fevereiro num ano normal: a data guardada já é a 28
-    return `Todos os anos a ${day} de ${monthName}`
+    return `Todo ano em ${day} de ${monthName}`
   }
   return day >= 29 ? `Todo dia ${day} (ou o último dia do mês)` : `Todo dia ${day}`
 }
@@ -29,7 +29,7 @@ export function describeSchedule(frequency: Frequency, day: number, nextDate: Is
 // Regras que podem recusar um lançamento ao ser criado (HINT guardado em recorrencias.falha)
 const FAILURE_REASONS: Record<string, string> = {
   recorrencias_arquivada_check: 'a conta ou a categoria está arquivada',
-  recorrencias_cartao_check: 'num cartão de crédito só há despesas',
+  recorrencias_cartao_check: 'em um cartão de crédito só há despesas',
   compras_cartao_conta_check: 'a conta deixou de ser um cartão de crédito',
   compras_cartao_categoria_check: 'a categoria não é de despesa',
   transactions_conta_cartao_check: 'a conta passou a ser um cartão de crédito',
@@ -38,5 +38,5 @@ const FAILURE_REASONS: Record<string, string> = {
 /** Aviso de um lançamento que não foi criado. */
 export function failureMessage(code: string, date: IsoDate): string {
   const reason = FAILURE_REASONS[code] ?? 'foi recusado'
-  return `O lançamento de ${formatShortDate(date)} não foi criado: ${reason}. Se precisares, regista-o à mão.`
+  return `O lançamento de ${formatShortDate(date)} não foi criado: ${reason}. Se precisar, registre manualmente.`
 }

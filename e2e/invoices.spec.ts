@@ -22,7 +22,7 @@ test('faturas: pagar em parte, pagar o resto e a fatura fica paga; o saldo não 
 
   // Sem cartões, a página explica o que fazer
   await page.getByRole('link', { name: 'Faturas' }).locator('visible=true').first().click()
-  await expect(page.getByText('Ainda não tens cartões de crédito')).toBeVisible()
+  await expect(page.getByText('Você ainda não tem cartões de crédito')).toBeVisible()
 
   await page.goto('/configuracoes/contas')
   await page.getByRole('button', { name: 'Nova conta' }).click()
@@ -44,7 +44,7 @@ test('faturas: pagar em parte, pagar o resto e a fatura fica paga; o saldo não 
   await compra.getByLabel('Descrição (opcional)').fill('Óculos')
   await compra.getByLabel('Categoria').selectOption({ label: 'Saúde' })
   await compra.getByLabel('Data da compra').fill(twoMonthsAgo())
-  await compra.getByRole('button', { name: 'Registar compra' }).click()
+  await compra.getByRole('button', { name: 'Registrar compra' }).click()
   await expect(compra).toBeHidden()
 
   // A fatura está vencida e por pagar
@@ -61,7 +61,7 @@ test('faturas: pagar em parte, pagar o resto e a fatura fica paga; o saldo não 
   let pagar = page.getByRole('dialog', { name: /^Pagar fatura de/ })
   await expect(pagar.getByLabel('Valor')).toHaveValue('300,00')
   await pagar.getByLabel('Valor').fill('100')
-  await pagar.getByRole('button', { name: 'Registar pagamento' }).click()
+  await pagar.getByRole('button', { name: 'Registrar pagamento' }).click()
   await expect(pagar).toBeHidden()
   await expect(fatura).toContainText('Vencida')
   await expect(fatura).toContainText(money('falta R$ 200,00'))
@@ -72,9 +72,9 @@ test('faturas: pagar em parte, pagar o resto e a fatura fica paga; o saldo não 
   await page.getByRole('button', { name: 'Pagar fatura' }).click()
   pagar = page.getByRole('dialog', { name: /^Pagar fatura de/ })
   await expect(pagar.getByLabel('Valor')).toHaveValue('200,00')
-  await pagar.getByRole('button', { name: 'Registar pagamento' }).click()
+  await pagar.getByRole('button', { name: 'Registrar pagamento' }).click()
   await expect(pagar).toBeHidden()
-  await expect(page.getByText('Nada por pagar')).toBeVisible()
+  await expect(page.getByText('Nada a pagar')).toBeVisible()
 
   await page.getByRole('button', { name: 'Pagas' }).click()
   await expect(lista.getByRole('button').first()).toContainText('Paga')

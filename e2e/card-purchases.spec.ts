@@ -6,7 +6,7 @@ import { expectNoHorizontalScroll, signUp, uniqueEmail } from './helpers'
 // Intl usa espaços não separáveis: qualquer espaço do texto aceita um espaço de qualquer tipo
 const money = (text: string) => new RegExp(text.replace(/[.$+]/g, '\\$&').replace(/ /g, '\\s'))
 
-test('compra no cartão: 3 parcelas, uma por mês, sem duplicar a despesa; apagar a compra', async ({
+test('compra no cartão: 3 parcelas, uma por mês, sem duplicar a despesa; excluir a compra', async ({
   page,
 }) => {
   await signUp(page, uniqueEmail('compra'))
@@ -36,7 +36,7 @@ test('compra no cartão: 3 parcelas, uma por mês, sem duplicar a despesa; apaga
   await expect(compra.getByRole('status')).toHaveText(money('3× R$ 100,00'))
   await expect(compra.getByRole('list', { name: 'Parcelas' }).getByRole('listitem')).toHaveCount(3)
   await expectNoHorizontalScroll(page)
-  await compra.getByRole('button', { name: 'Registar compra' }).click()
+  await compra.getByRole('button', { name: 'Registrar compra' }).click()
   await expect(compra).toBeHidden()
 
   // Este mês: só a 1.ª parcela
@@ -47,7 +47,7 @@ test('compra no cartão: 3 parcelas, uma por mês, sem duplicar a despesa; apaga
   await expectNoHorizontalScroll(page)
 
   // Mês seguinte: a 2.ª
-  await page.getByRole('button', { name: /^Mês seguinte/ }).click()
+  await page.getByRole('button', { name: /^Próximo mês/ }).click()
   await expect(page.getByRole('button', { name: /Bicicleta/ })).toContainText('Parcela 2/3')
 
   // Início: a despesa do mês é só a parcela (100,00), não o total da compra
@@ -63,12 +63,12 @@ test('compra no cartão: 3 parcelas, uma por mês, sem duplicar a despesa; apaga
   await page.getByRole('button', { name: /Bicicleta/ }).click()
   const detalhe = page.getByRole('dialog', { name: 'Bicicleta' })
   await expect(detalhe).toContainText(money('R$ 300,00'))
-  await detalhe.getByRole('button', { name: 'Apagar' }).click()
+  await detalhe.getByRole('button', { name: 'Excluir' }).click()
   const confirmar = page.getByRole('alertdialog')
-  await expect(confirmar).toContainText('As 3 parcelas são apagadas com a compra.')
-  await confirmar.getByRole('button', { name: 'Apagar' }).click()
+  await expect(confirmar).toContainText('As 3 parcelas são excluídas com a compra.')
+  await confirmar.getByRole('button', { name: 'Excluir' }).click()
   await expect(detalhe).toBeHidden()
   await expect(page.getByText(/Sem transações em/)).toBeVisible()
-  await page.getByRole('button', { name: /^Mês seguinte/ }).click()
+  await page.getByRole('button', { name: /^Próximo mês/ }).click()
   await expect(page.getByText(/Sem transações em/)).toBeVisible()
 })

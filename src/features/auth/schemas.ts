@@ -9,12 +9,12 @@ export const PASSWORD_MAX = 72
 const email = z
   .string()
   .trim()
-  .min(1, { error: 'Indica o teu e-mail.' })
+  .min(1, { error: 'Informe seu e-mail.' })
   .pipe(z.email({ error: 'E-mail inválido.' }))
 
 const newPassword = z
   .string()
-  .min(PASSWORD_MIN, { error: `A senha precisa de pelo menos ${PASSWORD_MIN} caracteres.` })
+  .min(PASSWORD_MIN, { error: `A senha precisa ter pelo menos ${PASSWORD_MIN} caracteres.` })
   .max(PASSWORD_MAX, { error: `A senha pode ter no máximo ${PASSWORD_MAX} caracteres.` })
 
 const passwordsMatch = (data: { password: string; confirmPassword: string }) =>
@@ -25,7 +25,7 @@ const mismatch = { error: 'As senhas não coincidem.', path: ['confirmPassword']
 export const loginSchema = z.object({
   email,
   // No login não aplicamos o mínimo: quem tem uma senha antiga mais curta tem de conseguir entrar.
-  password: z.string().min(1, { error: 'Indica a senha.' }),
+  password: z.string().min(1, { error: 'Informe a senha.' }),
 })
 
 export const signUpSchema = z
@@ -33,7 +33,7 @@ export const signUpSchema = z
     nome: z
       .string()
       .trim()
-      .min(1, { error: 'Indica o teu nome.' })
+      .min(1, { error: 'Informe seu nome.' })
       .max(80, { error: 'O nome pode ter no máximo 80 caracteres.' }),
     email,
     password: newPassword,

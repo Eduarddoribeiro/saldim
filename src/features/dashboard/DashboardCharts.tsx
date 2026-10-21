@@ -43,7 +43,7 @@ function ChartFrame({ label, children }: { label: string; children: ReactNode })
       <Suspense
         fallback={
           <div role="status" className="h-[220px] animate-pulse rounded-lg bg-muted/60">
-            <span className="sr-only">A carregar o gráfico…</span>
+            <span className="sr-only">Carregando o gráfico…</span>
           </div>
         }
       >

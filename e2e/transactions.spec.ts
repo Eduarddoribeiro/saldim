@@ -15,7 +15,7 @@ function isoDate(date: Date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
-test('transações: registar, ver por mês, editar, apagar', async ({ page }) => {
+test('transações: registrar, ver por mês, editar, excluir', async ({ page }) => {
   await signUp(page, uniqueEmail('transacoes'))
   await page.goto('/transacoes')
   await expect(page.getByText(/Sem transações em/)).toBeVisible()
@@ -27,7 +27,7 @@ test('transações: registar, ver por mês, editar, apagar', async ({ page }) =>
     .getByLabel('Descrição (opcional)')
     .fill('Supermercado do bairro com um nome muito comprido para testar o ecrã')
   await dialogo.getByLabel('Categoria').selectOption({ label: 'Alimentação' })
-  await dialogo.getByRole('button', { name: 'Registar' }).click()
+  await dialogo.getByRole('button', { name: 'Registrar' }).click()
   await expect(dialogo).toBeHidden()
   const despesa = page.getByRole('button', { name: /Supermercado/ })
   await expect(despesa).toContainText(money('-R$ 42,50'))
@@ -39,7 +39,7 @@ test('transações: registar, ver por mês, editar, apagar', async ({ page }) =>
   await dialogo.locator('label', { hasText: 'Receita' }).click()
   await dialogo.getByLabel('Valor').fill('3.000')
   await dialogo.getByLabel('Categoria').selectOption({ label: 'Salário' })
-  await dialogo.getByRole('button', { name: 'Registar' }).click()
+  await dialogo.getByRole('button', { name: 'Registrar' }).click()
   await expect(page.getByRole('button', { name: /Salário/ })).toContainText(money('+R$ 3.000,00'))
 
   // Despesa com data no mês anterior: não aparece neste mês, aparece ao recuar
@@ -50,7 +50,7 @@ test('transações: registar, ver por mês, editar, apagar', async ({ page }) =>
   await dialogo.getByLabel('Descrição (opcional)').fill('Renda antiga')
   await dialogo.getByLabel('Categoria').selectOption({ label: 'Moradia' })
   await dialogo.getByLabel('Data').fill(lastMonth)
-  await dialogo.getByRole('button', { name: 'Registar' }).click()
+  await dialogo.getByRole('button', { name: 'Registrar' }).click()
   await expect(dialogo).toBeHidden()
   await expect(page.getByText('Renda antiga')).toBeHidden()
 
@@ -69,32 +69,32 @@ test('transações: registar, ver por mês, editar, apagar', async ({ page }) =>
   const editar = page.getByRole('dialog', { name: 'Editar transação' })
   await expect(editar.getByLabel('Valor')).toHaveValue('42,50')
   await editar.getByLabel('Valor').fill('50')
-  await editar.getByRole('button', { name: 'Guardar' }).click()
+  await editar.getByRole('button', { name: 'Salvar' }).click()
   await expect(despesa).toContainText(money('-R$ 50,00'))
 
   // Apagar
   await despesa.click()
-  await editar.getByRole('button', { name: 'Apagar' }).click()
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Apagar' }).click()
+  await editar.getByRole('button', { name: 'Excluir' }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Excluir' }).click()
   await expect(page.getByRole('alertdialog')).toBeHidden()
   await expect(despesa).toHaveCount(0)
 })
 
-test('uma categoria com transações não pode ser apagada (mensagem clara)', async ({ page }) => {
+test('uma categoria com transações não pode ser excluída (mensagem clara)', async ({ page }) => {
   await signUp(page, uniqueEmail('categoria-em-uso'))
   await page.goto('/transacoes')
   const dialogo = await openNew(page)
   await dialogo.getByLabel('Valor').fill('10')
   await dialogo.getByLabel('Categoria').selectOption({ label: 'Lazer' })
-  await dialogo.getByRole('button', { name: 'Registar' }).click()
+  await dialogo.getByRole('button', { name: 'Registrar' }).click()
   await expect(dialogo).toBeHidden()
 
   await page.goto('/configuracoes/categorias')
   await page.getByRole('button', { name: /Lazer/ }).click()
   const editar = page.getByRole('dialog', { name: 'Editar categoria' })
-  await editar.getByRole('button', { name: 'Apagar' }).click()
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Apagar' }).click()
+  await editar.getByRole('button', { name: 'Excluir' }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Excluir' }).click()
   await expect(editar.getByRole('alert')).toHaveText(
-    'Esta categoria tem transações. Arquiva-a em vez de a apagar.',
+    'Esta categoria tem transações. Arquive em vez de excluir.',
   )
 })

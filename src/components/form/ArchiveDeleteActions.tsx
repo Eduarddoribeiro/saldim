@@ -50,13 +50,13 @@ export function ArchiveDeleteActions({
         onClick={() => setConfirming(true)}
       >
         <Trash2 aria-hidden />
-        Apagar
+        Excluir
       </Button>
 
       <AlertDialog open={confirming} onOpenChange={setConfirming}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Apagar “{itemName}”?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir “{itemName}”?</AlertDialogTitle>
             <AlertDialogDescription>
               Esta ação não pode ser desfeita.{deleteHint ? ` ${deleteHint}` : ''}
             </AlertDialogDescription>
@@ -70,7 +70,7 @@ export function ArchiveDeleteActions({
                 onDelete()
               }}
             >
-              Apagar
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -14,7 +14,7 @@ export const categoryFormSchema = z.object({
   nome: z
     .string()
     .trim()
-    .min(1, { error: 'Indica o nome da categoria.' })
+    .min(1, { error: 'Informe o nome da categoria.' })
     .max(40, { error: 'O nome pode ter no máximo 40 caracteres.' }),
   tipo: z.enum(TIPOS),
   cor: z.enum(COLOR_KEYS),

@@ -1,6 +1,6 @@
 import { LoaderCircle } from 'lucide-react'
 
-export function FullScreenLoader({ label = 'A carregar…' }: { label?: string }) {
+export function FullScreenLoader({ label = 'Carregando…' }: { label?: string }) {
   return (
     <div
       role="status"

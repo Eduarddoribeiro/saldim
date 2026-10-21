@@ -9,8 +9,8 @@ export type Budget = Tables<'budgets'>
 
 const MESSAGES = {
   '23505': 'Esta categoria já tem orçamento neste mês.',
-  '23514': 'O limite tem de ser maior que zero e a categoria tem de ser de despesa.',
-  '23503': 'A categoria já não existe. Atualiza a página.',
+  '23514': 'O limite precisa ser maior que zero e a categoria precisa ser de despesa.',
+  '23503': 'A categoria já não existe. Atualize a página.',
 }
 
 function fail(error: { code?: string; message?: string }): never {

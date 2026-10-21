@@ -22,7 +22,7 @@ export const accountFormSchema = z
     nome: z
       .string()
       .trim()
-      .min(1, { error: 'Indica o nome da conta.' })
+      .min(1, { error: 'Informe o nome da conta.' })
       .max(40, { error: 'O nome pode ter no máximo 40 caracteres.' }),
     tipo: z.enum(TIPOS_CONTA),
     // Texto no formulário → centavos ao validar
@@ -54,15 +54,15 @@ export const accountFormSchema = z
       }
       return Number(text)
     }
-    const diaFechamento = day(input.diaFechamento, 'diaFechamento', 'Escolhe o dia de fechamento.')
-    const diaVencimento = day(input.diaVencimento, 'diaVencimento', 'Escolhe o dia de vencimento.')
+    const diaFechamento = day(input.diaFechamento, 'diaFechamento', 'Escolha o dia de fechamento.')
+    const diaVencimento = day(input.diaVencimento, 'diaVencimento', 'Escolha o dia de vencimento.')
     const limite = limiteField.safeParse(input.limite)
     if (!limite.success) {
       fail('limite', limite.error.issues[0].message)
       valid = false
     }
     if (input.contaPagamentoId === '') {
-      fail('contaPagamentoId', 'Escolhe a conta de onde sai o pagamento da fatura.')
+      fail('contaPagamentoId', 'Escolha a conta de onde sai o pagamento da fatura.')
       valid = false
     }
     if (input.diaFechamento !== '' && input.diaVencimento !== '') {

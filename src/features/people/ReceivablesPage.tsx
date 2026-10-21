@@ -58,7 +58,7 @@ export function ReceivablesPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <PageHeader
           title="A receber"
-          description="Compras de outras pessoas no teu cartão e o que já te devolveram."
+          description="Compras de outras pessoas no seu cartão e o que já te devolveram."
         />
         <Button
           size="lg"
@@ -72,7 +72,7 @@ export function ReceivablesPage() {
 
       {isPending ? (
         <p className="text-sm text-muted-foreground" role="status">
-          A carregar…
+          Carregando…
         </p>
       ) : error ? (
         <div className="grid gap-3">
@@ -89,7 +89,7 @@ export function ReceivablesPage() {
         <EmptyState
           icon={HandCoins}
           title="Ninguém te deve nada"
-          description='Ao registar uma compra no cartão, em "De quem é a compra?" escolhe a pessoa (ou "Outra pessoa…").'
+          description='Ao registrar uma compra no cartão, em "De quem é a compra?" escolha a pessoa (ou "Outra pessoa…").'
         />
       ) : (
         <div className="grid gap-4">
@@ -230,7 +230,7 @@ function PersonCard({
 
       <details className="mt-3">
         <summary className="cursor-pointer text-sm font-medium text-muted-foreground select-none">
-          Ver detalhe: {purchases.length} compras e {reimbursements.length} pagamentos
+          Ver detalhes: {purchases.length} compras e {reimbursements.length} pagamentos
         </summary>
         {person.divida_anterior_centavos > 0 && (
           <p className="mt-2 text-sm">

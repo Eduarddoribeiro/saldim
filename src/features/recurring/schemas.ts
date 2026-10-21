@@ -12,14 +12,14 @@ export function recurringFormSchema(today: IsoDate) {
     descricao: z
       .string()
       .trim()
-      .min(1, { error: 'Indica um nome (ex.: Netflix).' })
+      .min(1, { error: 'Informe um nome (ex.: Netflix).' })
       .max(120, { error: 'O nome pode ter no máximo 120 caracteres.' }),
-    accountId: z.string().min(1, { error: 'Escolhe uma conta.' }),
-    categoryId: z.string().min(1, { error: 'Escolhe uma categoria.' }),
+    accountId: z.string().min(1, { error: 'Escolha uma conta.' }),
+    categoryId: z.string().min(1, { error: 'Escolha uma categoria.' }),
     frequencia: z.enum(['mensal', 'anual']),
     proximaData: z
       .string()
-      .refine(isIsoDate, { error: 'Indica uma data válida.', abort: true })
+      .refine(isIsoDate, { error: 'Informe uma data válida.', abort: true })
       .refine((date) => date >= today, { error: 'A próxima data não pode ser no passado.' }),
   })
 }

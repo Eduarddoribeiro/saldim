@@ -14,10 +14,10 @@ describe('previousMonthLabel', () => {
 describe('comparisonText', () => {
   it('aumento e diminuição com sinal, valor e percentagem', () => {
     expect(plain(comparisonText(compareAmounts(12000, 10000), 'BRL', 'setembro'))).toBe(
-      '+R$ 20,00 (+20%) face a setembro',
+      '+R$ 20,00 (+20%) em relação a setembro',
     )
     expect(plain(comparisonText(compareAmounts(7500, 10000), 'BRL', 'setembro'))).toBe(
-      '-R$ 25,00 (-25%) face a setembro',
+      '-R$ 25,00 (-25%) em relação a setembro',
     )
   })
 
@@ -27,7 +27,7 @@ describe('comparisonText', () => {
 
   it('sem valor anterior: mostra a diferença, sem inventar percentagem', () => {
     expect(plain(comparisonText(compareAmounts(5000, 0), 'EUR', 'setembro'))).toBe(
-      '+50,00 € face a setembro (sem valor anterior)',
+      '+50,00 € em relação a setembro (sem valor anterior)',
     )
   })
 })

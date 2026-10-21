@@ -9,9 +9,9 @@ import {
 
 describe('dbErrorMessage', () => {
   it('traduz códigos do Postgres e do PostgREST', () => {
-    expect(dbErrorMessage({ code: '23503' })).toMatch(/a ser usado/)
+    expect(dbErrorMessage({ code: '23503' })).toMatch(/em uso/)
     expect(dbErrorMessage({ code: '42501' })).toMatch(/permissão/)
-    expect(dbErrorMessage({ code: 'PGRST116' })).toBe('Registo não encontrado.')
+    expect(dbErrorMessage({ code: 'PGRST116' })).toBe('Registro não encontrado.')
   })
 
   it('aceita mensagens específicas por ecrã', () => {

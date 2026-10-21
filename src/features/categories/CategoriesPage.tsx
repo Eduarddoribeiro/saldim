@@ -38,7 +38,7 @@ export function CategoriesPage() {
         Configurações
       </Link>
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <PageHeader title="Categorias" description="Organiza as tuas receitas e despesas." />
+        <PageHeader title="Categorias" description="Organize suas receitas e despesas." />
         <Button size="lg" onClick={openNew} className="max-sm:mb-3 max-sm:w-full">
           <Plus aria-hidden />
           Nova categoria
@@ -80,7 +80,7 @@ export function CategoriesPage() {
           <EmptyState
             icon={Tags}
             title={`Sem categorias de ${TIPO_LABELS[tipo].plural.toLowerCase()}`}
-            description="Cria a primeira para começares a organizar os teus movimentos."
+            description="Crie a primeira para começar a organizar seus movimentos."
           />
         ) : (
           <>
@@ -149,7 +149,7 @@ function CategoryList({
 
 function CategoryListSkeleton() {
   return (
-    <ul aria-busy="true" aria-label="A carregar categorias" className="divide-y rounded-xl border">
+    <ul aria-busy="true" aria-label="Carregando categorias" className="divide-y rounded-xl border">
       {Array.from({ length: 5 }, (_, index) => (
         <li key={index} className="flex min-h-14 items-center gap-3 px-3">
           <span className="size-9 animate-pulse rounded-full bg-muted" />

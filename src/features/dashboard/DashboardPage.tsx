@@ -82,8 +82,8 @@ export function DashboardPage() {
         title="Início"
         description={
           firstName
-            ? `Olá, ${firstName}. Este é o resumo das tuas finanças.`
-            : 'Resumo das tuas finanças.'
+            ? `Olá, ${firstName}. Este é o resumo das suas finanças.`
+            : 'Resumo das suas finanças.'
         }
       />
       <MonthPicker month={month} onChange={setMonth} className="mb-6 max-sm:justify-center" />
@@ -95,7 +95,7 @@ export function DashboardPage() {
       <>
         {header}
         <p role="status" className="text-sm text-muted-foreground">
-          A carregar o resumo…
+          Carregando o resumo…
         </p>
       </>
     )
@@ -189,7 +189,7 @@ export function DashboardPage() {
             hint={
               positionPrevista.disponivel !== position.disponivel
                 ? `Previsto com transações futuras: ${formatMoney(positionPrevista.disponivel, currency)}`
-                : 'Nas tuas contas, sem os cartões, até hoje.'
+                : 'Nas suas contas, sem os cartões, até hoje.'
             }
             className="col-span-2"
           />
@@ -200,7 +200,7 @@ export function DashboardPage() {
             hint={
               positionPrevista.dividaCartoes !== position.dividaCartoes
                 ? `Com as parcelas futuras: ${formatMoney(positionPrevista.dividaCartoes, currency)}`
-                : 'Compras até hoje que ainda não pagaste.'
+                : 'Compras até hoje que você ainda não pagou.'
             }
           />
           <StatTile
@@ -232,7 +232,7 @@ export function DashboardPage() {
                   </p>
                   {vencidoTotal > 0 && <p>Já vencido: {formatMoney(vencidoTotal, currency)}</p>}
                   <Link to="/a-receber" className="font-medium underline underline-offset-4">
-                    Ver detalhe
+                    Ver detalhes
                   </Link>
                 </>
               }
@@ -275,8 +275,8 @@ export function DashboardPage() {
           value={formatMoney(summary.resultado, currency, { signDisplay: 'exceptZero' })}
           hint={
             <>
-              {summary.resultado > 0 && <p>Ganhaste mais do que gastaste.</p>}
-              {summary.resultado < 0 && <p>Gastaste mais do que ganhaste.</p>}
+              {summary.resultado > 0 && <p>Você ganhou mais do que gastou.</p>}
+              {summary.resultado < 0 && <p>Você gastou mais do que ganhou.</p>}
               <p>{vsPrevious('resultado')}</p>
             </>
           }
@@ -326,7 +326,7 @@ export function DashboardPage() {
                 to={transactionsLink}
                 className="font-medium text-foreground underline underline-offset-4"
               >
-                Registar
+                Registrar
               </Link>
             </p>
           ) : (

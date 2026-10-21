@@ -11,6 +11,6 @@ export const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 export function useTheme(): ThemeContextValue {
   const context = useContext(ThemeContext)
-  if (!context) throw new Error('useTheme tem de ser usado dentro de <ThemeProvider>')
+  if (!context) throw new Error('useTheme precisa ser usado dentro de <ThemeProvider>')
   return context
 }

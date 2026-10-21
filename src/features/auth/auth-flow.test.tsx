@@ -19,9 +19,9 @@ describe('rotas protegidas', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Entrar' })).toBeInTheDocument()
   })
 
-  it('enquanto verifica a sessão mostra "A carregar…" em vez do login', () => {
+  it('enquanto verifica a sessão mostra "Carregando…" em vez do login', () => {
     renderApp('/', fakeAuth({ session: null, loading: true }))
-    expect(screen.getByRole('status')).toHaveTextContent('A carregar…')
+    expect(screen.getByRole('status')).toHaveTextContent('Carregando…')
     expect(screen.queryByRole('heading', { name: 'Entrar' })).not.toBeInTheDocument()
   })
 
@@ -61,9 +61,15 @@ describe('rotas protegidas', () => {
     expect(router.state.location.state).toBeFalsy()
   })
 
-  it('com sessão, /registar leva para o início', () => {
-    const { router } = renderApp('/registar')
+  it('com sessão, /cadastro leva para o início', () => {
+    const { router } = renderApp('/cadastro')
     expect(router.state.location.pathname).toBe('/')
+  })
+
+  it('o endereço antigo /registar leva para /cadastro', () => {
+    const { router } = renderApp('/registar', noSession())
+    expect(router.state.location.pathname).toBe('/cadastro')
+    expect(screen.getByRole('heading', { level: 1, name: 'Criar conta' })).toBeInTheDocument()
   })
 })
 
@@ -73,8 +79,8 @@ describe('login', () => {
     renderApp('/entrar', auth)
     await userEvent.click(screen.getByRole('button', { name: 'Entrar' }))
 
-    expect(screen.getByText('Indica o teu e-mail.')).toBeInTheDocument()
-    expect(screen.getByText('Indica a senha.')).toBeInTheDocument()
+    expect(screen.getByText('Informe seu e-mail.')).toBeInTheDocument()
+    expect(screen.getByText('Informe a senha.')).toBeInTheDocument()
     expect(screen.getByLabelText('E-mail')).toHaveAttribute('aria-invalid', 'true')
     expect(auth.signIn).not.toHaveBeenCalled()
   })
@@ -103,7 +109,7 @@ describe('login', () => {
   })
 })
 
-describe('registo', () => {
+describe('registro', () => {
   async function fillSignUp(confirm = 'segredo123') {
     await userEvent.type(screen.getByLabelText('Nome'), 'Ana')
     await userEvent.type(screen.getByLabelText('E-mail'), 'ana@exemplo.pt')
@@ -114,7 +120,7 @@ describe('registo', () => {
 
   it('não envia se as senhas não coincidem', async () => {
     const auth = noSession()
-    renderApp('/registar', auth)
+    renderApp('/cadastro', auth)
     await fillSignUp('outra-senha')
     expect(screen.getByText('As senhas não coincidem.')).toBeInTheDocument()
     expect(auth.signUp).not.toHaveBeenCalled()
@@ -122,7 +128,7 @@ describe('registo', () => {
 
   it('envia nome, e-mail e senha', async () => {
     const auth = noSession()
-    renderApp('/registar', auth)
+    renderApp('/cadastro', auth)
     await fillSignUp()
     expect(auth.signUp).toHaveBeenCalledWith('Ana', 'ana@exemplo.pt', 'segredo123')
   })
@@ -132,11 +138,9 @@ describe('registo', () => {
       session: null,
       signUp: vi.fn(async () => ({ error: null, needsConfirmation: true })),
     })
-    renderApp('/registar', auth)
+    renderApp('/cadastro', auth)
     await fillSignUp()
-    expect(
-      await screen.findByRole('heading', { name: 'Confirma o teu e-mail' }),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Confirme seu e-mail' })).toBeInTheDocument()
   })
 })
 
@@ -160,7 +164,7 @@ describe('recuperação de senha', () => {
     const { router, auth } = renderApp('/nova-senha')
     await userEvent.type(screen.getByLabelText('Nova senha'), 'novasenha1')
     await userEvent.type(screen.getByLabelText('Confirmar nova senha'), 'novasenha1')
-    await userEvent.click(screen.getByRole('button', { name: 'Guardar nova senha' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar nova senha' }))
 
     expect(auth.updatePassword).toHaveBeenCalledWith('novasenha1')
     expect(router.state.location.pathname).toBe('/')
@@ -170,7 +174,7 @@ describe('recuperação de senha', () => {
 describe('sair', () => {
   it('o botão Sair das configurações termina a sessão', async () => {
     const { auth } = renderApp('/configuracoes')
-    expect(screen.getByText(/Sessão iniciada como ana@exemplo.pt/)).toBeInTheDocument()
+    expect(screen.getByText(/Conectado como ana@exemplo.pt/)).toBeInTheDocument()
     // Há um botão na sidebar e outro nas configurações; usamos o das configurações (o último)
     const buttons = screen.getAllByRole('button', { name: 'Sair' })
     await userEvent.click(buttons[buttons.length - 1])

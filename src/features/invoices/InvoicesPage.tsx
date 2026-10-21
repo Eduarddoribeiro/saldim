@@ -27,7 +27,7 @@ import { isToPay, summarizeInvoices } from './invoice-summary'
 
 type Filter = 'por_pagar' | 'pagas' | 'todas'
 const FILTERS: { value: Filter; label: string }[] = [
-  { value: 'por_pagar', label: 'Por pagar' },
+  { value: 'por_pagar', label: 'A pagar' },
   { value: 'pagas', label: 'Pagas' },
   { value: 'todas', label: 'Todas' },
 ]
@@ -83,7 +83,7 @@ export function InvoicesPage() {
   const header = (
     <PageHeader
       title="Faturas"
-      description="As faturas dos teus cartões: o que fecha, o que vence e o que já pagaste."
+      description="As faturas dos seus cartões: o que fecha, o que vence e o que você já pagou."
     />
   )
 
@@ -92,7 +92,7 @@ export function InvoicesPage() {
       <>
         {header}
         <p role="status" className="text-sm text-muted-foreground">
-          A carregar faturas…
+          Carregando faturas…
         </p>
       </>
     )
@@ -122,8 +122,8 @@ export function InvoicesPage() {
         {header}
         <EmptyState
           icon={CreditCard}
-          title="Ainda não tens cartões de crédito"
-          description="Cria um cartão em Configurações → Contas para registar compras e ver as faturas."
+          title="Você ainda não tem cartões de crédito"
+          description="Crie um cartão em Configurações → Contas para registrar compras e ver as faturas."
         />
         <Link
           to="/configuracoes/contas"
@@ -194,11 +194,11 @@ export function InvoicesPage() {
       {visible.length === 0 ? (
         <EmptyState
           icon={ReceiptText}
-          title={filter === 'por_pagar' ? 'Nada por pagar' : 'Sem faturas'}
+          title={filter === 'por_pagar' ? 'Nada a pagar' : 'Sem faturas'}
           description={
             filter === 'por_pagar'
               ? 'As faturas deste cartão estão pagas. As compras novas aparecem aqui.'
-              : 'As faturas aparecem quando registas uma compra no cartão.'
+              : 'As faturas aparecem quando você registra uma compra no cartão.'
           }
         />
       ) : (
@@ -244,7 +244,7 @@ function InvoiceRow({
     <button
       type="button"
       onClick={onSelect}
-      aria-label={`${title}: ${state.toLowerCase()}, total ${formatMoney(invoice.totalCentavos, currency)}${partial ? `, falta ${formatMoney(invoice.emAbertoCentavos, currency)}` : ''}. Ver detalhe`}
+      aria-label={`${title}: ${state.toLowerCase()}, total ${formatMoney(invoice.totalCentavos, currency)}${partial ? `, falta ${formatMoney(invoice.emAbertoCentavos, currency)}` : ''}. Ver detalhes`}
       className="flex min-h-16 w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none"
     >
       <span className="min-w-0 flex-1">

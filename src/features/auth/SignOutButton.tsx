@@ -22,7 +22,7 @@ export function SignOutButton({ className }: { className?: string }) {
       }}
     >
       <LogOut aria-hidden />
-      {pending ? 'A sair…' : 'Sair'}
+      {pending ? 'Saindo…' : 'Sair'}
     </Button>
   )
 }

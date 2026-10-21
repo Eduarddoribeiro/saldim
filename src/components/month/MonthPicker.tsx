@@ -32,7 +32,7 @@ export function MonthPicker({
         variant="outline"
         size="icon-lg"
         onClick={() => onChange(addMonths(month, 1))}
-        aria-label={`Mês seguinte (${formatMonth(addMonths(month, 1))})`}
+        aria-label={`Próximo mês (${formatMonth(addMonths(month, 1))})`}
       >
         <ChevronRight aria-hidden />
       </Button>

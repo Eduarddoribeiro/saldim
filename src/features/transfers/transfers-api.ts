@@ -22,16 +22,17 @@ export type PaymentValues = {
 }
 
 const MESSAGES = {
-  '23503': 'A conta ou a fatura já não existe. Atualiza a página e tenta de novo.',
-  '23514': 'Há um valor inválido (confirma o valor e a data).',
+  '23503': 'A conta ou a fatura já não existe. Atualize a página e tente de novo.',
+  '23514': 'Há um valor inválido (confira o valor e a data).',
 }
 
 // Regras com nome (HINT da trigger check_transferencia): mensagem própria.
 const RULE_MESSAGES: Record<string, string> = {
-  transferencias_origem_cartao_check: 'O pagamento tem de sair de uma conta de dinheiro.',
-  transferencias_cartao_sem_fatura_check: 'Um pagamento ao cartão tem de indicar a fatura.',
+  transferencias_origem_cartao_check: 'O pagamento precisa sair de uma conta de dinheiro.',
+  transferencias_cartao_sem_fatura_check: 'Um pagamento ao cartão precisa indicar a fatura.',
   transferencias_pagamento_futuro_check: 'Um pagamento não pode ter data futura.',
-  transferencias_contas_diferentes_check: 'A conta de origem e a de destino têm de ser diferentes.',
+  transferencias_contas_diferentes_check:
+    'A conta de origem e a de destino precisam ser diferentes.',
 }
 
 type DbError = { code?: string; message?: string; details?: string; hint?: string }

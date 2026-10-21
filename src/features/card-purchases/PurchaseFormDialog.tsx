@@ -155,7 +155,7 @@ function PurchaseForm({ onOpenChange, categories, accounts }: Props) {
       <SelectField
         id="compra-cartao"
         label="Cartão"
-        placeholder="Escolhe o cartão…"
+        placeholder="Escolha o cartão…"
         options={cards.map((account) => ({ value: account.id, label: account.nome }))}
         error={errors.cardId?.message}
         {...register('cardId')}
@@ -188,7 +188,7 @@ function PurchaseForm({ onOpenChange, categories, accounts }: Props) {
         options={personOptions}
         hint={
           pessoaId
-            ? 'Conta na fatura e no limite, mas não nos teus gastos: fica no que esta pessoa te deve.'
+            ? 'Conta na fatura e no limite, mas não nos seus gastos: fica no que esta pessoa te deve.'
             : undefined
         }
         {...register('pessoaId')}
@@ -219,7 +219,7 @@ function PurchaseForm({ onOpenChange, categories, accounts }: Props) {
         <SelectField
           id="compra-categoria"
           label="Categoria"
-          placeholder="Escolhe…"
+          placeholder="Escolha…"
           options={categoryOptions}
           error={errors.categoryId?.message}
           {...register('categoryId')}
@@ -242,17 +242,17 @@ function PurchaseForm({ onOpenChange, categories, accounts }: Props) {
               {...register('emCurso')}
             />
             <span>
-              Compra já em curso
+              Compra já em andamento
               <span className="block text-xs text-muted-foreground">
-                Algumas parcelas já foram pagas antes de usares a app: só as que faltam são
-                registadas.
+                Algumas parcelas já foram pagas antes de você usar o app: só as que faltam são
+                registradas.
               </span>
             </span>
           </label>
           {emCurso && (
             <SelectField
               id="compra-parcela-inicial"
-              label="Primeira parcela por pagar"
+              label="Primeira parcela a pagar"
               options={range(2, parcelas).map((n) => ({
                 value: String(n),
                 label: `${n}.ª de ${parcelas}`,
@@ -271,7 +271,7 @@ function PurchaseForm({ onOpenChange, categories, accounts }: Props) {
           Cancelar
         </Button>
         <Button type="submit" size="lg" disabled={busy || cards.length === 0}>
-          {isSubmitting ? 'A registar…' : 'Registar compra'}
+          {isSubmitting ? 'Registrando…' : 'Registrar compra'}
         </Button>
       </DialogFooter>
     </form>

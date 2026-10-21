@@ -5,18 +5,19 @@ const MESSAGES: Record<string, string> = {
   invalid_credentials: 'E-mail ou senha incorretos.',
   user_already_exists: 'Já existe uma conta com este e-mail.',
   email_exists: 'Já existe uma conta com este e-mail.',
-  weak_password: 'A senha é demasiado fraca. Usa pelo menos 8 caracteres.',
-  same_password: 'A nova senha tem de ser diferente da atual.',
-  email_not_confirmed: 'Confirma o teu e-mail antes de entrar.',
-  signup_disabled: 'O registo de novas contas está desativado.',
-  over_email_send_rate_limit: 'Foram enviados demasiados e-mails. Espera alguns minutos.',
-  over_request_rate_limit: 'Demasiadas tentativas. Espera um pouco e tenta de novo.',
-  session_not_found: 'A sessão expirou. Entra novamente.',
-  validation_failed: 'Verifica os dados introduzidos.',
+  weak_password: 'A senha é muito fraca. Use pelo menos 8 caracteres.',
+  same_password: 'A nova senha precisa ser diferente da atual.',
+  email_not_confirmed: 'Confirme seu e-mail antes de entrar.',
+  signup_disabled: 'O cadastro de novas contas está desativado.',
+  over_email_send_rate_limit: 'Muitos e-mails enviados. Aguarde alguns minutos.',
+  over_request_rate_limit: 'Muitas tentativas. Aguarde um pouco e tente de novo.',
+  session_not_found: 'Sua sessão expirou. Entre novamente.',
+  validation_failed: 'Confira os dados informados.',
 }
 
-export const GENERIC_AUTH_ERROR = 'Ocorreu um erro. Tenta novamente.'
-export const NETWORK_AUTH_ERROR = 'Sem ligação ao servidor. Verifica a tua ligação e tenta de novo.'
+export const GENERIC_AUTH_ERROR = 'Ocorreu um erro. Tente novamente.'
+export const NETWORK_AUTH_ERROR =
+  'Sem conexão com o servidor. Verifique sua internet e tente de novo.'
 
 type ErrorLike = { code?: string; status?: number; name?: string } | null | undefined
 

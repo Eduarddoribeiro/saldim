@@ -19,7 +19,7 @@ export function readSupabaseConfig(env: Record<string, string | undefined>): Sup
   }
   // Proteção contra o erro mais perigoso: pôr a chave secreta no frontend.
   if (publishableKey.startsWith('sb_secret_') || isServiceRoleJwt(publishableKey)) {
-    throw new Error('A chave em VITE_SUPABASE_PUBLISHABLE_KEY é SECRETA. Usa a chave pública.')
+    throw new Error('A chave em VITE_SUPABASE_PUBLISHABLE_KEY é SECRETA. Use a chave pública.')
   }
   return { url, publishableKey }
 }

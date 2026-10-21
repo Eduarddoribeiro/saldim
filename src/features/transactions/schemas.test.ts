@@ -27,15 +27,15 @@ describe('transactionFormSchema', () => {
   })
 
   it('exige valor maior que zero', () => {
-    expect(messages({ ...valid, valor: '0' })).toEqual(['O valor tem de ser maior que zero.'])
+    expect(messages({ ...valid, valor: '0' })).toEqual(['O valor precisa ser maior que zero.'])
     expect(messages({ ...valid, valor: '-5' })[0]).toMatch(/Não pode ser negativo/)
   })
 
   it('exige categoria, conta e data válida', () => {
     expect(messages({ ...valid, categoryId: '', accountId: '', data: '2026-02-30' })).toEqual([
-      'Indica uma data válida.',
-      'Escolhe uma categoria.',
-      'Escolhe uma conta.',
+      'Informe uma data válida.',
+      'Escolha uma categoria.',
+      'Escolha uma conta.',
     ])
   })
 

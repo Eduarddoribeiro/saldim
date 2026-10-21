@@ -130,7 +130,7 @@ describe('página de orçamentos', () => {
 
     const casa = plain(row(/Moradia/).textContent)
     expect(casa).toContain('Excedido · 120%')
-    expect(casa).toContain('Passou R$ 300,00')
+    expect(casa).toContain('Excedeu em R$ 300,00')
 
     // A barra de progresso é anunciada a leitores de ecrã (limitada a 100)
     const barra = within(row(/Moradia/)).getByRole('progressbar')
@@ -157,7 +157,7 @@ describe('página de orçamentos', () => {
     await userEvent.click(await defineButton('Lazer'))
     const dialog = await screen.findByRole('dialog', { name: 'Definir orçamento' })
     await userEvent.type(within(dialog).getByLabelText('Limite mensal'), '250,50')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Salvar' }))
 
     await waitFor(() => expect(row(/Lazer/)).toBeInTheDocument())
     expect(store.budgets.at(-1)).toMatchObject({
@@ -172,8 +172,8 @@ describe('página de orçamentos', () => {
     await userEvent.click(await defineButton('Lazer'))
     const dialog = await screen.findByRole('dialog')
     await userEvent.type(within(dialog).getByLabelText('Limite mensal'), '0')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }))
-    expect(within(dialog).getByText('O valor tem de ser maior que zero.')).toBeInTheDocument()
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Salvar' }))
+    expect(within(dialog).getByText('O valor precisa ser maior que zero.')).toBeInTheDocument()
   })
 
   it('edita e remove um orçamento existente', async () => {
@@ -183,9 +183,9 @@ describe('página de orçamentos', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Editar orçamento' })
     expect(within(dialog).getByLabelText('Limite mensal')).toHaveValue('1000,00')
 
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Apagar' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Excluir' }))
     const confirm = await screen.findByRole('alertdialog')
-    await userEvent.click(within(confirm).getByRole('button', { name: 'Apagar' }))
+    await userEvent.click(within(confirm).getByRole('button', { name: 'Excluir' }))
     await waitFor(() =>
       expect(
         within(screen.getByRole('region', { name: 'Sem orçamento' })).getByText('Alimentação'),

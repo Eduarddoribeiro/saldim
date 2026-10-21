@@ -4,18 +4,19 @@
 type ErrorLike = { code?: string; message?: string; name?: string } | null | undefined
 
 const DEFAULT_MESSAGES: Record<string, string> = {
-  '23505': 'Já existe um registo com esses dados.', // unique_violation
-  '23503': 'Este registo está a ser usado e não pode ser apagado.', // foreign_key_violation
+  '23505': 'Já existe um registro com esses dados.', // unique_violation
+  '23503': 'Este registro está em uso e não pode ser excluído.', // foreign_key_violation
   '23514': 'Há um valor inválido.', // check_violation
   '23502': 'Falta preencher um campo obrigatório.', // not_null_violation
-  '22001': 'Um dos textos é demasiado longo.', // string_data_right_truncation
-  '42501': 'Não tens permissão para esta operação.', // insufficient_privilege (inclui RLS)
-  PGRST116: 'Registo não encontrado.', // .single() sem linhas (também quando a RLS o esconde)
-  PGRST301: 'A sessão expirou. Entra novamente.', // JWT expirado
+  '22001': 'Um dos textos é longo demais.', // string_data_right_truncation
+  '42501': 'Você não tem permissão para esta operação.', // insufficient_privilege (inclui RLS)
+  PGRST116: 'Registro não encontrado.', // .single() sem linhas (também quando a RLS o esconde)
+  PGRST301: 'Sua sessão expirou. Entre novamente.', // JWT expirado
 }
 
-export const GENERIC_DB_ERROR = 'Ocorreu um erro. Tenta novamente.'
-export const NETWORK_DB_ERROR = 'Sem ligação ao servidor. Verifica a tua ligação e tenta de novo.'
+export const GENERIC_DB_ERROR = 'Ocorreu um erro. Tente novamente.'
+export const NETWORK_DB_ERROR =
+  'Sem conexão com o servidor. Verifique sua internet e tente de novo.'
 
 /** `overrides` permite mensagens mais específicas por ecrã (ex.: 23505 → "Já existe uma categoria…"). */
 export function dbErrorMessage(error: ErrorLike, overrides: Record<string, string> = {}): string {

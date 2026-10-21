@@ -80,7 +80,7 @@ export function RecurringPage() {
 
       {recurring.isPending || accounts.isPending || categories.isPending ? (
         <p className="text-sm text-muted-foreground" role="status">
-          A carregar recorrentes…
+          Carregando recorrentes…
         </p>
       ) : error ? (
         <div className="grid gap-3">
@@ -92,8 +92,8 @@ export function RecurringPage() {
       ) : sorted.length === 0 ? (
         <EmptyState
           icon={Repeat}
-          title="Ainda sem recorrentes"
-          description="Cria um para a Netflix, a renda ou o salário: o lançamento aparece sozinho em cada mês."
+          title="Nenhum recorrente ainda"
+          description="Crie um para a Netflix, o aluguel ou o salário: o lançamento aparece sozinho todo mês."
         />
       ) : (
         <ul aria-label="Recorrentes" className="divide-y rounded-xl border">

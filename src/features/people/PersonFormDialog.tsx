@@ -70,7 +70,7 @@ function PersonForm({ onOpenChange, person }: Props) {
       <DialogHeader>
         <DialogTitle>{person ? 'Editar pessoa' : 'Nova pessoa'}</DialogTitle>
         <DialogDescription>
-          Alguém que faz compras no teu cartão e te devolve o dinheiro.
+          Alguém que faz compras no seu cartão e te devolve o dinheiro.
         </DialogDescription>
       </DialogHeader>
 
@@ -90,7 +90,7 @@ function PersonForm({ onOpenChange, person }: Props) {
         label="Dívida anterior"
         inputMode="decimal"
         autoComplete="off"
-        hint={`O que já te devia antes de registares as compras aqui (conta como já vencido). ${MONEY_EXAMPLE}`}
+        hint={`O que essa pessoa já te devia antes de você registrar as compras aqui (conta como já vencido). ${MONEY_EXAMPLE}`}
         error={errors.dividaAnterior?.message}
         {...register('dividaAnterior')}
       />
@@ -100,7 +100,7 @@ function PersonForm({ onOpenChange, person }: Props) {
           itemName={person.nome}
           archived={person.arquivada}
           disabled={busy}
-          deleteHint="Se já tiver compras ou pagamentos, arquiva-a: deixa de aparecer nas escolhas, mas as contas ficam."
+          deleteHint="Se já tiver compras ou pagamentos, arquive: a pessoa some das opções, mas o histórico é mantido."
           onToggleArchive={() =>
             run(() =>
               update.mutateAsync({ id: person.id, patch: { arquivada: !person.arquivada } }),
@@ -115,7 +115,7 @@ function PersonForm({ onOpenChange, person }: Props) {
           Cancelar
         </Button>
         <Button type="submit" size="lg" disabled={busy}>
-          {isSubmitting ? 'A guardar…' : person ? 'Guardar' : 'Criar'}
+          {isSubmitting ? 'Salvando…' : person ? 'Salvar' : 'Criar'}
         </Button>
       </DialogFooter>
     </form>

@@ -95,7 +95,7 @@ financas/                     # raiz do repositório Git
 | Caminho                      | Página               | Acesso                                   | Estado                                                   |
 | ---------------------------- | -------------------- | ---------------------------------------- | -------------------------------------------------------- |
 | `/entrar`                    | `LoginPage`          | `PublicOnly` (com sessão → app)          | feito                                                    |
-| `/registar`                  | `SignUpPage`         | `PublicOnly`                             | feito                                                    |
+| `/cadastro`                  | `SignUpPage`         | `PublicOnly`                             | feito (`/registar` redireciona para cá)                  |
 | `/recuperar-senha`           | `ForgotPasswordPage` | `PublicOnly`                             | feito                                                    |
 | `/nova-senha`                | `ResetPasswordPage`  | sessão temporária do link de recuperação | feito                                                    |
 | `/`                          | `DashboardPage`      | `RequireAuth` (sem sessão → `/entrar`)   | feito (`?mes=YYYY-MM`)                                   |
@@ -157,7 +157,7 @@ Os tipos de `tests/` e `e2e/` são verificados por `tsconfig.tests.json`.
 
 - **TypeScript** estrito como configurado (`noUnusedLocals`, `verbatimModuleSyntax` → usar `import type`). Nada de `any` ou `@ts-ignore` para calar erros.
 - **Imports** com o alias `@/` (ex.: `@/lib/theme`); imports relativos só dentro da mesma pasta.
-- **Estilo:** Prettier (sem ponto e vírgula, aspas simples, 100 colunas, classes Tailwind ordenadas automaticamente). Nomes de código em inglês; textos da interface e comentários em **português de Portugal**.
+- **Estilo:** Prettier (sem ponto e vírgula, aspas simples, 100 colunas, classes Tailwind ordenadas automaticamente). Nomes de código em inglês; **textos da interface em português do Brasil** (tratamento por "você"; Salvar, Excluir, Registrar, "Carregando…"; datas com `Intl` em `pt-BR`); comentários e documentação em português de Portugal. Nomes internos (`registar_compra_cartao`, `registar_estorno_cartao`) ficam como estão — não aparecem na interface.
 - **React:** componentes de função com exports nomeados; um componente por ficheiro em `PascalCase.tsx`. Contextos/hooks em ficheiros `.ts` à parte (regra `only-export-components`). Lógica de negócio em funções puras em `src/lib` ou na pasta da feature, testadas sem React.
 - **Organização:** código de uma funcionalidade em `src/features/<área>/`; peças partilhadas em `src/components/`; `components/ui/` só para componentes shadcn.
 - **Estilos:** só classes Tailwind com os tokens do tema (`bg-background`, `text-muted-foreground`…), nunca cores fixas — garante claro/escuro.

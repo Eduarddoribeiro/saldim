@@ -106,7 +106,7 @@ function ReimbursementForm({
       <SelectField
         id="reembolso-conta"
         label="Conta onde entrou"
-        placeholder="Escolhe…"
+        placeholder="Escolha…"
         options={accountOptions}
         error={errors.accountId?.message}
         {...register('accountId')}
@@ -134,7 +134,7 @@ function ReimbursementForm({
           Cancelar
         </Button>
         <Button type="submit" size="lg" disabled={isSubmitting || create.isPending}>
-          {isSubmitting ? 'A registar…' : 'Registar pagamento'}
+          {isSubmitting ? 'Registrando…' : 'Registrar pagamento'}
         </Button>
       </DialogFooter>
     </form>

@@ -142,7 +142,7 @@ function TransactionForm({ onOpenChange, transaction, categories, accounts }: Pr
     <form onSubmit={onSubmit} noValidate className="grid gap-4">
       <DialogHeader>
         <DialogTitle>{transaction ? 'Editar transação' : 'Nova transação'}</DialogTitle>
-        <DialogDescription>Regista uma receita ou uma despesa.</DialogDescription>
+        <DialogDescription>Registre uma receita ou uma despesa.</DialogDescription>
       </DialogHeader>
 
       {serverError && <FormAlert>{serverError}</FormAlert>}
@@ -179,7 +179,7 @@ function TransactionForm({ onOpenChange, transaction, categories, accounts }: Pr
         <SelectField
           id="transacao-categoria"
           label="Categoria"
-          placeholder="Escolhe…"
+          placeholder="Escolha…"
           options={categoryOptions}
           error={errors.categoryId?.message}
           {...register('categoryId')}
@@ -187,7 +187,7 @@ function TransactionForm({ onOpenChange, transaction, categories, accounts }: Pr
         <SelectField
           id="transacao-conta"
           label="Conta"
-          placeholder="Escolhe…"
+          placeholder="Escolha…"
           options={accountOptions}
           error={errors.accountId?.message}
           {...register('accountId')}
@@ -232,7 +232,7 @@ function TransactionForm({ onOpenChange, transaction, categories, accounts }: Pr
           Cancelar
         </Button>
         <Button type="submit" size="lg" disabled={busy}>
-          {isSubmitting ? 'A guardar…' : transaction ? 'Guardar' : 'Registar'}
+          {isSubmitting ? 'Salvando…' : transaction ? 'Salvar' : 'Registrar'}
         </Button>
       </DialogFooter>
     </form>

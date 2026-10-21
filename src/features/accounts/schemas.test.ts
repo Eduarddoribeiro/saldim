@@ -67,7 +67,7 @@ describe('accountFormSchema — cartão de crédito', () => {
     })
   })
 
-  it('um saldo inválido escondido não impede guardar um cartão', () => {
+  it('um saldo inválido escondido não impede salvar um cartão', () => {
     expect(accountFormSchema.safeParse(card({ saldoInicial: 'abc' })).success).toBe(true)
   })
 
@@ -75,16 +75,16 @@ describe('accountFormSchema — cartão de crédito', () => {
     expect(
       errors(card({ diaFechamento: '', diaVencimento: '', limite: '', contaPagamentoId: '' })),
     ).toEqual({
-      diaFechamento: 'Escolhe o dia de fechamento.',
-      diaVencimento: 'Escolhe o dia de vencimento.',
-      limite: 'Indica o valor.',
-      contaPagamentoId: 'Escolhe a conta de onde sai o pagamento da fatura.',
+      diaFechamento: 'Escolha o dia de fechamento.',
+      diaVencimento: 'Escolha o dia de vencimento.',
+      limite: 'Informe o valor.',
+      contaPagamentoId: 'Escolha a conta de onde sai o pagamento da fatura.',
     })
   })
 
   it('aplica as regras dos dias de src/lib/credit-card.ts', () => {
     expect(errors(card({ diaFechamento: '10', diaVencimento: '10' }))).toEqual({
-      diaVencimento: 'O vencimento tem de ser num dia diferente do fechamento.',
+      diaVencimento: 'O vencimento precisa ser em um dia diferente do fechamento.',
     })
     expect(Object.keys(errors(card({ diaFechamento: '28', diaVencimento: '30' })))).toEqual([
       'diaFechamento',
@@ -92,8 +92,8 @@ describe('accountFormSchema — cartão de crédito', () => {
     expect(errors(card({ diaFechamento: '27', diaVencimento: '28' }))).toEqual({})
   })
 
-  it('o limite tem de ser positivo e válido', () => {
-    expect(errors(card({ limite: '0' }))).toEqual({ limite: 'O valor tem de ser maior que zero.' })
+  it('o limite precisa ser positivo e válido', () => {
+    expect(errors(card({ limite: '0' }))).toEqual({ limite: 'O valor precisa ser maior que zero.' })
     expect(errors(card({ limite: '-10' })).limite).toMatch(/Não pode ser negativo/)
   })
 })

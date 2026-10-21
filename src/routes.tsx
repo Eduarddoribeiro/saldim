@@ -1,4 +1,4 @@
-import type { RouteObject } from 'react-router'
+import { Navigate, type RouteObject } from 'react-router'
 import { AppShell } from '@/components/layout/AppShell'
 import { NotFoundPage } from '@/components/layout/NotFoundPage'
 import { AuthLayout } from '@/features/auth/AuthLayout'
@@ -33,6 +33,8 @@ const ReceivablesPage = page(() => import('@/features/people/ReceivablesPage'), 
 
 // As rotas ficam separadas do router para os testes as poderem usar com um router em memória
 export const routes: RouteObject[] = [
+  // Endereço antigo do registo (antes da conversão para pt-BR): links guardados continuam a funcionar
+  { path: 'registar', element: <Navigate to="/cadastro" replace /> },
   // Só sem sessão
   {
     element: <PublicOnly />,
@@ -41,7 +43,7 @@ export const routes: RouteObject[] = [
         element: <AuthLayout />,
         children: [
           { path: 'entrar', element: <LoginPage /> },
-          { path: 'registar', element: <SignUpPage /> },
+          { path: 'cadastro', element: <SignUpPage /> },
           { path: 'recuperar-senha', element: <ForgotPasswordPage /> },
         ],
       },

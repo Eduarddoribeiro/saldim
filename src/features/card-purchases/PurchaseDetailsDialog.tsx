@@ -100,13 +100,13 @@ function Summary({
   const removeRefund = useDeleteRefund()
   const people = usePeople()
   const name = purchase.descricao || category?.nome || 'Compra no cartão'
-  const registadas = purchase.parcelas - purchase.parcela_inicial + 1
+  const registradas = purchase.parcelas - purchase.parcela_inicial + 1
 
   const person = people.data?.find((item) => item.id === purchase.pessoa_id)
   const details: [string, string][] = [
     ...(purchase.pessoa_id
       ? [
-          ['De quem', `${person?.nome ?? 'Outra pessoa'} (não conta nos teus gastos)`] as [
+          ['De quem', `${person?.nome ?? 'Outra pessoa'} (não conta nos seus gastos)`] as [
             string,
             string,
           ],
@@ -119,7 +119,7 @@ function Summary({
     [
       'Parcelas',
       purchase.parcela_inicial > 1
-        ? `${purchase.parcelas}× (registadas da ${purchase.parcela_inicial}.ª à ${purchase.parcelas}.ª)`
+        ? `${purchase.parcelas}× (registradas da ${purchase.parcela_inicial}.ª à ${purchase.parcelas}.ª)`
         : `${purchase.parcelas}×`,
     ],
   ]
@@ -130,8 +130,8 @@ function Summary({
       <DialogHeader>
         <DialogTitle>{name}</DialogTitle>
         <DialogDescription>
-          Compra no cartão. Se foi devolvida ou cancelada, regista um estorno; se te enganaste a
-          registá-la, apaga-a e regista-a de novo.
+          Compra no cartão. Se foi devolvida ou cancelada, registre um estorno; se registrou errado,
+          exclua e registre de novo.
         </DialogDescription>
       </DialogHeader>
 
@@ -199,7 +199,7 @@ function Summary({
       <ArchiveDeleteActions
         itemName={name}
         disabled={remove.isPending}
-        deleteHint={`${registadas === 1 ? 'A parcela é apagada' : `As ${registadas} parcelas são apagadas`} com a compra${refunds.length > 0 ? ', tal como os estornos' : ''}.`}
+        deleteHint={`${registradas === 1 ? 'A parcela é excluída' : `As ${registradas} parcelas são excluídas`} com a compra${refunds.length > 0 ? ', assim como os estornos' : ''}.`}
         onDelete={() => run(() => remove.mutateAsync(purchase.id))}
       />
 
@@ -209,7 +209,7 @@ function Summary({
         </Button>
         {porEstornar > 0 && (
           <Button type="button" size="lg" onClick={onRefund}>
-            Registar estorno
+            Registrar estorno
           </Button>
         )}
       </DialogFooter>
@@ -256,9 +256,9 @@ function RefundForm({
       <DialogHeader>
         <DialogTitle>Estorno de {name}</DialogTitle>
         <DialogDescription>
-          {card?.nome ?? 'Cartão'} · falta estornar {formatMoney(porEstornar, currency)}. Usa o
+          {card?.nome ?? 'Cartão'} · falta estornar {formatMoney(porEstornar, currency)}. Use o
           valor e a data do extrato: o estorno entra na fatura dessa data e desconta dos gastos
-          desse mês. As parcelas já registadas não mudam.
+          desse mês. As parcelas já registradas não mudam.
         </DialogDescription>
       </DialogHeader>
 
@@ -300,7 +300,7 @@ function RefundForm({
           Voltar
         </Button>
         <Button type="submit" size="lg" disabled={isSubmitting || create.isPending}>
-          {isSubmitting ? 'A registar…' : 'Registar estorno'}
+          {isSubmitting ? 'Registrando…' : 'Registrar estorno'}
         </Button>
       </DialogFooter>
     </form>

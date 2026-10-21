@@ -29,7 +29,7 @@ export function ForgotPasswordPage() {
   return (
     <AuthCard
       title="Recuperar senha"
-      description="Enviamos-te um link para definires uma nova senha."
+      description="Vamos enviar um link para você criar uma nova senha."
       footer={
         <Link to="/entrar" className="font-medium text-foreground underline underline-offset-4">
           Voltar ao login
@@ -39,7 +39,7 @@ export function ForgotPasswordPage() {
       {sent ? (
         // Mesma mensagem exista ou não a conta: não revelamos que e-mails estão registados.
         <FormAlert variant="success">
-          Se existir uma conta com esse e-mail, vais receber um link em breve.
+          Se existir uma conta com esse e-mail, você vai receber um link em breve.
         </FormAlert>
       ) : (
         <form onSubmit={onSubmit} noValidate className="grid gap-4">
@@ -54,7 +54,7 @@ export function ForgotPasswordPage() {
             {...register('email')}
           />
           <Button type="submit" size="lg" className="h-10" disabled={isSubmitting}>
-            {isSubmitting ? 'A enviar…' : 'Enviar link'}
+            {isSubmitting ? 'Enviando…' : 'Enviar link'}
           </Button>
         </form>
       )}

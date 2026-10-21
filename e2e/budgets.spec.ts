@@ -12,7 +12,7 @@ test('orçamentos: definir, acompanhar o estado, copiar para o mês seguinte', a
   const nova = page.getByRole('dialog', { name: 'Nova transação' })
   await nova.getByLabel('Valor').fill('450')
   await nova.getByLabel('Categoria').selectOption({ label: 'Alimentação' })
-  await nova.getByRole('button', { name: 'Registar' }).click()
+  await nova.getByRole('button', { name: 'Registrar' }).click()
   await expect(nova).toBeHidden()
 
   // Navegação: no telemóvel pela barra inferior, no desktop pela sidebar
@@ -24,7 +24,7 @@ test('orçamentos: definir, acompanhar o estado, copiar para o mês seguinte', a
   await page.getByRole('button', { name: 'Definir orçamento de Alimentação' }).click()
   const dialogo = page.getByRole('dialog', { name: 'Definir orçamento' })
   await dialogo.getByLabel('Limite mensal').fill('500')
-  await dialogo.getByRole('button', { name: 'Guardar' }).click()
+  await dialogo.getByRole('button', { name: 'Salvar' }).click()
   await expect(dialogo).toBeHidden()
 
   const linha = page.getByRole('region', { name: 'Com orçamento' }).getByRole('button', {
@@ -39,12 +39,12 @@ test('orçamentos: definir, acompanhar o estado, copiar para o mês seguinte', a
   await linha.click()
   const editar = page.getByRole('dialog', { name: 'Editar orçamento' })
   await editar.getByLabel('Limite mensal').fill('400')
-  await editar.getByRole('button', { name: 'Guardar' }).click()
+  await editar.getByRole('button', { name: 'Salvar' }).click()
   await expect(linha).toContainText('Excedido · 113%')
-  await expect(linha).toContainText(money('Passou R$ 50,00'))
+  await expect(linha).toContainText(money('Excedeu em R$ 50,00'))
 
   // Mês seguinte: oferece copiar o orçamento
-  await page.getByRole('button', { name: /Mês seguinte/ }).click()
+  await page.getByRole('button', { name: /Próximo mês/ }).click()
   await page.getByRole('button', { name: /Copiar de/ }).click()
   await expect(page.getByText('1 orçamento copiado.')).toBeVisible()
   const copiado = page.getByRole('region', { name: 'Com orçamento' }).getByRole('button', {

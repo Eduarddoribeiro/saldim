@@ -36,7 +36,7 @@ export function ConfirmDeleteButton({
         variant="ghost"
         size="icon"
         disabled={disabled}
-        aria-label={`Apagar ${what}`}
+        aria-label={`Excluir ${what}`}
         onClick={() => setConfirming(true)}
       >
         <Trash2 aria-hidden />
@@ -44,7 +44,7 @@ export function ConfirmDeleteButton({
       <AlertDialog open={confirming} onOpenChange={setConfirming}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Apagar {what}?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir {what}?</AlertDialogTitle>
             <AlertDialogDescription>{consequence}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -56,7 +56,7 @@ export function ConfirmDeleteButton({
                 onConfirm()
               }}
             >
-              Apagar
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

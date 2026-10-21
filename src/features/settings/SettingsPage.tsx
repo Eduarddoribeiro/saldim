@@ -51,7 +51,7 @@ export function SettingsPage() {
       <div className="grid gap-4">
         <SettingsSection
           title="Aparência"
-          description="Escolhe entre claro, escuro ou seguir o sistema."
+          description="Escolha entre claro, escuro ou seguir o sistema."
         >
           <div className="max-w-56">
             <ThemeToggle showLabel />
@@ -60,7 +60,7 @@ export function SettingsPage() {
 
         <SettingsSection
           title="Organização"
-          description="Onde está o teu dinheiro e como os movimentos são agrupados."
+          description="Onde está seu dinheiro e como os movimentos são agrupados."
         >
           <ul className="-mx-1 divide-y">
             <SettingsLink to="/configuracoes/contas" icon={Landmark} label="Contas" />
@@ -70,7 +70,7 @@ export function SettingsPage() {
           </ul>
         </SettingsSection>
 
-        <SettingsSection title="Conta" description={`Sessão iniciada como ${user?.email ?? '—'}.`}>
+        <SettingsSection title="Conta" description={`Conectado como ${user?.email ?? '—'}.`}>
           <SignOutButton className="-ml-2.5" />
         </SettingsSection>
       </div>

@@ -76,7 +76,7 @@ export function BudgetsPage() {
 
       {isPending ? (
         <p role="status" className="text-sm text-muted-foreground">
-          A carregar orçamentos…
+          Carregando orçamentos…
         </p>
       ) : error ? (
         <div className="grid gap-3">
@@ -126,7 +126,7 @@ export function BudgetsPage() {
             <EmptyState
               icon={Target}
               title={`Sem orçamentos em ${formatMonth(month)}`}
-              description="Escolhe uma categoria abaixo e define quanto queres gastar no máximo."
+              description="Escolha uma categoria abaixo e defina quanto quer gastar no máximo."
             />
           ) : (
             <section aria-label="Com orçamento" className="grid gap-3">
@@ -245,7 +245,7 @@ function BudgetRow({
         <span className="text-muted-foreground tabular-nums">
           {status.restante >= 0
             ? `Restam ${formatMoney(status.restante, currency)}`
-            : `Passou ${formatMoney(-status.restante, currency)}`}
+            : `Excedeu em ${formatMoney(-status.restante, currency)}`}
         </span>
       </span>
     </button>

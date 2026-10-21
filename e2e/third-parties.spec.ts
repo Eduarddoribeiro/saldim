@@ -34,7 +34,7 @@ test('compra da mãe: fora dos gastos, a receber no Início, pagamento recebido'
   await compra.getByLabel('Nome da pessoa').fill('Mãe')
   await compra.getByLabel('Descrição (opcional)').fill('Sofá')
   await compra.getByLabel('Categoria').selectOption({ label: 'Moradia' })
-  await compra.getByRole('button', { name: 'Registar compra' }).click()
+  await compra.getByRole('button', { name: 'Registrar compra' }).click()
   await expect(compra).toBeHidden()
   await expect(page.getByRole('button', { name: /^Sofá: despesa/ })).toContainText('Para Mãe')
 
@@ -48,14 +48,14 @@ test('compra da mãe: fora dos gastos, a receber no Início, pagamento recebido'
   await expect(tile('Saldo líquido')).toContainText(money('R$ 200,00'))
 
   // A mãe devolve 100,00 por Pix
-  await tile('A receber').getByRole('link', { name: 'Ver detalhe' }).click()
+  await tile('A receber').getByRole('link', { name: 'Ver detalhes' }).click()
   const mae = page.getByRole('region', { name: 'Mãe' })
   await expect(mae).toContainText(money('Deve R$ 300,00'))
   await mae.getByRole('button', { name: 'Recebi' }).click()
   const pagamento = page.getByRole('dialog', { name: 'Pagamento de Mãe' })
   await pagamento.getByLabel('Valor').fill('100')
   await pagamento.getByLabel('Descrição (opcional)').fill('Pix')
-  await pagamento.getByRole('button', { name: 'Registar pagamento' }).click()
+  await pagamento.getByRole('button', { name: 'Registrar pagamento' }).click()
   await expect(pagamento).toBeHidden()
   await expect(mae).toContainText(money('Deve R$ 200,00'))
   await expectNoHorizontalScroll(page)

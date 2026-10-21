@@ -14,7 +14,7 @@ export const NEW_PERSON = '__nova__'
 const wholeNumber = z.string().transform((text, ctx) => {
   const value = Number(text)
   if (text === '' || !Number.isInteger(value)) {
-    ctx.addIssue({ code: 'custom', message: 'Escolhe um número.' })
+    ctx.addIssue({ code: 'custom', message: 'Escolha um número.' })
     return z.NEVER
   }
   return value
@@ -22,13 +22,13 @@ const wholeNumber = z.string().transform((text, ctx) => {
 
 export const purchaseFormSchema = z
   .object({
-    cardId: z.string().min(1, { error: 'Escolhe o cartão.' }),
+    cardId: z.string().min(1, { error: 'Escolha o cartão.' }),
     valor: moneyField({ positive: true }),
     parcelas: wholeNumber,
     data: z.string().refine((data) => isIsoDate(data) && data >= MIN_DATE && data <= MAX_DATE, {
-      error: 'Indica uma data válida.',
+      error: 'Informe uma data válida.',
     }),
-    categoryId: z.string().min(1, { error: 'Escolhe uma categoria.' }),
+    categoryId: z.string().min(1, { error: 'Escolha uma categoria.' }),
     descricao: z
       .string()
       .trim()
@@ -42,7 +42,7 @@ export const purchaseFormSchema = z
   })
   .superRefine((values, ctx) => {
     if (values.pessoaId === NEW_PERSON && values.novaPessoa === '') {
-      ctx.addIssue({ code: 'custom', path: ['novaPessoa'], message: 'Indica o nome da pessoa.' })
+      ctx.addIssue({ code: 'custom', path: ['novaPessoa'], message: 'Informe o nome da pessoa.' })
     }
     if (values.parcelas < 1 || values.parcelas > MAX_PARCELAS) {
       ctx.addIssue({
@@ -63,8 +63,8 @@ export const purchaseFormSchema = z
         path: ['parcelaInicial'],
         message:
           values.parcelas < 2
-            ? 'Uma compra em curso tem pelo menos 2 parcelas.'
-            : `Escolhe uma parcela entre 2 e ${values.parcelas}.`,
+            ? 'Uma compra em andamento tem pelo menos 2 parcelas.'
+            : `Escolha uma parcela entre 2 e ${values.parcelas}.`,
       })
     }
   })
@@ -95,7 +95,7 @@ export function refundFormSchema({
     }),
     data: z
       .string()
-      .refine((data) => isIsoDate(data) && data >= MIN_DATE, { error: 'Indica uma data válida.' })
+      .refine((data) => isIsoDate(data) && data >= MIN_DATE, { error: 'Informe uma data válida.' })
       .refine((data) => data >= dataCompra, {
         error: 'O estorno não pode ser anterior à data da compra.',
       })

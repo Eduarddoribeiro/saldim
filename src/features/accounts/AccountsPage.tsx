@@ -52,7 +52,7 @@ export function AccountsPage() {
 
       {isPending ? (
         <p className="text-sm text-muted-foreground" role="status">
-          A carregar contas…
+          Carregando contas…
         </p>
       ) : error ? (
         <div className="grid gap-3">
@@ -64,8 +64,8 @@ export function AccountsPage() {
       ) : active.length === 0 && archived.length === 0 ? (
         <EmptyState
           icon={Landmark}
-          title="Ainda sem contas"
-          description="Cria uma conta para começares a registar movimentos."
+          title="Nenhuma conta ainda"
+          description="Crie uma conta para começar a registrar movimentos."
         />
       ) : (
         <section aria-label="Contas ativas">

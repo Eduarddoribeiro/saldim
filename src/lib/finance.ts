@@ -454,7 +454,7 @@ export type BudgetStatus = {
 
 export function budgetStatus(limite: number, gasto: number): BudgetStatus {
   if (!Number.isSafeInteger(limite) || limite <= 0) {
-    throw new RangeError(`Limite de orçamento inválido: ${limite} (tem de ser > 0 centavos)`)
+    throw new RangeError(`Limite de orçamento inválido: ${limite} (precisa ser > 0 centavos)`)
   }
   const percent = Math.round((gasto * 100) / limite)
   // O estado compara os valores exatos (não a percentagem arredondada): 100,4 % já é "excedido".

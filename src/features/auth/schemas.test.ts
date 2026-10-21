@@ -36,7 +36,7 @@ describe('signUpSchema', () => {
 
   it('recusa e-mail inválido e nome vazio', () => {
     expect(firstIssue({ ...valid, email: 'ana@' })?.message).toBe('E-mail inválido.')
-    expect(firstIssue({ ...valid, nome: '   ' })?.message).toBe('Indica o teu nome.')
+    expect(firstIssue({ ...valid, nome: '   ' })?.message).toBe('Informe seu nome.')
   })
 })
 
@@ -48,8 +48,8 @@ describe('loginSchema', () => {
   it('exige e-mail e senha', () => {
     const result = loginSchema.safeParse({ email: '', password: '' })
     expect(result.error?.issues.map((issue) => issue.message)).toEqual([
-      'Indica o teu e-mail.',
-      'Indica a senha.',
+      'Informe seu e-mail.',
+      'Informe a senha.',
     ])
   })
 })

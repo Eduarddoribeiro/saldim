@@ -29,7 +29,7 @@ export function SignUpPage() {
 
   const footer = (
     <p>
-      Já tens conta?{' '}
+      Já tem conta?{' '}
       <Link to="/entrar" className="font-medium text-foreground underline underline-offset-4">
         Entrar
       </Link>
@@ -38,21 +38,17 @@ export function SignUpPage() {
 
   if (confirmationSentTo) {
     return (
-      <AuthCard title="Confirma o teu e-mail" footer={footer}>
+      <AuthCard title="Confirme seu e-mail" footer={footer}>
         <FormAlert variant="success">
-          Enviámos um link de confirmação para <strong>{confirmationSentTo}</strong>. Abre-o para
-          ativar a conta.
+          Enviamos um link de confirmação para <strong>{confirmationSentTo}</strong>. Abra o link
+          para ativar a conta.
         </FormAlert>
       </AuthCard>
     )
   }
 
   return (
-    <AuthCard
-      title="Criar conta"
-      description="Começa a controlar as tuas finanças."
-      footer={footer}
-    >
+    <AuthCard title="Criar conta" description="Comece a controlar suas finanças." footer={footer}>
       <form onSubmit={onSubmit} noValidate className="grid gap-4">
         {serverError && <FormAlert>{serverError}</FormAlert>}
         <TextField
@@ -89,7 +85,7 @@ export function SignUpPage() {
           {...register('confirmPassword')}
         />
         <Button type="submit" size="lg" className="h-10" disabled={isSubmitting}>
-          {isSubmitting ? 'A criar conta…' : 'Criar conta'}
+          {isSubmitting ? 'Criando conta…' : 'Criar conta'}
         </Button>
       </form>
     </AuthCard>

@@ -183,20 +183,20 @@ async function openPurchaseForm() {
 }
 
 describe('compras no cartão', () => {
-  it('T1: compra de outra pessoa — escolhe uma existente ou cria uma nova ao registar', async () => {
+  it('T1: compra de outra pessoa — escolha uma existente ou cria uma nova ao registrar', async () => {
     const dialog = await openPurchaseForm()
     const pessoa = within(dialog).getByLabelText('De quem é a compra?')
     expect(pessoa).toHaveValue('')
     await within(dialog).findByRole('option', { name: 'Mãe' })
     await userEvent.selectOptions(pessoa, 'Outra pessoa…')
-    expect(within(dialog).getByText(/não nos teus gastos/)).toBeInTheDocument()
+    expect(within(dialog).getByText(/não nos seus gastos/)).toBeInTheDocument()
     await userEvent.type(within(dialog).getByLabelText('Valor total'), '50')
     await userEvent.selectOptions(within(dialog).getByLabelText('Categoria'), 'alim')
     // Sem o nome não regista
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Registar compra' }))
-    expect(await within(dialog).findByText('Indica o nome da pessoa.')).toBeInTheDocument()
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar compra' }))
+    expect(await within(dialog).findByText('Informe o nome da pessoa.')).toBeInTheDocument()
     await userEvent.type(within(dialog).getByLabelText('Nome da pessoa'), 'Primo')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Registar compra' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar compra' }))
     await waitFor(() => expect(createPerson).toHaveBeenCalledWith('Primo'))
     await waitFor(() =>
       expect(registerPurchase).toHaveBeenCalledWith(
@@ -224,7 +224,7 @@ describe('compras no cartão', () => {
     const dialog = await openPurchaseForm()
     // Só há um cartão: vem escolhido
     expect(within(dialog).getByLabelText('Cartão')).toHaveValue('visa')
-    expect(within(dialog).getByText(/Indica o valor, as parcelas e a data/)).toBeInTheDocument()
+    expect(within(dialog).getByText(/Informe o valor, as parcelas e a data/)).toBeInTheDocument()
 
     await userEvent.type(within(dialog).getByLabelText('Valor total'), '100,00')
     await userEvent.selectOptions(within(dialog).getByLabelText('Número de parcelas'), '3')
@@ -247,7 +247,7 @@ describe('compras no cartão', () => {
       '3/3 fatura de fev 2027 · vence 05/02/2027R$ 33,34',
     ])
 
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Registar compra' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar compra' }))
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(registerPurchase).toHaveBeenCalledWith({
       cardId: 'visa',
@@ -262,13 +262,13 @@ describe('compras no cartão', () => {
     })
   })
 
-  it('compra em curso: escolhe a primeira parcela por pagar e só essas aparecem', async () => {
+  it('compra em andamento: escolha a primeira parcela por pagar e só essas aparecem', async () => {
     const dialog = await openPurchaseForm()
     await userEvent.type(within(dialog).getByLabelText('Valor total'), '600,01')
     await userEvent.selectOptions(within(dialog).getByLabelText('Número de parcelas'), '6')
     await userEvent.selectOptions(within(dialog).getByLabelText('Categoria'), 'alim')
-    await userEvent.click(within(dialog).getByLabelText(/Compra já em curso/))
-    await userEvent.selectOptions(within(dialog).getByLabelText('Primeira parcela por pagar'), '4')
+    await userEvent.click(within(dialog).getByLabelText(/Compra já em andamento/))
+    await userEvent.selectOptions(within(dialog).getByLabelText('Primeira parcela a pagar'), '4')
 
     expect(plain(within(dialog).getByRole('status').textContent)).toBe(
       '6× R$ 100,00 (a última R$ 100,01) · da 4.ª à 6.ª: R$ 300,01',
@@ -277,7 +277,7 @@ describe('compras no cartão', () => {
       within(within(dialog).getByRole('list', { name: 'Parcelas' })).getAllByRole('listitem'),
     ).toHaveLength(3)
 
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Registar compra' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar compra' }))
     await waitFor(() =>
       expect(registerPurchase).toHaveBeenCalledWith(
         expect.objectContaining({ valor: 60001, parcelas: 6, parcelaInicial: 4 }),
@@ -290,7 +290,7 @@ describe('compras no cartão', () => {
     await userEvent.type(within(dialog).getByLabelText('Valor total'), '0,02')
     await userEvent.selectOptions(within(dialog).getByLabelText('Número de parcelas'), '3')
     await userEvent.selectOptions(within(dialog).getByLabelText('Categoria'), 'alim')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Registar compra' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar compra' }))
     expect(
       await within(dialog).findByText('O valor não chega para todas as parcelas (1 centavo cada).'),
     ).toBeInTheDocument()
@@ -300,14 +300,14 @@ describe('compras no cartão', () => {
     const valor = within(dialog).getByLabelText('Valor total')
     await userEvent.clear(valor)
     await userEvent.type(valor, '30,00')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Registar compra' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar compra' }))
     expect(
       await within(dialog).findByText('As parcelas passariam do ano 2999.'),
     ).toBeInTheDocument()
     expect(screen.getByRole('dialog', { name: 'Compra no cartão' })).toBeInTheDocument()
   })
 
-  it('tocar numa parcela abre a compra; apagar pede confirmação e apaga a compra inteira', async () => {
+  it('tocar em uma parcela abre a compra; excluir pede confirmação e apaga a compra inteira', async () => {
     renderApp('/transacoes')
     await userEvent.click(await screen.findByRole('button', { name: /Televisão/ }))
     const dialog = await screen.findByRole('dialog', { name: 'Televisão' })
@@ -317,10 +317,10 @@ describe('compras no cartão', () => {
       within(within(dialog).getByRole('list', { name: 'Parcelas' })).getAllByRole('listitem'),
     ).toHaveLength(3)
 
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Apagar' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Excluir' }))
     const confirm = await screen.findByRole('alertdialog')
-    expect(confirm).toHaveTextContent('As 3 parcelas são apagadas com a compra.')
-    await userEvent.click(within(confirm).getByRole('button', { name: 'Apagar' }))
+    expect(confirm).toHaveTextContent('As 3 parcelas são excluídas com a compra.')
+    await userEvent.click(within(confirm).getByRole('button', { name: 'Excluir' }))
 
     await waitFor(() => expect(deletePurchase).toHaveBeenCalledWith('tv'))
     await waitFor(() =>
@@ -373,14 +373,14 @@ describe('estornos (C8)', () => {
 
   it('regista um estorno parcial com o valor do extrato e volta ao detalhe', async () => {
     const dialog = await openPurchase()
-    await userEvent.click(await within(dialog).findByRole('button', { name: 'Registar estorno' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Registrar estorno' }))
     const form = await screen.findByRole('dialog', { name: 'Estorno de Televisão' })
     // Sugere o que falta estornar (a compra inteira) e a data de hoje
     expect(within(form).getByLabelText('Valor')).toHaveValue('100,00')
     expect(within(form).getByLabelText('Data')).toHaveValue('2026-10-14')
     await userEvent.clear(within(form).getByLabelText('Valor'))
     await userEvent.type(within(form).getByLabelText('Valor'), '40')
-    await userEvent.click(within(form).getByRole('button', { name: 'Registar estorno' }))
+    await userEvent.click(within(form).getByRole('button', { name: 'Registrar estorno' }))
     await waitFor(() =>
       expect(registerRefund).toHaveBeenCalledWith({
         compraId: 'tv',
@@ -401,7 +401,7 @@ describe('estornos (C8)', () => {
   it('não deixa estornar mais do que falta, nem com data futura ou antes da compra', async () => {
     store.refunds = [estorno(9000)]
     const dialog = await openPurchase()
-    await userEvent.click(await within(dialog).findByRole('button', { name: 'Registar estorno' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Registrar estorno' }))
     const form = await screen.findByRole('dialog', { name: 'Estorno de Televisão' })
     expect(within(form).getByLabelText('Valor')).toHaveValue('10,00')
     await userEvent.clear(within(form).getByLabelText('Valor'))
@@ -409,7 +409,7 @@ describe('estornos (C8)', () => {
     const data = within(form).getByLabelText('Data')
     await userEvent.clear(data)
     await userEvent.type(data, '2026-10-15')
-    await userEvent.click(within(form).getByRole('button', { name: 'Registar estorno' }))
+    await userEvent.click(within(form).getByRole('button', { name: 'Registrar estorno' }))
     expect(
       await within(form).findByText(
         'O estorno não pode passar do que falta estornar desta compra.',
@@ -418,7 +418,7 @@ describe('estornos (C8)', () => {
     expect(within(form).getByText('Um estorno não pode ter data futura.')).toBeInTheDocument()
     await userEvent.clear(data)
     await userEvent.type(data, '2026-09-09')
-    await userEvent.click(within(form).getByRole('button', { name: 'Registar estorno' }))
+    await userEvent.click(within(form).getByRole('button', { name: 'Registrar estorno' }))
     expect(
       await within(form).findByText('O estorno não pode ser anterior à data da compra.'),
     ).toBeInTheDocument()
@@ -429,7 +429,7 @@ describe('estornos (C8)', () => {
     store.refunds = [estorno(10000)]
     const dialog = await openPurchase()
     await waitFor(() => expect(plain(dialog.textContent)).toContain('EstornadoR$ 100,00'))
-    expect(within(dialog).queryByRole('button', { name: 'Registar estorno' })).toBeNull()
+    expect(within(dialog).queryByRole('button', { name: 'Registrar estorno' })).toBeNull()
   })
 
   it('o estorno aparece na lista como crédito e abre a compra; apaga-se com confirmação', async () => {
@@ -454,10 +454,10 @@ describe('estornos (C8)', () => {
     await userEvent.click(linha)
     const dialog = await screen.findByRole('dialog', { name: 'Televisão' })
     await userEvent.click(
-      await within(dialog).findByRole('button', { name: /Apagar o estorno de R\$\s25,00/ }),
+      await within(dialog).findByRole('button', { name: /Excluir o estorno de R\$\s25,00/ }),
     )
     const confirm = await screen.findByRole('alertdialog')
-    await userEvent.click(within(confirm).getByRole('button', { name: 'Apagar' }))
+    await userEvent.click(within(confirm).getByRole('button', { name: 'Excluir' }))
     await waitFor(() => expect(deleteRefund).toHaveBeenCalledWith('e0'))
   })
 })

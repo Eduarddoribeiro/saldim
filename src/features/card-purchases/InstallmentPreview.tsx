@@ -60,7 +60,7 @@ function previewSchedule(input: PreviewInput, history: CardDaysChange[]) {
 export function InstallmentPreview({
   input,
   currency,
-  title = 'Pré-visualização',
+  title = 'Prévia',
 }: {
   input: PreviewInput | null
   currency: Currency
@@ -71,7 +71,7 @@ export function InstallmentPreview({
   if (input && history.error) {
     return (
       <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-        Não foi possível calcular as faturas. Atualiza a página e tenta de novo.
+        Não foi possível calcular as faturas. Atualize a página e tente de novo.
       </p>
     )
   }
@@ -80,7 +80,7 @@ export function InstallmentPreview({
   if (!input || !schedule) {
     return (
       <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-        Indica o valor, as parcelas e a data para ver as faturas.
+        Informe o valor, as parcelas e a data para ver as faturas.
       </p>
     )
   }

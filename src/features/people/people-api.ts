@@ -21,21 +21,21 @@ export type ReimbursementValues = {
 
 const MESSAGES = {
   '23505': 'Já existe uma pessoa com esse nome.',
-  '23514': 'Há um valor inválido (confirma o nome, o valor e a data).',
+  '23514': 'Há um valor inválido (confira o nome, o valor e a data).',
 }
 
 // Regras com nome (FK ou HINT das triggers): mensagem própria. O nome aparece no texto técnico.
 const RULE_MESSAGES: Record<string, string> = {
   compras_cartao_pessoa_fk:
-    'Esta pessoa tem compras registadas. Arquiva-a em vez de a apagar (as contas dela ficam).',
+    'Esta pessoa tem compras registradas. Arquive em vez de excluir (o histórico dela é mantido).',
   reembolsos_pessoa_fk:
-    'Esta pessoa tem pagamentos registados. Arquiva-a em vez de a apagar (as contas dela ficam).',
+    'Esta pessoa tem pagamentos registrados. Arquive em vez de excluir (o histórico dela é mantido).',
   transactions_pessoa_fk:
-    'Esta pessoa tem compras registadas. Arquiva-a em vez de a apagar (as contas dela ficam).',
-  reembolsos_conta_check: 'O dinheiro devolvido entra numa conta de dinheiro, não num cartão.',
+    'Esta pessoa tem compras registradas. Arquive em vez de excluir (o histórico dela é mantido).',
+  reembolsos_conta_check: 'O dinheiro devolvido entra em uma conta de dinheiro, não em um cartão.',
   reembolsos_futuro_check: 'Um pagamento recebido não pode ter data futura.',
-  reembolsos_account_fk: 'A conta escolhida já não existe. Atualiza a página e tenta de novo.',
-  pessoas_nome_check: 'Indica um nome com até 60 caracteres.',
+  reembolsos_account_fk: 'A conta escolhida já não existe. Atualize a página e tente de novo.',
+  pessoas_nome_check: 'Informe um nome com até 60 caracteres.',
   pessoas_divida_anterior_check: 'A dívida anterior não é válida.',
 }
 

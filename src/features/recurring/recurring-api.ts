@@ -45,18 +45,18 @@ export type RecurringPatch = Partial<
 >
 
 const MESSAGES = {
-  '23503': 'A conta ou a categoria escolhida já não existe. Atualiza a página e tenta de novo.',
-  '23514': 'Há um valor inválido (confirma o valor, o nome e a data).',
+  '23503': 'A conta ou a categoria escolhida já não existe. Atualize a página e tente de novo.',
+  '23514': 'Há um valor inválido (confira o valor, o nome e a data).',
 }
 
 // Regras com nome (CHECK ou HINT da trigger): mensagem própria. O nome aparece no texto técnico.
 const RULE_MESSAGES: Record<string, string> = {
-  recorrencias_categoria_check: 'Escolhe uma categoria do mesmo tipo do lançamento.',
-  recorrencias_cartao_check: 'Num cartão de crédito só há despesas.',
+  recorrencias_categoria_check: 'Escolha uma categoria do mesmo tipo do lançamento.',
+  recorrencias_cartao_check: 'Em um cartão de crédito só há despesas.',
   recorrencias_data_check: 'A próxima data não pode ser no passado.',
   recorrencias_dia_check: 'A próxima data não é válida.',
-  recorrencias_descricao_check: 'Indica um nome com até 120 caracteres.',
-  recorrencias_valor_check: 'O valor tem de ser maior que zero.',
+  recorrencias_descricao_check: 'Informe um nome com até 120 caracteres.',
+  recorrencias_valor_check: 'O valor precisa ser maior que zero.',
 }
 
 type DbError = { code?: string; message?: string; details?: string; hint?: string }

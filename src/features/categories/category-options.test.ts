@@ -35,7 +35,7 @@ describe('opções de categorias', () => {
     for (const icon of Object.values(CATEGORY_ICONS)) expect(icon.label).not.toBe('')
   })
 
-  it('valores desconhecidos caem num valor seguro', () => {
+  it('valores desconhecidos caem em um valor seguro', () => {
     expect(colorOf('fucsia')).toBe(CATEGORY_COLORS.slate)
     expect(iconOf('nao-existe')).toBe(Tag)
     expect(iconOf('car')).toBe(CATEGORY_ICONS.car.icon)

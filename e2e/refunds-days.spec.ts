@@ -36,7 +36,7 @@ async function comprar(page: Page) {
   await compra.getByLabel('Número de parcelas').selectOption('3')
   await compra.getByLabel('Descrição (opcional)').fill('Sofá')
   await compra.getByLabel('Categoria').selectOption({ label: 'Moradia' })
-  await compra.getByRole('button', { name: 'Registar compra' }).click()
+  await compra.getByRole('button', { name: 'Registrar compra' }).click()
   await expect(compra).toBeHidden()
 }
 
@@ -48,12 +48,12 @@ test('estorno parcial: crédito na fatura, desconta dos gastos e da dívida', as
   // A parcela de hoje (1/3) abre a compra; regista um estorno de 100,00
   await page.getByRole('button', { name: /^Sofá: despesa/ }).click()
   const detalhe = page.getByRole('dialog', { name: 'Sofá' })
-  await detalhe.getByRole('button', { name: 'Registar estorno' }).click()
+  await detalhe.getByRole('button', { name: 'Registrar estorno' }).click()
   const form = page.getByRole('dialog', { name: 'Estorno de Sofá' })
   await expect(form.getByLabel('Valor')).toHaveValue('300,00')
   await form.getByLabel('Valor').fill('100')
   await form.getByLabel('Descrição (opcional)').fill('Devolução de uma peça')
-  await form.getByRole('button', { name: 'Registar estorno' }).click()
+  await form.getByRole('button', { name: 'Registrar estorno' }).click()
   await expect(detalhe).toContainText(money('EstornadoR$ 100,00'))
   await page.keyboard.press('Escape')
   await expect(detalhe).toBeHidden()
@@ -118,7 +118,7 @@ test('mudar os dias de um cartão com faturas: avisa e recalcula a fatura aberta
   await editar.getByLabel('Dia de fechamento').selectOption(String(novos.diaFechamento))
   await editar.getByLabel('Dia de vencimento').selectOption(String(novos.diaVencimento))
   await expect(editar.getByText(/^Os dias novos valem a partir da fatura de/)).toBeVisible()
-  await editar.getByRole('button', { name: 'Guardar' }).click()
+  await editar.getByRole('button', { name: 'Salvar' }).click()
   await expect(editar).toBeHidden()
 
   // A fatura aberta passou aos dias novos

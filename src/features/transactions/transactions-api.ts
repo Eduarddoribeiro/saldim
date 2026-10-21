@@ -11,8 +11,8 @@ import type { TransactionFormValues } from './schemas'
 export type Transaction = Tables<'transactions'>
 
 const MESSAGES = {
-  '23503': 'A conta ou a categoria escolhida já não existe. Atualiza a página e tenta de novo.',
-  '23514': 'Há um valor inválido (confirma o valor, a data e se a categoria é do tipo certo).',
+  '23503': 'A conta ou a categoria escolhida já não existe. Atualize a página e tente de novo.',
+  '23514': 'Há um valor inválido (confira o valor, a data e se a categoria é do tipo certo).',
 }
 
 function fail(error: { code?: string; message?: string }): never {

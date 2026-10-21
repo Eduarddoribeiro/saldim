@@ -81,7 +81,7 @@ export function monthsEndingAt(end: MonthKey, count: number): MonthKey[] {
 /** Rótulo curto para eixos: 'out' ou, com ano, 'out 26'. */
 export function formatMonthShort(month: MonthKey, withYear = false): string {
   const [year, monthIndex] = month.split('-').map(Number)
-  const name = new Intl.DateTimeFormat('pt-PT', { month: 'short' })
+  const name = new Intl.DateTimeFormat('pt-BR', { month: 'short' })
     .format(new Date(year, monthIndex - 1, 1))
     .replace('.', '')
   return withYear ? `${name} ${String(year).slice(2)}` : name
@@ -90,7 +90,7 @@ export function formatMonthShort(month: MonthKey, withYear = false): string {
 /** 'outubro de 2026' */
 export function formatMonth(month: MonthKey): string {
   const [year, monthIndex] = month.split('-').map(Number)
-  return new Intl.DateTimeFormat('pt-PT', { month: 'long', year: 'numeric' }).format(
+  return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(
     new Date(year, monthIndex - 1, 1),
   )
 }
@@ -98,7 +98,7 @@ export function formatMonth(month: MonthKey): string {
 /** 'terça-feira, 14 de outubro' (com o ano só se não for o ano de referência) */
 export function formatDay(date: IsoDate, referenceYear = new Date().getFullYear()): string {
   const [year, month, day] = date.split('-').map(Number)
-  return new Intl.DateTimeFormat('pt-PT', {
+  return new Intl.DateTimeFormat('pt-BR', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',

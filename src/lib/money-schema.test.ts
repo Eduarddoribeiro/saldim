@@ -11,7 +11,7 @@ describe('moneyField', () => {
   })
 
   it('exige valor', () => {
-    expect(message(moneyField().safeParse('  '))).toBe('Indica o valor.')
+    expect(message(moneyField().safeParse('  '))).toBe('Informe o valor.')
   })
 
   it('explica o formato quando o valor é inválido', () => {
@@ -28,7 +28,7 @@ describe('moneyField', () => {
 
   it('com positive exige valor maior que zero', () => {
     expect(message(moneyField({ positive: true }).safeParse('0,00'))).toBe(
-      'O valor tem de ser maior que zero.',
+      'O valor precisa ser maior que zero.',
     )
     expect(moneyField({ positive: true }).parse('0,01')).toBe(1)
   })

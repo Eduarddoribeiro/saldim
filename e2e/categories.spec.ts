@@ -22,9 +22,9 @@ test('categorias: iniciais, criar, editar, arquivar', async ({ page }) => {
   const opcao = (nome: string) =>
     dialogo.locator('label', { has: page.getByRole('radio', { name: nome }) })
   await opcao('Violeta').click()
-  await opcao('Desporto').click()
+  await opcao('Esporte').click()
   await expect(dialogo.getByRole('radio', { name: 'Violeta' })).toBeChecked()
-  await expect(dialogo.getByRole('radio', { name: 'Desporto' })).toBeChecked()
+  await expect(dialogo.getByRole('radio', { name: 'Esporte' })).toBeChecked()
   await dialogo.getByRole('button', { name: 'Criar categoria' }).click()
   await expect(dialogo).toBeHidden()
   await expect(lista.getByRole('button', { name: /Ginásio/ })).toBeVisible()
@@ -39,17 +39,17 @@ test('categorias: iniciais, criar, editar, arquivar', async ({ page }) => {
   // Editar
   await lista.getByRole('button', { name: /Ginásio/ }).click()
   const editar = page.getByRole('dialog', { name: 'Editar categoria' })
-  await editar.getByLabel('Nome').fill('Desporto')
-  await editar.getByRole('button', { name: 'Guardar' }).click()
-  await expect(lista.getByRole('button', { name: /Desporto/ })).toBeVisible()
+  await editar.getByLabel('Nome').fill('Esporte')
+  await editar.getByRole('button', { name: 'Salvar' }).click()
+  await expect(lista.getByRole('button', { name: /Esporte/ })).toBeVisible()
 
   // Arquivar
-  await lista.getByRole('button', { name: /Desporto/ }).click()
+  await lista.getByRole('button', { name: /Esporte/ }).click()
   await editar.getByRole('button', { name: 'Arquivar' }).click()
   await expect(page.getByText('Arquivadas (1)')).toBeVisible()
   await expect(lista.getByRole('listitem')).toHaveCount(9) // o grupo das arquivadas começa fechado
   await page.getByText('Arquivadas (1)').click()
-  await expect(lista.getByRole('button', { name: /Desporto/ })).toBeVisible()
+  await expect(lista.getByRole('button', { name: /Esporte/ })).toBeVisible()
   await expect(lista.getByRole('listitem')).toHaveCount(10)
 
   // Os dados persistem no servidor

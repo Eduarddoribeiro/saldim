@@ -152,7 +152,7 @@ describe('página de faturas', () => {
   it('sem cartões, explica e liga às contas', async () => {
     store.accounts = [account({})]
     renderApp('/faturas')
-    expect(await screen.findByText('Ainda não tens cartões de crédito')).toBeInTheDocument()
+    expect(await screen.findByText('Você ainda não tem cartões de crédito')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Ir para as contas' })).toHaveAttribute(
       'href',
       '/configuracoes/contas',
@@ -200,13 +200,13 @@ describe('página de faturas', () => {
       within(within(form).getByLabelText('Pagar a partir de'))
         .getAllByRole('option')
         .map((o) => o.textContent),
-    ).toEqual(['Escolhe a conta…', 'Conta principal', 'Poupança'])
+    ).toEqual(['Escolha a conta…', 'Conta principal', 'Poupança'])
     const valor = within(form).getByLabelText('Valor')
     expect(valor).toHaveValue('150,00')
 
     await userEvent.clear(valor)
     await userEvent.type(valor, '100')
-    await userEvent.click(within(form).getByRole('button', { name: 'Registar pagamento' }))
+    await userEvent.click(within(form).getByRole('button', { name: 'Registrar pagamento' }))
     await waitFor(() =>
       expect(createPayment).toHaveBeenCalledWith({
         faturaId: 'nov',
@@ -228,7 +228,7 @@ describe('página de faturas', () => {
     const data = within(form).getByLabelText('Data')
     await userEvent.clear(data)
     await userEvent.type(data, '2026-10-15')
-    await userEvent.click(within(form).getByRole('button', { name: 'Registar pagamento' }))
+    await userEvent.click(within(form).getByRole('button', { name: 'Registrar pagamento' }))
     expect(
       await within(form).findByText('Um pagamento não pode ter data futura.'),
     ).toBeInTheDocument()
@@ -264,10 +264,10 @@ describe('página de faturas', () => {
     await userEvent.click(await screen.findByRole('button', { name: /Fatura de novembro/ }))
     const dialog = await screen.findByRole('dialog', { name: 'Fatura de novembro de 2026' })
     await userEvent.click(
-      within(dialog).getByRole('button', { name: /Apagar o pagamento de R\$\s50,00/ }),
+      within(dialog).getByRole('button', { name: /Excluir o pagamento de R\$\s50,00/ }),
     )
     const confirm = await screen.findByRole('alertdialog')
-    await userEvent.click(within(confirm).getByRole('button', { name: 'Apagar' }))
+    await userEvent.click(within(confirm).getByRole('button', { name: 'Excluir' }))
     await waitFor(() => expect(deletePayment).toHaveBeenCalledWith('p-nov'))
   })
 })

@@ -20,30 +20,30 @@ export type Refund = Pick<
 export type RefundValues = { compraId: string; valor: number; data: string; descricao: string }
 
 const MESSAGES = {
-  '23503': 'O cartão ou a categoria escolhida já não existe. Atualiza a página e tenta de novo.',
-  '23514': 'Há um valor inválido (confirma o valor, as parcelas e a data).',
+  '23503': 'O cartão ou a categoria escolhida já não existe. Atualize a página e tente de novo.',
+  '23514': 'Há um valor inválido (confira o valor, as parcelas e a data).',
 }
 
 // Regras com nome (CHECK ou HINT das triggers): mensagem própria. O nome aparece no texto técnico.
 const RULE_MESSAGES: Record<string, string> = {
-  compras_cartao_conta_check: 'Escolhe um cartão de crédito.',
-  compras_cartao_categoria_check: 'Uma compra no cartão tem de usar uma categoria de despesa.',
-  compras_cartao_valor_check: 'O valor tem de chegar para todas as parcelas (1 centavo cada).',
+  compras_cartao_conta_check: 'Escolha um cartão de crédito.',
+  compras_cartao_categoria_check: 'Uma compra no cartão precisa usar uma categoria de despesa.',
+  compras_cartao_valor_check: 'O valor precisa chegar para todas as parcelas (1 centavo cada).',
   compras_cartao_parcelas_check: 'O número de parcelas não é válido.',
   // D6 (migration transferencias): o histórico pago não se apaga; corrige-se com um estorno
   compras_cartao_fatura_paga_check:
-    'Esta compra tem parcelas ou estornos em faturas com pagamentos, por isso não pode ser apagada. Para a corrigir, regista um estorno.',
+    'Esta compra tem parcelas ou estornos em faturas com pagamentos, por isso não pode ser excluída. Para corrigir, registre um estorno.',
   // Estornos (migration estornos_dias_cartao)
   transactions_estorno_valor_check: 'Os estornos desta compra não podem passar do valor da compra.',
   transactions_estorno_futuro_check: 'Um estorno não pode ter data futura.',
   transactions_estorno_data_check: 'O estorno não pode ser anterior à data da compra.',
   transactions_estorno_fatura_paga_check:
-    'Este estorno está numa fatura com pagamentos, por isso não pode ser apagado.',
-  compras_cartao_pessoa_fk: 'A pessoa escolhida já não existe. Atualiza a página e tenta de novo.',
+    'Este estorno está em uma fatura com pagamentos, por isso não pode ser excluído.',
+  compras_cartao_pessoa_fk: 'A pessoa escolhida já não existe. Atualize a página e tente de novo.',
   transactions_estorno_compra_check:
-    'Esta compra já não existe. Atualiza a página e tenta de novo.',
-  faturas_mes_check: 'As parcelas passariam do ano 2999. Confirma a data da compra.',
-  faturas_datas_check: 'As parcelas passariam do ano 2999. Confirma a data da compra.',
+    'Esta compra já não existe. Atualize a página e tente de novo.',
+  faturas_mes_check: 'As parcelas passariam do ano 2999. Confira a data da compra.',
+  faturas_datas_check: 'As parcelas passariam do ano 2999. Confira a data da compra.',
 }
 
 type DbError = { code?: string; message?: string; details?: string; hint?: string }

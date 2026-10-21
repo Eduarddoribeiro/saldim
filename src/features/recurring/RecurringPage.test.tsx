@@ -123,7 +123,7 @@ describe('RecurringPage', () => {
     renderApp('/configuracoes')
     await userEvent.click(screen.getByRole('link', { name: 'Recorrentes' }))
     expect(screen.getByRole('heading', { level: 1, name: 'Recorrentes' })).toBeInTheDocument()
-    expect(await screen.findByText('Ainda sem recorrentes')).toBeInTheDocument()
+    expect(await screen.findByText('Nenhum recorrente ainda')).toBeInTheDocument()
   })
 
   it('lista por próxima data, com a repetição, a conta e as pausadas no fim', async () => {
@@ -217,7 +217,7 @@ describe('RecurringPage', () => {
     await userEvent.clear(data)
     await userEvent.type(data, '2027-03-15')
     expect(
-      within(dialog).getByText('Todos os anos a 15 de março, a partir desta data.'),
+      within(dialog).getByText('Todo ano em 15 de março, a partir desta data.'),
     ).toBeInTheDocument()
   })
 
@@ -233,7 +233,7 @@ describe('RecurringPage', () => {
     expect(
       await within(dialog).findByText('A próxima data não pode ser no passado.'),
     ).toBeInTheDocument()
-    expect(within(dialog).getByText('Indica um nome (ex.: Netflix).')).toBeInTheDocument()
+    expect(within(dialog).getByText('Informe um nome (ex.: Netflix).')).toBeInTheDocument()
     expect(createRecurring).not.toHaveBeenCalled()
   })
 
@@ -247,7 +247,7 @@ describe('RecurringPage', () => {
     const valor = within(dialog).getByLabelText('Valor')
     await userEvent.clear(valor)
     await userEvent.type(valor, '1600')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Salvar' }))
     await waitFor(() =>
       expect(updateRecurring).toHaveBeenCalledWith(
         'renda',

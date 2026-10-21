@@ -44,7 +44,7 @@ import {
 
 export const CATEGORY_COLORS = {
   slate: {
-    label: 'Cinzento',
+    label: 'Cinza',
     badge: 'bg-slate-500/15 text-slate-700 dark:text-slate-300',
     swatch: 'bg-slate-500',
   },
@@ -107,15 +107,15 @@ export const CATEGORY_ICONS = {
   zap: { label: 'Eletricidade', icon: Zap },
   droplet: { label: 'Água', icon: Droplet },
   wifi: { label: 'Internet', icon: Wifi },
-  smartphone: { label: 'Telemóvel', icon: Smartphone },
+  smartphone: { label: 'Celular', icon: Smartphone },
   receipt: { label: 'Fatura', icon: Receipt },
   car: { label: 'Carro', icon: Car },
   fuel: { label: 'Combustível', icon: Fuel },
-  bus: { label: 'Transportes públicos', icon: Bus },
+  bus: { label: 'Transporte público', icon: Bus },
   plane: { label: 'Viagem', icon: Plane },
   'heart-pulse': { label: 'Saúde', icon: HeartPulse },
   pill: { label: 'Farmácia', icon: Pill },
-  dumbbell: { label: 'Desporto', icon: Dumbbell },
+  dumbbell: { label: 'Esporte', icon: Dumbbell },
   'graduation-cap': { label: 'Educação', icon: GraduationCap },
   'book-open': { label: 'Livros', icon: BookOpen },
   baby: { label: 'Filhos', icon: Baby },

@@ -8,7 +8,7 @@ export const personFormSchema = z.object({
   nome: z
     .string()
     .trim()
-    .min(1, { error: 'Indica o nome.' })
+    .min(1, { error: 'Informe o nome.' })
     .max(60, { error: 'O nome pode ter no máximo 60 caracteres.' }),
   /** D23: o que já devia antes de as compras estarem na app (0 se nada) */
   dividaAnterior: moneyField(),
@@ -21,10 +21,10 @@ export type PersonFormValues = z.output<typeof personFormSchema>
 export function reimbursementFormSchema(today: IsoDate) {
   return z.object({
     valor: moneyField({ positive: true }),
-    accountId: z.string().min(1, { error: 'Escolhe a conta onde entrou o dinheiro.' }),
+    accountId: z.string().min(1, { error: 'Escolha a conta onde entrou o dinheiro.' }),
     data: z
       .string()
-      .refine(isIsoDate, { error: 'Indica uma data válida.', abort: true })
+      .refine(isIsoDate, { error: 'Informe uma data válida.', abort: true })
       .refine((date) => date <= today, {
         error: 'Um pagamento recebido não pode ter data futura.',
       }),

@@ -88,7 +88,7 @@ function CategoryForm({ onOpenChange, category, defaultTipo }: Props) {
         <DialogDescription>
           {isEdit
             ? `Categoria de ${TIPO_LABELS[category!.tipo].plural.toLowerCase()}.`
-            : 'Usada para organizar as tuas receitas e despesas.'}
+            : 'Usada para organizar as suas receitas e despesas.'}
         </DialogDescription>
       </DialogHeader>
 
@@ -166,7 +166,7 @@ function CategoryForm({ onOpenChange, category, defaultTipo }: Props) {
           itemName={category.nome}
           archived={category.arquivada}
           disabled={busy}
-          deleteHint="Se a categoria já tiver transações, arquiva-a em vez de a apagar."
+          deleteHint="Se a categoria já tiver transações, arquive em vez de excluir."
           onToggleArchive={() =>
             run(() =>
               update.mutateAsync({ id: category.id, patch: { arquivada: !category.arquivada } }),
@@ -181,7 +181,7 @@ function CategoryForm({ onOpenChange, category, defaultTipo }: Props) {
           Cancelar
         </Button>
         <Button type="submit" size="lg" disabled={busy}>
-          {isSubmitting ? 'A guardar…' : isEdit ? 'Guardar' : 'Criar categoria'}
+          {isSubmitting ? 'Salvando…' : isEdit ? 'Salvar' : 'Criar categoria'}
         </Button>
       </DialogFooter>
     </form>

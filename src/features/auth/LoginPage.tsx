@@ -28,11 +28,11 @@ export function LoginPage() {
   return (
     <AuthCard
       title="Entrar"
-      description="Acede às tuas finanças."
+      description="Acesse suas finanças."
       footer={
         <p>
-          Ainda não tens conta?{' '}
-          <Link to="/registar" className="font-medium text-foreground underline underline-offset-4">
+          Ainda não tem conta?{' '}
+          <Link to="/cadastro" className="font-medium text-foreground underline underline-offset-4">
             Criar conta
           </Link>
         </p>
@@ -62,11 +62,11 @@ export function LoginPage() {
             to="/recuperar-senha"
             className="justify-self-end text-sm text-muted-foreground underline-offset-4 hover:underline"
           >
-            Esqueci-me da senha
+            Esqueci a senha
           </Link>
         </div>
         <Button type="submit" size="lg" className="h-10" disabled={isSubmitting}>
-          {isSubmitting ? 'A entrar…' : 'Entrar'}
+          {isSubmitting ? 'Entrando…' : 'Entrar'}
         </Button>
       </form>
     </AuthCard>

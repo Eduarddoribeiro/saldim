@@ -9,11 +9,11 @@ async function register(page: Page, tipo: 'Despesa' | 'Receita', valor: string, 
   if (tipo === 'Receita') await dialogo.locator('label', { hasText: 'Receita' }).click()
   await dialogo.getByLabel('Valor').fill(valor)
   await dialogo.getByLabel('Categoria').selectOption({ label: categoria })
-  await dialogo.getByRole('button', { name: 'Registar' }).click()
+  await dialogo.getByRole('button', { name: 'Registrar' }).click()
   await expect(dialogo).toBeHidden()
 }
 
-test('início: saldo, resumo do mês, gastos por categoria e contas batem com o registado', async ({
+test('início: saldo, resumo do mês, gastos por categoria e contas batem com o registrado', async ({
   page,
 }) => {
   await signUp(page, uniqueEmail('inicio'), 'Bruno Costa')
@@ -23,7 +23,7 @@ test('início: saldo, resumo do mês, gastos por categoria e contas batem com o 
   await page.goto('/configuracoes/contas')
   await page.getByRole('button', { name: /Conta principal/ }).click()
   await page.getByRole('dialog').getByLabel('Saldo inicial').fill('1.000')
-  await page.getByRole('dialog').getByRole('button', { name: 'Guardar' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Salvar' }).click()
   await expect(page.getByRole('dialog')).toBeHidden()
 
   await page.goto('/transacoes')
@@ -48,9 +48,9 @@ test('início: saldo, resumo do mês, gastos por categoria e contas batem com o 
   await expect(page.getByRole('region', { name: 'Contas' })).toContainText(money('R$ 2.499,50'))
 
   // Comparação com o mês anterior (conta nova: no mês anterior não há nada)
-  await expect(tile('Receitas · este mês')).toContainText(/face a .+ \(sem valor anterior\)/)
+  await expect(tile('Receitas · este mês')).toContainText(/em relação a .+ \(sem valor anterior\)/)
   await expect(gastos.getByRole('listitem').first()).toContainText(
-    /face a .+ \(sem valor anterior\)/,
+    /em relação a .+ \(sem valor anterior\)/,
   )
 
   // Receitas e despesas: gráfico real (Recharts, carregado à parte) com as barras do mês atual
