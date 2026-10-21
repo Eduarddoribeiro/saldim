@@ -143,11 +143,7 @@ function PurchaseForm({ onOpenChange, categories, accounts }: Props) {
     <form onSubmit={onSubmit} noValidate className="grid gap-4">
       <DialogHeader>
         <DialogTitle>Compra no cartão</DialogTitle>
-        <DialogDescription>
-          {pessoaId
-            ? 'Cada parcela é cobrada na fatura do cartão e fica no que esta pessoa te deve.'
-            : 'Cada parcela conta como despesa no seu mês e é cobrada na fatura do cartão.'}
-        </DialogDescription>
+        <DialogDescription>Cada parcela entra na fatura do mês em que vence.</DialogDescription>
       </DialogHeader>
 
       {serverError && <FormAlert>{serverError}</FormAlert>}
@@ -188,7 +184,7 @@ function PurchaseForm({ onOpenChange, categories, accounts }: Props) {
         options={personOptions}
         hint={
           pessoaId
-            ? 'Conta na fatura e no limite, mas não nos seus gastos: fica no que esta pessoa te deve.'
+            ? 'Conta na fatura e no limite, mas não nos seus gastos: vai para A receber.'
             : undefined
         }
         {...register('pessoaId')}
@@ -244,7 +240,7 @@ function PurchaseForm({ onOpenChange, categories, accounts }: Props) {
             <span>
               Compra já em andamento
               <span className="block text-xs text-muted-foreground">
-                Algumas parcelas já foram pagas antes de você usar o app: só as que faltam são
+                Marque se você começou a usar o app no meio das parcelas: só as que faltam são
                 registradas.
               </span>
             </span>

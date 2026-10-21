@@ -18,7 +18,7 @@ function isoDate(date: Date) {
 test('transações: registrar, ver por mês, editar, excluir', async ({ page }) => {
   await signUp(page, uniqueEmail('transacoes'))
   await page.goto('/transacoes')
-  await expect(page.getByText(/Sem transações em/)).toBeVisible()
+  await expect(page.getByText(/Nenhuma transação em/)).toBeVisible()
 
   // Despesa
   let dialogo = await openNew(page)
@@ -27,7 +27,7 @@ test('transações: registrar, ver por mês, editar, excluir', async ({ page }) 
     .getByLabel('Descrição (opcional)')
     .fill('Supermercado do bairro com um nome muito comprido para testar o ecrã')
   await dialogo.getByLabel('Categoria').selectOption({ label: 'Alimentação' })
-  await dialogo.getByRole('button', { name: 'Registrar' }).click()
+  await dialogo.getByRole('button', { name: 'Registrar despesa' }).click()
   await expect(dialogo).toBeHidden()
   const despesa = page.getByRole('button', { name: /Supermercado/ })
   await expect(despesa).toContainText(money('-R$ 42,50'))
@@ -39,7 +39,7 @@ test('transações: registrar, ver por mês, editar, excluir', async ({ page }) 
   await dialogo.locator('label', { hasText: 'Receita' }).click()
   await dialogo.getByLabel('Valor').fill('3.000')
   await dialogo.getByLabel('Categoria').selectOption({ label: 'Salário' })
-  await dialogo.getByRole('button', { name: 'Registrar' }).click()
+  await dialogo.getByRole('button', { name: 'Registrar receita' }).click()
   await expect(page.getByRole('button', { name: /Salário/ })).toContainText(money('+R$ 3.000,00'))
 
   // Despesa com data no mês anterior: não aparece neste mês, aparece ao recuar
@@ -50,7 +50,7 @@ test('transações: registrar, ver por mês, editar, excluir', async ({ page }) 
   await dialogo.getByLabel('Descrição (opcional)').fill('Renda antiga')
   await dialogo.getByLabel('Categoria').selectOption({ label: 'Moradia' })
   await dialogo.getByLabel('Data').fill(lastMonth)
-  await dialogo.getByRole('button', { name: 'Registrar' }).click()
+  await dialogo.getByRole('button', { name: 'Registrar despesa' }).click()
   await expect(dialogo).toBeHidden()
   await expect(page.getByText('Renda antiga')).toBeHidden()
 
@@ -86,7 +86,7 @@ test('uma categoria com transações não pode ser excluída (mensagem clara)', 
   const dialogo = await openNew(page)
   await dialogo.getByLabel('Valor').fill('10')
   await dialogo.getByLabel('Categoria').selectOption({ label: 'Lazer' })
-  await dialogo.getByRole('button', { name: 'Registrar' }).click()
+  await dialogo.getByRole('button', { name: 'Registrar despesa' }).click()
   await expect(dialogo).toBeHidden()
 
   await page.goto('/configuracoes/categorias')

@@ -9,7 +9,7 @@ async function register(page: Page, tipo: 'Despesa' | 'Receita', valor: string, 
   if (tipo === 'Receita') await dialogo.locator('label', { hasText: 'Receita' }).click()
   await dialogo.getByLabel('Valor').fill(valor)
   await dialogo.getByLabel('Categoria').selectOption({ label: categoria })
-  await dialogo.getByRole('button', { name: 'Registrar' }).click()
+  await dialogo.getByRole('button', { name: `Registrar ${tipo.toLowerCase()}` }).click()
   await expect(dialogo).toBeHidden()
 }
 

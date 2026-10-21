@@ -59,7 +59,10 @@ export function TransactionsPage() {
   return (
     <>
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <PageHeader title="Transações" description="Receitas e despesas registradas." />
+        <PageHeader
+          title="Transações"
+          description="Receitas, despesas e compras no cartão de cada mês."
+        />
         <div className="flex flex-wrap gap-2">
           {/* Atalho para os lançamentos recorrentes (a página vive nas Configurações) */}
           <Link
@@ -108,8 +111,8 @@ export function TransactionsPage() {
       ) : list.length === 0 ? (
         <EmptyState
           icon={ArrowLeftRight}
-          title={`Sem transações em ${formatMonth(month)}`}
-          description="Registre uma receita ou uma despesa para começar."
+          title={`Nenhuma transação em ${formatMonth(month)}`}
+          description="Registre uma receita, uma despesa ou uma compra no cartão."
         />
       ) : (
         <div className="grid min-w-0 gap-6 *:min-w-0">

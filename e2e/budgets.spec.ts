@@ -12,7 +12,7 @@ test('orçamentos: definir, acompanhar o estado, copiar para o mês seguinte', a
   const nova = page.getByRole('dialog', { name: 'Nova transação' })
   await nova.getByLabel('Valor').fill('450')
   await nova.getByLabel('Categoria').selectOption({ label: 'Alimentação' })
-  await nova.getByRole('button', { name: 'Registrar' }).click()
+  await nova.getByRole('button', { name: 'Registrar despesa' }).click()
   await expect(nova).toBeHidden()
 
   // Navegação: no telemóvel pela barra inferior, no desktop pela sidebar

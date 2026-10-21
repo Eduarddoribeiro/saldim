@@ -179,7 +179,7 @@ describe('página de transações', () => {
 
   it('mostra um estado vazio nos meses sem transações', async () => {
     renderApp('/transacoes?mes=2026-01')
-    expect(await screen.findByText('Sem transações em janeiro de 2026')).toBeInTheDocument()
+    expect(await screen.findByText('Nenhuma transação em janeiro de 2026')).toBeInTheDocument()
   })
 
   it('regista uma despesa: valor em centavos, data de hoje e conta pré-selecionada', async () => {
@@ -200,7 +200,7 @@ describe('página de transações', () => {
     await userEvent.type(within(dialog).getByLabelText('Valor'), '1.234,50')
     await userEvent.selectOptions(categoria, 'casa')
     await userEvent.type(within(dialog).getByLabelText('Descrição (opcional)'), 'Renda')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar despesa' }))
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(store.transactions.at(-1)).toMatchObject({
@@ -233,6 +233,22 @@ describe('página de transações', () => {
     const conta = within(dialog).getByLabelText('Conta')
     expect(conta).toHaveValue('conta')
     expect(within(conta).queryByRole('option', { name: 'A Visa' })).not.toBeInTheDocument()
+    // A descrição explica onde ficam as compras no cartão
+    expect(dialog).toHaveAccessibleDescription(
+      'Compras no cartão de crédito ficam em “Compra no cartão”.',
+    )
+  })
+
+  it('o botão de registrar diz o tipo escolhido', async () => {
+    renderApp('/transacoes')
+    await screen.findByText('Supermercado')
+    await userEvent.click(newButton())
+    const dialog = await screen.findByRole('dialog', { name: 'Nova transação' })
+    expect(dialog).toHaveAccessibleDescription('Dinheiro que entrou ou saiu de uma conta.')
+    expect(within(dialog).getByRole('button', { name: 'Registrar despesa' })).toBeInTheDocument()
+
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Receita' }))
+    expect(within(dialog).getByRole('button', { name: 'Registrar receita' })).toBeInTheDocument()
   })
 
   it('ao mudar para receita, mostra só categorias de receita e limpa a escolha anterior', async () => {
@@ -274,7 +290,7 @@ describe('página de transações', () => {
     await screen.findByText('Supermercado')
     await userEvent.click(newButton())
     const dialog = await screen.findByRole('dialog')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar despesa' }))
 
     expect(within(dialog).getByText('Informe o valor.')).toBeInTheDocument()
     expect(within(dialog).getByText('Escolha uma categoria.')).toBeInTheDocument()

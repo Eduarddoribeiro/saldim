@@ -75,6 +75,8 @@ function TransactionForm({ onOpenChange, transaction, categories, accounts }: Pr
   const firstActiveAccount = accounts.find(
     (account) => !account.arquivada && !isCreditCard(account),
   )
+  // Com cartões, a descrição explica onde ficam as compras no cartão (não aparecem em "Conta")
+  const hasCards = accounts.some((account) => isCreditCard(account) && !account.arquivada)
 
   const {
     register,
@@ -142,7 +144,13 @@ function TransactionForm({ onOpenChange, transaction, categories, accounts }: Pr
     <form onSubmit={onSubmit} noValidate className="grid gap-4">
       <DialogHeader>
         <DialogTitle>{transaction ? 'Editar transação' : 'Nova transação'}</DialogTitle>
-        <DialogDescription>Registre uma receita ou uma despesa.</DialogDescription>
+        <DialogDescription>
+          {transaction
+            ? 'As mudanças entram no saldo e nos relatórios do mês.'
+            : hasCards
+              ? 'Compras no cartão de crédito ficam em “Compra no cartão”.'
+              : 'Dinheiro que entrou ou saiu de uma conta.'}
+        </DialogDescription>
       </DialogHeader>
 
       {serverError && <FormAlert>{serverError}</FormAlert>}
@@ -196,13 +204,14 @@ function TransactionForm({ onOpenChange, transaction, categories, accounts }: Pr
 
       {missingSetup && (
         <FormAlert>
-          Precisas de pelo menos uma{' '}
-          {accountOptions.length === 0 ? 'conta' : `categoria de ${tipo}`} ativa.{' '}
+          {accountOptions.length === 0
+            ? 'Para registrar, você precisa de uma conta ativa.'
+            : `Nenhuma categoria de ${tipo} ativa.`}{' '}
           <Link
             to={accountOptions.length === 0 ? '/configuracoes/contas' : '/configuracoes/categorias'}
             className="font-medium underline underline-offset-4"
           >
-            Criar agora
+            {accountOptions.length === 0 ? 'Criar conta' : 'Criar categoria'}
           </Link>
         </FormAlert>
       )}
@@ -223,6 +232,7 @@ function TransactionForm({ onOpenChange, transaction, categories, accounts }: Pr
             'Transação'
           }
           disabled={busy}
+          deleteHint="O saldo da conta e os relatórios do mês são recalculados sem ela."
           onDelete={() => run(() => remove.mutateAsync(transaction.id))}
         />
       )}
@@ -232,7 +242,7 @@ function TransactionForm({ onOpenChange, transaction, categories, accounts }: Pr
           Cancelar
         </Button>
         <Button type="submit" size="lg" disabled={busy}>
-          {isSubmitting ? 'Salvando…' : transaction ? 'Salvar' : 'Registrar'}
+          {isSubmitting ? 'Salvando…' : transaction ? 'Salvar' : `Registrar ${tipo}`}
         </Button>
       </DialogFooter>
     </form>

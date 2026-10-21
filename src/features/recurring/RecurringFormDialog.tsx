@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Pause, Play } from 'lucide-react'
 import { useEffect, useMemo } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
+import { Link } from 'react-router'
 import { ArchiveDeleteActions } from '@/components/form/ArchiveDeleteActions'
 import { FormAlert } from '@/components/form/FormAlert'
 import { SegmentedControl } from '@/components/form/SegmentedControl'
@@ -247,8 +248,15 @@ function RecurringForm({ onOpenChange, recurring, categories, accounts }: Props)
 
       {missingSetup && (
         <FormAlert>
-          Precisas de pelo menos uma{' '}
-          {accountOptions.length === 0 ? 'conta' : `categoria de ${tipo}`} ativa.
+          {accountOptions.length === 0
+            ? 'Para criar um recorrente, você precisa de uma conta ativa.'
+            : `Nenhuma categoria de ${tipo} ativa.`}{' '}
+          <Link
+            to={accountOptions.length === 0 ? '/configuracoes/contas' : '/configuracoes/categorias'}
+            className="font-medium underline underline-offset-4"
+          >
+            {accountOptions.length === 0 ? 'Criar conta' : 'Criar categoria'}
+          </Link>
         </FormAlert>
       )}
 

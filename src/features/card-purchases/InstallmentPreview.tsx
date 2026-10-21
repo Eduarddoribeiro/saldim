@@ -80,7 +80,7 @@ export function InstallmentPreview({
   if (!input || !schedule) {
     return (
       <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-        Informe o valor, as parcelas e a data para ver as faturas.
+        Escolha o cartão e informe o valor para ver as parcelas e as faturas.
       </p>
     )
   }

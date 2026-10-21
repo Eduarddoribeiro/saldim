@@ -224,7 +224,7 @@ describe('compras no cartão', () => {
     const dialog = await openPurchaseForm()
     // Só há um cartão: vem escolhido
     expect(within(dialog).getByLabelText('Cartão')).toHaveValue('visa')
-    expect(within(dialog).getByText(/Informe o valor, as parcelas e a data/)).toBeInTheDocument()
+    expect(within(dialog).getByText(/Escolha o cartão e informe o valor/)).toBeInTheDocument()
 
     await userEvent.type(within(dialog).getByLabelText('Valor total'), '100,00')
     await userEvent.selectOptions(within(dialog).getByLabelText('Número de parcelas'), '3')
