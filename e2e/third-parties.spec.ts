@@ -41,7 +41,10 @@ test('compra da mãe: fora dos gastos, a receber no Início, pagamento recebido'
   // Início: não é gasto meu; a dívida inclui a parcela de hoje; a mãe deve 300,00
   await page.goto('/')
   const tile = (label: string) => page.getByText(label, { exact: true }).locator('..')
-  await expect(tile('Despesas · este mês')).toContainText(money('R$ 0,00'))
+  // Receitas/despesas do mês ficam na secção do mês (o nome também aparece no gráfico)
+  const monthTile = (label: string) =>
+    page.getByRole('region', { name: 'este mês' }).getByText(label, { exact: true }).locator('..')
+  await expect(monthTile('Despesas')).toContainText(money('R$ 0,00'))
   await expect(tile('Dívida nos cartões')).toContainText(money('R$ 100,00'))
   await expect(tile('A receber')).toContainText(money('Mãe: R$ 300,00'))
   // Líquido = 0,00 − 100,00 + 300,00
@@ -63,7 +66,7 @@ test('compra da mãe: fora dos gastos, a receber no Início, pagamento recebido'
   // O dinheiro entrou na conta, sem contar como receita; o líquido não muda
   await page.goto('/')
   await expect(tile('Dinheiro disponível')).toContainText(money('R$ 100,00'))
-  await expect(tile('Receitas · este mês')).toContainText(money('R$ 0,00'))
+  await expect(monthTile('Receitas')).toContainText(money('R$ 0,00'))
   await expect(tile('A receber')).toContainText(money('Mãe: R$ 200,00'))
   await expect(tile('Saldo líquido')).toContainText(money('R$ 200,00'))
 })

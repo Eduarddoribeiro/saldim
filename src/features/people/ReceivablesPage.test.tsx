@@ -162,7 +162,7 @@ describe('A receber', () => {
     expect(plain(mae.textContent)).toContain('Já vencido: R$ 70,00 · em faturas futuras: R$ 200,00')
     const compras = within(mae).getByRole('list', { name: 'Compras de Mãe' })
     expect(plain(compras.textContent)).toBe(
-      'SofáVisa · 28/09/2026 · 2× · faltam 1 de 2R$ 300,00Faturas vencidas R$ 100,00Faturas futuras R$ 200,00',
+      'SofáR$ 300,00Visa · 28/09/2026 · 2× · faltam 1 de 2Faturas vencidas R$ 100,00 · Faturas futuras R$ 200,00',
     )
     const pagamentos = within(mae).getByRole('list', { name: 'Pagamentos de Mãe' })
     expect(plain(pagamentos.textContent)).toContain('Pix15/10/2026 · PicPay+R$ 30,00')
@@ -206,7 +206,10 @@ describe('A receber', () => {
     const compras = () =>
       within(within(mae).getByRole('list', { name: 'Compras de Mãe' }))
         .getAllByRole('listitem')
-        .map((li) => li.textContent?.split(' · ')[0])
+        .map(
+          (li) =>
+            `${li.firstElementChild?.firstElementChild?.textContent}${li.children[1]?.textContent?.split(' · ')[0]}`,
+        )
     expect(compras()).toEqual(['SofáVisa', 'GásNubank'])
 
     await userEvent.selectOptions(within(mae).getByLabelText('Cartão'), 'Nubank')

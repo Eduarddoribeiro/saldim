@@ -109,7 +109,10 @@ export function RecurringPage() {
             )
             const schedule = describeSchedule(item.frequencia, item.dia, item.proxima_data)
             const next = item.ativa ? `Próximo: ${formatShortDate(item.proxima_data)}` : 'Pausado'
-            const details = [schedule, accountName(item.account_id)].filter(Boolean).join(' · ')
+            const detailParts = [schedule, accountName(item.account_id)].filter(
+              (part): part is string => Boolean(part),
+            )
+            const details = detailParts.join(' · ')
             return (
               <li key={item.id}>
                 <button
@@ -124,11 +127,19 @@ export function RecurringPage() {
                   />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium">{item.descricao}</span>
-                    <span className="block text-xs text-muted-foreground">{details}</span>
+                    {/* Quebra só entre as partes ("Todo dia 5 · Nubank conta"), nunca no meio de uma */}
+                    <span className="block text-xs text-muted-foreground">
+                      {detailParts.map((part, index) => (
+                        <span key={part}>
+                          {index > 0 && ' · '}
+                          <span className="whitespace-nowrap">{part}</span>
+                        </span>
+                      ))}
+                    </span>
                     <span
                       className={
                         item.ativa
-                          ? 'block text-xs text-muted-foreground'
+                          ? 'block text-xs whitespace-nowrap text-muted-foreground'
                           : 'block text-xs font-medium text-amber-700 dark:text-amber-400'
                       }
                     >

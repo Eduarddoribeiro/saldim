@@ -81,7 +81,10 @@ test('estorno parcial: crédito na fatura, desconta dos gastos e da dívida', as
   // Início: despesas do mês 100 − 100 = 0; dívida 0 (as parcelas futuras: 200,00); limite 4.800,00
   await page.goto('/')
   const tile = (label: string) => page.getByText(label, { exact: true }).locator('..')
-  await expect(tile('Despesas · este mês')).toContainText(money('R$ 0,00'))
+  // Receitas/despesas do mês ficam na secção do mês (o nome também aparece no gráfico)
+  const monthTile = (label: string) =>
+    page.getByRole('region', { name: 'este mês' }).getByText(label, { exact: true }).locator('..')
+  await expect(monthTile('Despesas')).toContainText(money('R$ 0,00'))
   await expect(tile('Dívida nos cartões')).toContainText(money('R$ 0,00'))
   await expect(tile('Dívida nos cartões')).toContainText(
     money('Com as parcelas futuras: R$ 200,00'),

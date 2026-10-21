@@ -52,8 +52,13 @@ test('compra no cartão: 3 parcelas, uma por mês, sem duplicar a despesa; exclu
 
   // Início: a despesa do mês é só a parcela (100,00), não o total da compra
   await page.goto('/')
-  const tile = (label: string) => page.getByText(label, { exact: true }).locator('..').locator('..')
-  await expect(tile('Despesas · este mês')).toContainText(money('R$ 100,00'))
+  const monthTile = (label: string) =>
+    page
+      .getByRole('region', { name: 'este mês' })
+      .getByText(label, { exact: true })
+      .locator('..')
+      .locator('..')
+  await expect(monthTile('Despesas')).toContainText(money('R$ 100,00'))
   const gastos = page.getByRole('region', { name: 'Gastos por categoria' })
   await expect(gastos.getByRole('listitem').first()).toContainText('Alimentação')
   await expect(gastos.getByRole('listitem').first()).toContainText(money('R$ 100,00'))

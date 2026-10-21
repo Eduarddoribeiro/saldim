@@ -66,7 +66,32 @@ export function PersonDebtDetails({
 
   return (
     <div className="mt-3 grid gap-4">
-      <div className="overflow-x-auto">
+      {/* Telemóvel: um bloco por cartão (a tabela de 4 colunas não cabe a 360px e cortava valores) */}
+      <section aria-labelledby={`por-cartao-${personId}`} className="grid gap-2 sm:hidden">
+        <h4 id={`por-cartao-${personId}`} className="text-sm font-medium">
+          Compras de {personName} por cartão
+        </h4>
+        <ul className="divide-y rounded-lg border text-sm">
+          {[
+            ...cards.map((card) => ({ key: card.cardId, nome: cardName(card.cardId), ...card })),
+            ...(cards.length > 1 ? [{ key: 'total', nome: 'Todos os cartões', ...total }] : []),
+          ].map((row) => (
+            <li key={row.key} className="grid gap-1 px-3 py-2">
+              <span className={row.key === 'total' ? 'font-medium' : undefined}>{row.nome}</span>
+              <dl className="grid grid-cols-[1fr_auto] gap-x-3 text-xs tabular-nums">
+                <dt className="text-muted-foreground">Faturas vencidas</dt>
+                <dd className="text-right">{money(row.vencido)}</dd>
+                <dt className="text-muted-foreground">Faturas futuras</dt>
+                <dd className="text-right">{money(row.futuro)}</dd>
+                <dt className="text-muted-foreground">Total</dt>
+                <dd className="text-right font-medium">{money(row.vencido + row.futuro)}</dd>
+              </dl>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <div className="overflow-x-auto max-sm:hidden">
         <table className="w-full text-sm">
           <caption className="mb-1 text-left text-sm font-medium">
             Compras de {personName} por cartão
@@ -195,24 +220,25 @@ function PurchaseDebtRow({
       : `${purchase.parcelas}× · todas vencidas`
     : 'À vista'
   return (
-    <li className="flex items-start justify-between gap-3 px-3 py-2">
-      <span className="min-w-0">
-        <span className="block truncate">{name}</span>
-        <span className="block text-xs text-muted-foreground">
-          {cardName} · {shortDate(purchase.data_compra)} · {tipo}
+    // Nome e valor numa linha; o resto por baixo, a toda a largura (lado a lado espremia o cartão)
+    <li className="grid gap-0.5 px-3 py-2">
+      <span className="flex items-baseline justify-between gap-3">
+        <span className="min-w-0 truncate">{name}</span>
+        <span className="shrink-0 tabular-nums">{money(purchase.valor_total_centavos)}</span>
+      </span>
+      <span className="text-xs text-muted-foreground">
+        {cardName} · {shortDate(purchase.data_compra)} · {tipo}
+      </span>
+      {(debt.vencido !== 0 || debt.futuro !== 0) && (
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {[
+            debt.vencido !== 0 ? `Faturas vencidas ${money(debt.vencido)}` : null,
+            debt.futuro !== 0 ? `Faturas futuras ${money(debt.futuro)}` : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
         </span>
-      </span>
-      <span className="shrink-0 text-right text-xs tabular-nums">
-        <span className="block text-sm">{money(purchase.valor_total_centavos)}</span>
-        {debt.vencido !== 0 && (
-          <span className="block text-muted-foreground">
-            Faturas vencidas {money(debt.vencido)}
-          </span>
-        )}
-        {debt.futuro !== 0 && (
-          <span className="block text-muted-foreground">Faturas futuras {money(debt.futuro)}</span>
-        )}
-      </span>
+      )}
     </li>
   )
 }

@@ -187,7 +187,9 @@ function PersonCard({
 
   return (
     <section aria-labelledby={headingId} className="rounded-xl border p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      {/* Valores em cima e ações sempre numa linha própria: antes os botões saltavam para o lado ou
+          para baixo conforme o tamanho do valor, e os cartões ficavam desiguais */}
+      <div className="grid gap-3">
         <div className="min-w-0">
           <h2 id={headingId} className="truncate font-medium">
             {person.nome}
@@ -212,16 +214,17 @@ function PersonCard({
           )}
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="lg" onClick={onEdit} aria-label={`Editar ${person.nome}`}>
-            <Pencil aria-hidden />
-          </Button>
           <Button
             size="lg"
             onClick={() => onPay(vencido > 0 ? vencido : Math.max(total, 0))}
             aria-label={`Recebi de ${person.nome}`}
+            className="max-sm:flex-1"
           >
             <HandCoins aria-hidden />
             Recebi
+          </Button>
+          <Button variant="outline" size="lg" onClick={onEdit} aria-label={`Editar ${person.nome}`}>
+            <Pencil aria-hidden />
           </Button>
         </div>
       </div>

@@ -193,9 +193,12 @@ export function DashboardPage() {
             }
             className="col-span-2"
           />
+          {/* Dívida e líquido têm dicas longas: no telemóvel ocupam a linha toda (a meia largura
+              o título partia em duas linhas e a dica em cinco) */}
           <StatTile
             label={position.dividaCartoes < 0 ? 'Crédito nos cartões' : 'Dívida nos cartões'}
             icon={CreditCard}
+            className="col-span-2 sm:col-span-1"
             value={formatMoney(Math.abs(position.dividaCartoes), currency)}
             hint={
               positionPrevista.dividaCartoes !== position.dividaCartoes
@@ -206,6 +209,7 @@ export function DashboardPage() {
           <StatTile
             label="Saldo líquido"
             icon={Landmark}
+            className="col-span-2 sm:col-span-1"
             value={formatMoney(position.liquido, currency)}
             hint={
               <>
@@ -247,47 +251,57 @@ export function DashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {!hasCards && (
-          <StatTile
-            hero
-            label="Saldo atual"
-            icon={Wallet}
-            value={formatMoney(saldoAtual, currency)}
-            hint={
-              saldoPrevisto !== saldoAtual
-                ? `Com os lançamentos futuros: ${formatMoney(saldoPrevisto, currency)}`
-                : 'Soma de todas as contas, até hoje.'
-            }
-            className="col-span-2 sm:col-span-3"
-          />
-        )}
+      {!hasCards && (
         <StatTile
-          label={`Receitas · ${monthLabel}`}
-          icon={ArrowUpRight}
-          value={formatMoney(summary.receitas, currency)}
-          hint={vsPrevious('receitas')}
-        />
-        <StatTile
-          label={`Despesas · ${monthLabel}`}
-          icon={ArrowDownRight}
-          value={formatMoney(summary.despesas, currency)}
-          hint={vsPrevious('despesas')}
-        />
-        <StatTile
-          label={`Resultado · ${monthLabel}`}
-          icon={Scale}
-          value={formatMoney(summary.resultado, currency, { signDisplay: 'exceptZero' })}
+          hero
+          label="Saldo atual"
+          icon={Wallet}
+          value={formatMoney(saldoAtual, currency)}
           hint={
-            <>
-              {summary.resultado > 0 && <p>Você ganhou mais do que gastou.</p>}
-              {summary.resultado < 0 && <p>Você gastou mais do que ganhou.</p>}
-              <p>{vsPrevious('resultado')}</p>
-            </>
+            saldoPrevisto !== saldoAtual
+              ? `Com os lançamentos futuros: ${formatMoney(saldoPrevisto, currency)}`
+              : 'Soma de todas as contas, até hoje.'
           }
-          className="col-span-2 sm:col-span-1"
+          className="mb-3"
         />
-      </div>
+      )}
+
+      {/* O mês fica num título: "Receitas · este mês" partia em duas linhas a meia largura */}
+      <section aria-labelledby="resumo-mes" className="mt-3">
+        <h2
+          id="resumo-mes"
+          className="mb-2 text-sm font-medium text-muted-foreground first-letter:uppercase"
+        >
+          {monthLabel}
+        </h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <StatTile
+            label="Receitas"
+            icon={ArrowUpRight}
+            value={formatMoney(summary.receitas, currency)}
+            hint={vsPrevious('receitas')}
+          />
+          <StatTile
+            label="Despesas"
+            icon={ArrowDownRight}
+            value={formatMoney(summary.despesas, currency)}
+            hint={vsPrevious('despesas')}
+          />
+          <StatTile
+            label="Resultado"
+            icon={Scale}
+            value={formatMoney(summary.resultado, currency, { signDisplay: 'exceptZero' })}
+            hint={
+              <>
+                {summary.resultado > 0 && <p>Você ganhou mais do que gastou.</p>}
+                {summary.resultado < 0 && <p>Você gastou mais do que ganhou.</p>}
+                <p>{vsPrevious('resultado')}</p>
+              </>
+            }
+            className="col-span-2 sm:col-span-1"
+          />
+        </div>
+      </section>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <MonthlyComparisonPanel series={series} currency={currency} />

@@ -63,18 +63,24 @@ export function TransactionsPage() {
           title="Transações"
           description="Receitas, despesas e compras no cartão de cada mês."
         />
-        <div className="flex flex-wrap gap-2">
+        {/* No telemóvel os atalhos ocupam a largura toda, lado a lado, e afastam-se do seletor de mês */}
+        <div className="flex flex-wrap gap-2 max-md:mb-4 max-sm:w-full">
           {/* Atalho para os lançamentos recorrentes (a página vive nas Configurações) */}
           <Link
             to="/configuracoes/recorrentes"
             // cn resolve o conflito border-transparent × border-border, como no <Button>
-            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}
+            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'max-sm:flex-1')}
           >
             <Repeat aria-hidden />
             Recorrentes
           </Link>
           {hasCards && (
-            <Button size="lg" variant="outline" onClick={() => setPurchaseFormOpen(true)}>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => setPurchaseFormOpen(true)}
+              className="max-sm:flex-1"
+            >
               <CreditCard aria-hidden />
               Compra no cartão
             </Button>
@@ -115,8 +121,9 @@ export function TransactionsPage() {
           description="Registre uma receita, uma despesa ou uma compra no cartão."
         />
       ) : (
-        <div className="grid min-w-0 gap-6 *:min-w-0">
+        <div className="grid min-w-0 gap-6 *:min-w-0 max-md:pb-16">
           {/* min-w-0: sem isto, um texto longo alarga a grelha além do ecrã (scroll horizontal) */}
+          {/* pb-16 no telemóvel: a última transação fica acima do botão flutuante, não por baixo dele */}
           {groupByDay(list).map(([day, items]) => (
             <section key={day} aria-labelledby={`dia-${day}`}>
               <h2

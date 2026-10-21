@@ -216,8 +216,10 @@ function BudgetRow({
       className="grid w-full grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 px-3 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none"
     >
       <CategoryBadge cor={category.cor} icone={category.icone} className="row-span-3" />
-      <span className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-2">
-        <span className="max-w-full min-w-0 truncate font-medium">{category.nome}</span>
+      {/* Estrutura fixa: no telemóvel cada informação na sua linha (lado a lado, umas linhas cabiam e
+          outras partiam, e cada orçamento ficava montado de uma forma); a partir de sm, lado a lado */}
+      <span className="flex min-w-0 flex-col sm:flex-row sm:items-baseline sm:justify-between sm:gap-x-2">
+        <span className="min-w-0 truncate font-medium">{category.nome}</span>
         <span className="shrink-0 text-sm tabular-nums">
           {formatMoney(gasto, currency)}
           <span className="text-muted-foreground"> de {formatMoney(limite, currency)}</span>
@@ -237,7 +239,7 @@ function BudgetRow({
           style={{ width: `${Math.min(status.percent, 100)}%` }}
         />
       </span>
-      <span className="flex flex-wrap items-center justify-between gap-x-2 text-xs">
+      <span className="flex flex-col gap-0.5 text-xs sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
         <span className={cn('inline-flex items-center gap-1 font-medium', state.text)}>
           <StateIcon className="size-3.5" aria-hidden />
           {state.label} · {status.percent}%

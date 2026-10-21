@@ -33,12 +33,18 @@ test('início: saldo, resumo do mês, gastos por categoria e contas batem com o 
 
   await page.getByRole('link', { name: 'Início' }).locator('visible=true').first().click()
   const tile = (label: string) => page.getByText(label, { exact: true }).locator('..').locator('..')
+  const monthTile = (label: string) =>
+    page
+      .getByRole('region', { name: 'este mês' })
+      .getByText(label, { exact: true })
+      .locator('..')
+      .locator('..')
 
   // 1000 + 3000 − 1200 − 300,50 = 2.499,50
   await expect(tile('Saldo atual')).toContainText(money('R$ 2.499,50'))
-  await expect(tile('Receitas · este mês')).toContainText(money('R$ 3.000,00'))
-  await expect(tile('Despesas · este mês')).toContainText(money('R$ 1.500,50'))
-  await expect(tile('Resultado · este mês')).toContainText(money('+R$ 1.499,50'))
+  await expect(monthTile('Receitas')).toContainText(money('R$ 3.000,00'))
+  await expect(monthTile('Despesas')).toContainText(money('R$ 1.500,50'))
+  await expect(monthTile('Resultado')).toContainText(money('+R$ 1.499,50'))
 
   const gastos = page.getByRole('region', { name: 'Gastos por categoria' })
   await expect(gastos.getByRole('listitem').first()).toContainText('Moradia')
@@ -48,7 +54,7 @@ test('início: saldo, resumo do mês, gastos por categoria e contas batem com o 
   await expect(page.getByRole('region', { name: 'Contas' })).toContainText(money('R$ 2.499,50'))
 
   // Comparação com o mês anterior (conta nova: no mês anterior não há nada)
-  await expect(tile('Receitas · este mês')).toContainText(/nada em /)
+  await expect(monthTile('Receitas')).toContainText(/nada em /)
   await expect(gastos.getByRole('listitem').first()).toContainText(/nada em /)
 
   // Receitas e despesas: gráfico real (Recharts, carregado à parte) com as barras do mês atual

@@ -126,6 +126,13 @@ const tx = (overrides: Partial<Transaction>): Transaction => ({
 
 const plain = (text: string | null | undefined) => (text ?? '').replace(/[\u00a0\u202f]/g, ' ')
 const tile = (label: RegExp) => plain(screen.getByText(label).closest('div')?.textContent)
+// Receitas, despesas e resultado ficam na secção do mês (o nome "Receitas" também está no gráfico)
+const monthTile = (label: string, month: string) =>
+  plain(
+    within(screen.getByRole('region', { name: month }))
+      .getByText(label)
+      .closest('div')?.textContent,
+  )
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
@@ -187,7 +194,7 @@ describe('início (dashboard)', () => {
     expect(tile(/^Dinheiro disponível$/)).toContain('R$ 2.751,00')
     expect(tile(/^Dívida nos cartões$/)).toContain('R$ 0,00')
     // Despesas do mês: 2200,00 + 300,00 da parcela — o pagamento NÃO conta como despesa
-    expect(tile(/^Despesas · este mês$/)).toContain('R$ 2.500,00')
+    expect(monthTile('Despesas', 'este mês')).toContain('R$ 2.500,00')
     const contas = screen.getByRole('region', { name: 'Contas' })
     // Banco: 1000 + 5000 − 1500 − 500 − 999 − 300 (pagamento) = 2701,00; Visa: −300 + 300 = 0
     expect(plain(within(contas).getByText('Banco').closest('li')?.textContent)).toContain(
@@ -287,7 +294,7 @@ describe('início (dashboard)', () => {
     renderApp('/')
     await screen.findByText('A receber')
     // As despesas do mês não incluem a parcela da mãe (as mesmas 2200,00 de sempre)
-    expect(tile(/^Despesas · este mês$/)).toContain('R$ 2.200,00')
+    expect(monthTile('Despesas', 'este mês')).toContain('R$ 2.200,00')
     // O reembolso entra no banco: 3051,00 + 50,00
     expect(tile(/^Dinheiro disponível$/)).toContain('R$ 3.101,00')
     // A dívida do cartão inclui a parcela da mãe (é dívida real)
@@ -346,10 +353,10 @@ describe('início (dashboard)', () => {
   it('receitas, despesas e resultado do mês (inclui transações futuras do próprio mês)', async () => {
     renderApp('/')
     await screen.findByText('Saldo atual')
-    expect(tile(/^Receitas · este mês$/)).toContain('R$ 5.000,00')
-    expect(tile(/^Despesas · este mês$/)).toContain('R$ 2.200,00')
-    expect(tile(/^Resultado · este mês$/)).toContain('+R$ 2.800,00')
-    expect(tile(/^Resultado · este mês$/)).toContain('Você ganhou mais do que gastou.')
+    expect(monthTile('Receitas', 'este mês')).toContain('R$ 5.000,00')
+    expect(monthTile('Despesas', 'este mês')).toContain('R$ 2.200,00')
+    expect(monthTile('Resultado', 'este mês')).toContain('+R$ 2.800,00')
+    expect(monthTile('Resultado', 'este mês')).toContain('Você ganhou mais do que gastou.')
   })
 
   it('gastos por categoria ordenados, com valor e percentagem escritos', async () => {
@@ -368,11 +375,15 @@ describe('início (dashboard)', () => {
   it('compara receitas, despesas e resultado com o mês anterior', async () => {
     renderApp('/')
     await screen.findByText('Saldo atual')
-    expect(tile(/^Receitas · este mês$/)).toContain('nada em setembro')
+    expect(monthTile('Receitas', 'este mês')).toContain('nada em setembro')
     // 2.200,00 − 999,00 = +1.201,00 (+120 %)
-    expect(tile(/^Despesas · este mês$/)).toContain('+R$ 1.201,00 (+120%) em relação a setembro')
+    expect(monthTile('Despesas', 'este mês')).toContain(
+      '+R$ 1.201,00 (+120%) em relação a setembro',
+    )
     // +2.800,00 − (−999,00) = +3.799,00; % sobre |−999,00| = +380 %
-    expect(tile(/^Resultado · este mês$/)).toContain('+R$ 3.799,00 (+380%) em relação a setembro')
+    expect(monthTile('Resultado', 'este mês')).toContain(
+      '+R$ 3.799,00 (+380%) em relação a setembro',
+    )
   })
 
   it('categorias que deixaram de ter gastos aparecem em uma nota (não desaparecem em silêncio)', async () => {
@@ -484,8 +495,8 @@ describe('início (dashboard)', () => {
   it('noutro mês, os números e as ligações seguem o mês escolhido', async () => {
     renderApp('/?mes=2026-09')
     await screen.findByText('Saldo atual')
-    expect(tile(/^Despesas · setembro de 2026$/)).toContain('R$ 999,00')
-    expect(tile(/^Resultado · setembro de 2026$/)).toContain('-R$ 999,00')
+    expect(monthTile('Despesas', 'setembro de 2026')).toContain('R$ 999,00')
+    expect(monthTile('Resultado', 'setembro de 2026')).toContain('-R$ 999,00')
     expect(screen.getByRole('link', { name: 'Ver todas' })).toHaveAttribute(
       'href',
       '/transacoes?mes=2026-09',
@@ -497,7 +508,7 @@ describe('início (dashboard)', () => {
   it('mês sem movimentos mostra zeros e mensagens claras', async () => {
     renderApp('/?mes=2026-01')
     await screen.findByText('Saldo atual')
-    expect(tile(/^Resultado · janeiro de 2026$/)).toContain('R$ 0,00')
+    expect(monthTile('Resultado', 'janeiro de 2026')).toContain('R$ 0,00')
     expect(screen.getByText('Nenhuma despesa em janeiro de 2026.')).toBeInTheDocument()
     expect(screen.getByText(/Nenhuma transação em janeiro de 2026\./)).toBeInTheDocument()
   })
@@ -506,6 +517,6 @@ describe('início (dashboard)', () => {
     renderApp('/')
     await screen.findByText('Saldo atual')
     await userEvent.click(screen.getByRole('button', { name: /Mês anterior/ }))
-    expect(await screen.findByText('Despesas · setembro de 2026')).toBeInTheDocument()
+    expect(await screen.findByRole('region', { name: 'setembro de 2026' })).toBeInTheDocument()
   })
 })
