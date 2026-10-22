@@ -6,6 +6,20 @@ cada pessoa te deve pelas compras que fez no seu cartão.
 
 🔗 **Demo:** [saldo-orpin.vercel.app](https://saldo-orpin.vercel.app)
 
+<p align="center">
+  <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/inicio-desktop-escuro.png"><img src="docs/screenshots/inicio-desktop-claro.png" alt="Início no computador: dinheiro disponível, dívida nos cartões, saldo líquido e a receber" width="820"></picture>
+</p>
+
+<p align="center">
+  <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/inicio-celular-escuro.png"><img src="docs/screenshots/inicio-celular-claro.png" alt="Início no celular" width="200"></picture>
+  <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/faturas-celular-escuro.png"><img src="docs/screenshots/faturas-celular-claro.png" alt="Faturas do cartão no celular" width="200"></picture>
+  <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/a-receber-celular-escuro.png"><img src="docs/screenshots/a-receber-celular-claro.png" alt="A receber: quanto a Ana deve e as próximas faturas" width="200"></picture>
+  <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/transacoes-celular-escuro.png"><img src="docs/screenshots/transacoes-celular-claro.png" alt="Lista de transações no celular" width="200"></picture>
+</p>
+
+<sub>Capturas feitas com uma conta de demonstração e dados inventados (<code>npm run demo:seed</code> e
+<code>npm run demo:screenshots</code>).</sub>
+
 ## Por que mais um app de finanças
 
 A maioria dos apps trata o cartão de crédito como uma conta comum, e aí o saldo nunca bate com o banco.
@@ -63,15 +77,17 @@ npm run dev         # http://localhost:5173
 
 ## Comandos
 
-| Comando            | O que faz                                                |
-| ------------------ | -------------------------------------------------------- |
-| `npm run dev`      | Servidor de desenvolvimento                              |
-| `npm run build`    | Verifica os tipos e gera a build                         |
-| `npm run lint`     | Analisa o código (oxlint)                                |
-| `npm test`         | Testes unitários e de componentes                        |
-| `npm run test:rls` | Testes de integração e segurança contra o Supabase local |
-| `npm run test:e2e` | Testes ponta a ponta (Playwright)                        |
-| `npm run verify`   | Tudo acima, mais a formatação; para na primeira falha    |
+| Comando                    | O que faz                                                         |
+| -------------------------- | ----------------------------------------------------------------- |
+| `npm run dev`              | Servidor de desenvolvimento                                       |
+| `npm run build`            | Verifica os tipos e gera a build                                  |
+| `npm run lint`             | Analisa o código (oxlint)                                         |
+| `npm test`                 | Testes unitários e de componentes                                 |
+| `npm run test:rls`         | Testes de integração e segurança contra o Supabase local          |
+| `npm run test:e2e`         | Testes ponta a ponta (Playwright)                                 |
+| `npm run demo:seed`        | Cria a conta de demonstração no Supabase local (dados inventados) |
+| `npm run demo:screenshots` | Tira as capturas do README com a conta de demonstração            |
+| `npm run verify`           | Tudo acima, mais a formatação; para na primeira falha             |
 
 ## Estrutura
 

@@ -144,6 +144,8 @@ Os tipos de `tests/` e `e2e/` são verificados por `tsconfig.tests.json`.
 | `npm run db:status`                  | Mostra URLs e chaves locais                                                                                                                  |
 | `npm run db:reset`                   | Recria a base local e aplica todas as migrations (apaga dados locais)                                                                        |
 | `npx supabase migration up --local`  | Aplica só as migrations novas, **sem apagar** os dados locais                                                                                |
+| `npm run demo:seed`                  | Recria a conta de demonstração `demo@saldim.app` no Supabase LOCAL (6 meses inventados, datas relativas a hoje)                              |
+| `npm run demo:screenshots`           | Capturas do README em `docs/screenshots/` (app a correr; `APP_URL` muda o endereço)                                                          |
 | `npm run db:types`                   | Regenera `src/lib/database.types.ts` a partir da base local                                                                                  |
 | `npm run env:local`                  | Escreve `.env` com o URL e a chave pública locais                                                                                            |
 | `npx supabase migration new <nome>`  | Cria uma migration vazia em `supabase/migrations/`                                                                                           |
