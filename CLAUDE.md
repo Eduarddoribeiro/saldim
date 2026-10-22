@@ -229,7 +229,7 @@ Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etap
 - **GitHub:** enviar com `git push` só com autorização explícita de cada vez.
 - **Hook `post-commit`:** versionado e sem rede, mas inativo até aprovação (`git config core.hooksPath .githooks`).
 - **Deploy / projeto Supabase na cloud (Etapa 14):** exige conta, credenciais reais e possíveis custos; ativar confirmação de e-mail e SMTP próprio em produção.
-- **Renomear** o pacote/pasta `financas` → `saldo` (opcional; só cosmético).
+- **Renomear** o pacote/pasta `financas` → `saldim` (opcional; só cosmético).
 
 ## Forma de trabalho
 
@@ -241,7 +241,8 @@ Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etap
 
 ## Git e GitHub
 
-- Repositório remoto **privado**: `origin` → https://github.com/Eduarddoribeiro/saldo (ramo `main`). O `gh` está instalado em `C:\Program Files\GitHub CLI\gh.exe` e autenticado.
+- Repositório remoto **público** (portefólio): https://github.com/Eduarddoribeiro/saldim (ramo `main`; antes chamava-se `saldo`, e o GitHub redireciona o endereço antigo). Tudo o que entra num commit fica visível, incluindo o e-mail do autor. O `gh` está instalado em `C:\Program Files\GitHub CLI\gh.exe` e autenticado.
+- Mensagens de commit **sem** a linha `Co-Authored-By: Claude` (pedido do utilizador).
 - **Nunca fazer `git push` sem autorização explícita do utilizador.**
 - `.githooks/post-commit` (versionado) só mostra o commit criado e quantos commits faltam enviar — sem operações de rede. Está **inativo**; ativar só com aprovação: `git config core.hooksPath .githooks`.
 
