@@ -1,4 +1,4 @@
-// Datas no Saldo: as transações guardam só o dia ('YYYY-MM-DD', tipo `date` no Postgres) e os meses
+// Datas no Saldim: as transações guardam só o dia ('YYYY-MM-DD', tipo `date` no Postgres) e os meses
 // identificam-se por 'YYYY-MM'. Trabalhamos com texto e números, sem horas, para não haver surpresas de
 // fuso horário. Regra do período em docs/plano.md: mês = data >= dia 1 e < dia 1 do mês seguinte.
 

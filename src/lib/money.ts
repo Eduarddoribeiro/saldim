@@ -1,4 +1,4 @@
-// Dinheiro no Saldo: SEMPRE centavos inteiros (number inteiro no TS, bigint no Postgres).
+// Dinheiro no Saldim: SEMPRE centavos inteiros (number inteiro no TS, bigint no Postgres).
 // Conversão só nas extremidades: texto → centavos ao ler um formulário, centavos → texto ao mostrar.
 // Regras completas em docs/plano.md → "Valores monetários".
 

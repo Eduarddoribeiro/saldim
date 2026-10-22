@@ -1,4 +1,4 @@
-// Cálculos financeiros do Saldo — implementação EXATA das regras de docs/plano.md → "Cálculos".
+// Cálculos financeiros do Saldim — implementação EXATA das regras de docs/plano.md → "Cálculos".
 // Funções puras: recebem dados, devolvem números. Tudo em centavos inteiros (sem vírgula flutuante).
 
 import {

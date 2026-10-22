@@ -1,4 +1,4 @@
-# Saldo — plano de desenvolvimento
+# Saldim — plano de desenvolvimento
 
 Plano aprovado pelo utilizador em 2026-10-14. O estado de cada etapa está em `CLAUDE.md`; este documento guarda as regras e os critérios de conclusão.
 
@@ -134,7 +134,7 @@ Etapa R1 (migration `recorrentes`). Uma recorrência descreve um lançamento que
 
 **16. Importação automática via Open Finance** — puxar transações dos bancos através de um agregador (ex.: Pluggy, Belvo) em vez de as registar à mão. Requer autorização: serviço externo, credenciais, possíveis custos e dados bancários a sair da app. Por decidir: agregador, deduplicação com lançamentos manuais, mapeamento para categorias. Depende da 14 (deploy).
 
-**17. Claude sobre os dados da app** — ligar o Claude (ex.: por MCP) à base do Saldo para perguntas em linguagem natural sobre os dados já organizados. Requer autorização: acesso externo aos dados; só leitura e só os dados do próprio utilizador (respeitar RLS, nunca `service_role`).
+**17. Claude sobre os dados da app** — ligar o Claude (ex.: por MCP) à base do Saldim para perguntas em linguagem natural sobre os dados já organizados. Requer autorização: acesso externo aos dados; só leitura e só os dados do próprio utilizador (respeitar RLS, nunca `service_role`).
 
 ## Verificação
 

@@ -208,7 +208,7 @@ function AccountForm({ onOpenChange, account }: Props) {
           label="Saldo inicial"
           inputMode="decimal"
           autoComplete="off"
-          hint={`Quanto a conta tinha quando você começou a usar o Saldo. Pode ser negativo. ${MONEY_EXAMPLE}`}
+          hint={`Quanto a conta tinha quando você começou a usar o Saldim. Pode ser negativo. ${MONEY_EXAMPLE}`}
           error={errors.saldoInicial?.message}
           {...register('saldoInicial')}
         />

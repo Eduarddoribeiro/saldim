@@ -14,7 +14,7 @@ Uso principal no **celular, no dia a dia**: registrar uma despesa logo depois de
 
 ## Product Purpose
 
-O Saldo é um app web de finanças pessoais, responsivo e sincronizado entre dispositivos (login com e-mail e senha). Permite registrar receitas e despesas por conta e categoria, acompanhar o saldo atual e o previsto, definir orçamentos mensais e ver os gastos por categoria.
+O Saldim é um app web de finanças pessoais, responsivo e sincronizado entre dispositivos (login com e-mail e senha). Permite registrar receitas e despesas por conta e categoria, acompanhar o saldo atual e o previsto, definir orçamentos mensais e ver os gastos por categoria.
 
 Sucesso: a pessoa confia no número que vê. O saldo, a fatura e o que tem a receber batem com o banco e com o cartão de verdade, e registrar um gasto é rápido o bastante para ser feito na hora.
 
@@ -41,7 +41,7 @@ Sucesso: a pessoa confia no número que vê. O saldo, a fatura e o que tem a rec
 
 ## Brand Commitments
 
-- Nome: **Saldo** (`AppLogo.tsx`, `<title>`).
+- Nome: **Saldim** (`AppLogo.tsx`, `<title>`, `public/favicon.svg`). Ícone: dois traços iguais, como um sinal de igual (o saldo bate com o do banco); o traço de baixo é o verde da marca (emerald).
 - **Idioma: português do Brasil**, tratando por "você" (Salvar, Excluir, Registrar). Toda a interface foi convertida de pt-PT para pt-BR.
 
 ## Evidence on Hand

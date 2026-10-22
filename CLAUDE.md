@@ -1,10 +1,10 @@
-# Saldo — guia do projeto
+# Saldim — guia do projeto
 
 ## Objetivo
 
-**Saldo** é uma aplicação web pessoal de finanças, responsiva (telemóvel e desktop) e com sincronização entre dispositivos (dados no Supabase com login). Permite registar receitas e despesas, acompanhar o saldo, definir orçamentos mensais e ver gastos por categoria.
+**Saldim** é uma aplicação web pessoal de finanças, responsiva (telemóvel e desktop) e com sincronização entre dispositivos (dados no Supabase com login). Permite registar receitas e despesas, acompanhar o saldo, definir orçamentos mensais e ver gastos por categoria.
 
-> Nome: a interface usa **Saldo** (`AppLogo.tsx`, `<title>`). O pacote npm e a pasta continuam `financas`, e a chave do tema em `localStorage` continua `financas-theme` (mudar apagaria a preferência guardada).
+> Nome: a interface usa **Saldim** (`AppLogo.tsx`, `<title>`, `public/favicon.svg`; antes chamava-se Saldo). O pacote npm e a pasta continuam `financas`, e a chave do tema em `localStorage` continua `financas-theme` (mudar apagaria a preferência guardada).
 
 ## Tecnologias instaladas (versões reais, `npm ls --depth=0`)
 
