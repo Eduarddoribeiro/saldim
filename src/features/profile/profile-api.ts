@@ -10,3 +10,9 @@ export async function getProfile(): Promise<Profile> {
   if (error) throw new UserFacingError(dbErrorMessage(error))
   return data
 }
+
+/** Muda o nome do perfil (é o que vê quem foi convidado para ver o que deve). */
+export async function updateProfileName(userId: string, nome: string): Promise<void> {
+  const { error } = await supabase.from('profiles').update({ nome }).eq('id', userId)
+  if (error) throw new UserFacingError(dbErrorMessage(error))
+}

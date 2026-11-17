@@ -13,6 +13,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import { useAuth } from '@/features/auth/auth-context'
 import { SignOutButton } from '@/features/auth/SignOutButton'
+import { useSharedDebts } from '@/features/sharing/hooks'
 
 function SettingsSection({
   title,
@@ -49,6 +50,7 @@ function SettingsLink({ to, icon: Icon, label }: { to: string; icon: LucideIcon;
 
 export function SettingsPage() {
   const { user } = useAuth()
+  const sharedDebts = useSharedDebts()
 
   return (
     <>
@@ -62,6 +64,9 @@ export function SettingsPage() {
           <ul className="-mx-1 divide-y">
             <SettingsLink to="/orcamentos" icon={Target} label="Orçamentos" />
             <SettingsLink to="/a-receber" icon={HandCoins} label="Pessoas e a receber" />
+            {(sharedDebts.data?.length ?? 0) > 0 && (
+              <SettingsLink to="/o-que-devo" icon={HandCoins} label="O que eu devo" />
+            )}
           </ul>
         </SettingsSection>
 

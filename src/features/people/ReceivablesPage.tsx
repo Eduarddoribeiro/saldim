@@ -1,4 +1,4 @@
-import { ChevronDown, HandCoins, Pencil, Plus } from 'lucide-react'
+import { ChevronDown, HandCoins, Pencil, Plus, Share2 } from 'lucide-react'
 import { useState } from 'react'
 import { ConfirmDeleteButton } from '@/components/form/ConfirmDeleteButton'
 import { FormAlert } from '@/components/form/FormAlert'
@@ -12,6 +12,7 @@ import { usePurchases } from '@/features/card-purchases/hooks'
 import type { Account } from '@/features/accounts/accounts-api'
 import type { CardPurchase } from '@/features/card-purchases/purchases-api'
 import { useCategories } from '@/features/categories/hooks'
+import { ShareDebtDialog } from '@/features/sharing/ShareDebtDialog'
 import { HeroStat } from '@/features/dashboard/BalanceHero'
 import { useCurrency } from '@/features/profile/hooks'
 import { errorMessage } from '@/lib/db-errors'
@@ -44,6 +45,10 @@ export function ReceivablesPage() {
     person: Person | null
     suggested: number
   }>({ open: false, person: null, suggested: 0 })
+  const [shareDialog, setShareDialog] = useState<{ open: boolean; person: Person | null }>({
+    open: false,
+    person: null,
+  })
 
   const queries = [people, receivables, purchases, accounts]
   const isPending = queries.some((query) => query.isPending)
@@ -117,6 +122,7 @@ export function ReceivablesPage() {
               currency={currency}
               onEdit={() => setPersonDialog({ open: true, person })}
               onPay={(suggested) => setPayDialog({ open: true, person, suggested })}
+              onShare={() => setShareDialog({ open: true, person })}
             />
           ))}
         </div>
@@ -148,6 +154,12 @@ export function ReceivablesPage() {
         onOpenChange={(open) => setPersonDialog((current) => ({ ...current, open }))}
         person={personDialog.person}
       />
+      <ShareDebtDialog
+        open={shareDialog.open}
+        onOpenChange={(open) => setShareDialog((current) => ({ ...current, open }))}
+        // A pessoa atualizada (ex.: depois de deixar de compartilhar)
+        person={all.find((item) => item.id === shareDialog.person?.id) ?? shareDialog.person}
+      />
       <ReimbursementFormDialog
         open={payDialog.open}
         onOpenChange={(open) => setPayDialog((current) => ({ ...current, open }))}
@@ -172,6 +184,7 @@ function PersonCard({
   currency,
   onEdit,
   onPay,
+  onShare,
 }: {
   person: Person
   receivable: Receivable | undefined
@@ -185,6 +198,7 @@ function PersonCard({
   currency: Currency
   onEdit: () => void
   onPay: (suggested: number) => void
+  onShare: () => void
 }) {
   const categories = useCategories()
   const remove = useDeleteReimbursement()
@@ -211,8 +225,18 @@ function PersonCard({
             </h2>
             <p className="truncate text-xs text-muted-foreground">
               {purchases.length === 1 ? '1 compra' : `${purchases.length} compras`} no seu cartão
+              {person.viewer_id && ' · vê na conta dela'}
             </p>
           </div>
+          <Button
+            variant="ghost"
+            size="icon-lg"
+            className={cn('shrink-0 rounded-full', person.viewer_id && 'text-primary')}
+            onClick={onShare}
+            aria-label={`Compartilhar com ${person.nome}`}
+          >
+            <Share2 aria-hidden />
+          </Button>
           <Button
             variant="ghost"
             size="icon-lg"

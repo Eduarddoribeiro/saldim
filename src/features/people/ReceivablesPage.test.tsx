@@ -56,6 +56,7 @@ const person = (id: string, nome: string, arquivada = false): Person => ({
   nome,
   arquivada,
   divida_anterior_centavos: 0,
+  viewer_id: null,
   created_at: '',
 })
 

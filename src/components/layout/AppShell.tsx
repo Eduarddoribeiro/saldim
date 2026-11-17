@@ -4,6 +4,7 @@ import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import { QuickEntryProvider } from '@/features/quick-entry/QuickEntryProvider'
 import { cn } from '@/lib/utils'
 import { RecurringGenerator } from '@/features/recurring/RecurringGenerator'
+import { PendingInviteRedirect } from '@/features/sharing/PendingInviteRedirect'
 import { applyHiddenValues, readHiddenValues } from '@/lib/privacy'
 import { AppLogo } from './AppLogo'
 import { BottomNav } from './BottomNav'
@@ -26,6 +27,8 @@ export function AppShell() {
       <div className="flex min-h-svh">
         {/* Cria os lançamentos recorrentes que já chegaram ao dia (não mostra nada) */}
         <RecurringGenerator />
+        {/* Convite aberto antes de entrar: volta a ele (não mostra nada) */}
+        <PendingInviteRedirect />
         <Sidebar />
 
         <div className="flex min-w-0 flex-1 flex-col">

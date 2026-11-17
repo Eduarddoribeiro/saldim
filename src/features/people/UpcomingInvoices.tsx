@@ -13,6 +13,12 @@ import {
   type UpcomingSource,
 } from './receivable-details'
 
+/** O que se mostra de cada compra (também na página de quem deve, que não lê a compra inteira) */
+type PurchaseInfo = Pick<
+  CardPurchase,
+  'id' | 'descricao' | 'category_id' | 'parcelas' | 'parcela_inicial'
+>
+
 /** Parcela ou estorno de qualquer pessoa: o componente fica só com os da pessoa do cartão. */
 export type PersonMovement = UpcomingSource & { pessoa_id: string | null }
 
@@ -46,10 +52,10 @@ export function UpcomingInvoices({
   /** "Em faturas futuras" da pessoa (total − vencido) */
   futuro: number
   movements: PersonMovement[]
-  purchases: CardPurchase[]
+  purchases: PurchaseInfo[]
   invoices: { id: string; data_vencimento: IsoDate }[]
-  accounts: Account[]
-  categories: Category[]
+  accounts: Pick<Account, 'id' | 'nome'>[]
+  categories: Pick<Category, 'id' | 'nome'>[]
   currency: Currency
 }) {
   const today = todayIso()
@@ -141,9 +147,9 @@ function ItemsByCard({
   money,
 }: {
   items: UpcomingItem[]
-  purchases: CardPurchase[]
-  accounts: Account[]
-  categories: Category[]
+  purchases: PurchaseInfo[]
+  accounts: Pick<Account, 'id' | 'nome'>[]
+  categories: Pick<Category, 'id' | 'nome'>[]
   money: (cents: number) => string
 }) {
   const byCard = new Map<string, UpcomingItem[]>()

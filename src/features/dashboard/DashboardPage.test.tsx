@@ -337,6 +337,7 @@ describe('início (dashboard)', () => {
         nome: 'Mãe',
         arquivada: false,
         divida_anterior_centavos: 0,
+        viewer_id: null,
         created_at: '',
       },
     ]

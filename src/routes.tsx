@@ -30,6 +30,8 @@ const CategoriesPage = page(() => import('@/features/categories/CategoriesPage')
 const AccountsPage = page(() => import('@/features/accounts/AccountsPage'), 'AccountsPage')
 const RecurringPage = page(() => import('@/features/recurring/RecurringPage'), 'RecurringPage')
 const ReceivablesPage = page(() => import('@/features/people/ReceivablesPage'), 'ReceivablesPage')
+const InvitePage = page(() => import('@/features/sharing/InvitePage'), 'InvitePage')
+const SharedDebtPage = page(() => import('@/features/sharing/SharedDebtPage'), 'SharedDebtPage')
 
 // As rotas ficam separadas do router para os testes as poderem usar com um router em memória
 export const routes: RouteObject[] = [
@@ -49,10 +51,14 @@ export const routes: RouteObject[] = [
       },
     ],
   },
-  // Destino do link de recuperação: precisa da sessão temporária criada pelo link
+  // Destino do link de recuperação: precisa da sessão temporária criada pelo link.
+  // Convite para ver o que se deve: com ou sem sessão (sem sessão, explica e manda criar conta)
   {
     element: <AuthLayout />,
-    children: [{ path: 'nova-senha', element: <ResetPasswordPage /> }],
+    children: [
+      { path: 'nova-senha', element: <ResetPasswordPage /> },
+      { path: 'convite/:token', element: <InvitePage /> },
+    ],
   },
   // Só com sessão
   {
@@ -70,6 +76,7 @@ export const routes: RouteObject[] = [
           { path: 'configuracoes/contas', element: <AccountsPage /> },
           { path: 'configuracoes/recorrentes', element: <RecurringPage /> },
           { path: 'a-receber', element: <ReceivablesPage /> },
+          { path: 'o-que-devo', element: <SharedDebtPage /> },
           { path: '*', element: <NotFoundPage /> },
         ],
       },

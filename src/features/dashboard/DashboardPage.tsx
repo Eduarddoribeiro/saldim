@@ -9,6 +9,7 @@ import { useAccounts } from '@/features/accounts/hooks'
 import { usePurchases } from '@/features/card-purchases/hooks'
 import { useCategories } from '@/features/categories/hooks'
 import { DueInvoices } from '@/features/invoices/DueInvoices'
+import { SharedDebtBanner } from '@/features/sharing/SharedDebtBanner'
 import { usePeople } from '@/features/people/hooks'
 import { useReceivables } from '@/features/people/use-receivables'
 import { useProfile } from '@/features/profile/hooks'
@@ -216,6 +217,8 @@ export function DashboardPage() {
       </BalanceHero>
 
       <QuickActions hasCards={hasCards} />
+
+      <SharedDebtBanner />
 
       {hasCards && (
         <DueInvoices

@@ -228,6 +228,42 @@ export type Database = {
           },
         ]
       }
+      convites_pessoa: {
+        Row: {
+          created_at: string
+          expira_em: string
+          id: string
+          pessoa_id: string
+          token_hash: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          expira_em?: string
+          id?: string
+          pessoa_id: string
+          token_hash: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          expira_em?: string
+          id?: string
+          pessoa_id?: string
+          token_hash?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'convites_pessoa_fk'
+            columns: ['pessoa_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'pessoas'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
+      }
       faturas: {
         Row: {
           account_id: string
@@ -275,6 +311,7 @@ export type Database = {
           id: string
           nome: string
           user_id: string
+          viewer_id: string | null
         }
         ComputedFields: never
         Insert: {
@@ -284,6 +321,7 @@ export type Database = {
           id?: string
           nome: string
           user_id?: string
+          viewer_id?: string | null
         }
         Update: {
           arquivada?: boolean
@@ -292,6 +330,7 @@ export type Database = {
           id?: string
           nome?: string
           user_id?: string
+          viewer_id?: string | null
         }
         Relationships: []
       }
@@ -592,6 +631,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      aceitar_convite: { Args: { p_token: string }; Returns: string }
       cartao_data_parcela: { Args: { data_compra: string; numero: number }; Returns: string }
       cartao_datas_fatura: {
         Args: { dia_fechamento: number; dia_vencimento: number; mes_referencia: string }
@@ -631,6 +671,23 @@ export type Database = {
       cartao_valor_parcela: {
         Args: { numero: number; parcelas: number; total: number }
         Returns: number
+      }
+      criar_convite_pessoa: { Args: { p_pessoa_id: string }; Returns: string }
+      deixar_de_compartilhar: { Args: { p_pessoa_id: string }; Returns: undefined }
+      divida_partilhada: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          cartoes: Json
+          categorias: Json
+          compras: Json
+          divida_anterior_centavos: number
+          dono_nome: string
+          faturas: Json
+          movimentos: Json
+          pessoa_id: string
+          pessoa_nome: string
+          reembolsos: Json
+        }[]
       }
       gerar_recorrencias: { Args: { p_hoje: string }; Returns: number }
       recorrencia_seguinte: {
