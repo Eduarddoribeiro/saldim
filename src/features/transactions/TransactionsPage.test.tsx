@@ -339,6 +339,50 @@ describe('página de transações', () => {
     expect(await screen.findByRole('dialog', { name: 'Novo lançamento' })).toBeInTheDocument()
   })
 
+  it('extrato como no banco: resumo do mês (entrou/saiu) e "Hoje" na faixa do dia', async () => {
+    renderApp('/transacoes')
+    const resumo = await screen.findByRole('region', { name: 'Resumo do mês' })
+    // Outubro: salário de 5000,00; supermercado de 123,45 (setembro fica de fora)
+    await waitFor(() => expect(plain(resumo.textContent)).toContain('EntrouR$ 5.000,00'))
+    expect(plain(resumo.textContent)).toContain('SaiuR$ 123,45')
+    // Hoje é 14/10
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Hoje, 14 de outubro' }),
+    ).toBeInTheDocument()
+  })
+
+  it('uma compra à vista no cartão não diz "Parcela 1/1"', async () => {
+    const purchasesApi = await import('@/features/card-purchases/purchases-api')
+    vi.mocked(purchasesApi.listPurchases).mockResolvedValueOnce([
+      {
+        id: 'vista',
+        user_id: 'u',
+        account_id: 'conta',
+        category_id: 'alim',
+        descricao: 'Pizza',
+        data_compra: '2026-10-12',
+        valor_total_centavos: 5000,
+        parcelas: 1,
+        parcela_inicial: 1,
+        pessoa_id: null,
+        created_at: '',
+      },
+    ])
+    store.transactions.push(
+      transaction({
+        id: 'pz',
+        descricao: 'Pizza',
+        data: '2026-10-12',
+        compra_id: 'vista',
+        parcela_numero: 1,
+      }),
+    )
+    renderApp('/transacoes')
+    const linha = await screen.findByRole('button', { name: /^Pizza: despesa/ })
+    await waitFor(() => expect(linha).toHaveTextContent('Alimentação · Conta principal'))
+    expect(linha).not.toHaveTextContent('Parcela')
+  })
+
   it('mostra o saldo de cada dia ao lado da data', async () => {
     store.transactions.push(
       transaction({

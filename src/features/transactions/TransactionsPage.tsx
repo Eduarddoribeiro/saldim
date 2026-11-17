@@ -14,12 +14,13 @@ import { useCategories } from '@/features/categories/hooks'
 import { usePeople } from '@/features/people/hooks'
 import { useCurrency } from '@/features/profile/hooks'
 import { useQuickEntry } from '@/features/quick-entry/quick-entry-context'
-import { formatDay, formatMonth } from '@/lib/dates'
+import { formatMonth, todayIso } from '@/lib/dates'
 import { errorMessage } from '@/lib/db-errors'
 import { formatMoney, type Currency } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import { useTransactions } from './hooks'
 import { groupByDay } from './group-by-day'
+import { statementDayLabel, statementTotals } from './statement'
 import { TransactionFormDialog } from './TransactionFormDialog'
 import { TransactionRow } from './TransactionRow'
 import { isPlainTransaction, type PlainTransaction } from './transaction-kind'
@@ -51,6 +52,8 @@ export function TransactionsPage() {
   const error = transactions.error ?? categories.error ?? accounts.error ?? purchases.error
   const openedPurchase = details.purchaseId ? purchasesById.get(details.purchaseId) : undefined
   const list = transactions.data ?? []
+  const totals = statementTotals(list)
+  const today = todayIso()
 
   return (
     <>
@@ -69,7 +72,24 @@ export function TransactionsPage() {
         </Link>
       </div>
 
-      <MonthPicker month={month} onChange={setMonth} className="mb-6 max-sm:justify-center" />
+      {/* Resumo do mês, como no topo de um extrato de banco: o mês e quanto entrou e saiu */}
+      <section aria-label="Resumo do mês" className="mb-5 rounded-2xl border bg-card p-3">
+        <MonthPicker month={month} onChange={setMonth} className="justify-center" />
+        {!isPending && !error && (
+          <dl className="mt-3 grid grid-cols-2 gap-2">
+            <div className="rounded-xl bg-muted/60 px-3 py-2">
+              <dt className="text-xs text-muted-foreground">Entrou</dt>
+              <dd className="font-semibold text-positive tabular-nums">
+                {formatMoney(totals.entrou, currency)}
+              </dd>
+            </div>
+            <div className="rounded-xl bg-muted/60 px-3 py-2">
+              <dt className="text-xs text-muted-foreground">Saiu</dt>
+              <dd className="font-semibold tabular-nums">{formatMoney(totals.saiu, currency)}</dd>
+            </div>
+          </dl>
+        )}
+      </section>
 
       {isPending ? (
         <p role="status" className="text-sm text-muted-foreground">
@@ -103,20 +123,27 @@ export function TransactionsPage() {
           }
         />
       ) : (
-        <div className="grid min-w-0 gap-5 *:min-w-0">
-          {/* min-w-0: sem isto, um texto longo alarga a grelha além do ecrã (scroll horizontal) */}
-          {groupByDay(list).map(([day, items]) => (
-            <section key={day} aria-labelledby={`dia-${day}`}>
-              <div className="mb-2 flex items-baseline justify-between gap-3 px-1">
+        // Uma lista contínua (como num extrato de banco): cada dia é uma faixa fina dentro dela, que
+        // fica presa no topo ao rolar, com o saldo do dia à direita. Sem overflow-hidden: impediria o
+        // `sticky`. min-w-0: um texto longo não alarga a página.
+        <div className="min-w-0 rounded-2xl border bg-card">
+          {groupByDay(list).map(([day, items], index) => (
+            <section key={day} aria-labelledby={`dia-${day}`} className="min-w-0">
+              <div
+                className={cn(
+                  'sticky top-14 z-10 flex items-center justify-between gap-3 border-b bg-muted/95 px-4 py-2 backdrop-blur md:top-0',
+                  index === 0 ? 'rounded-t-2xl' : 'border-t',
+                )}
+              >
                 <h2
                   id={`dia-${day}`}
-                  className="min-w-0 truncate text-sm font-medium text-muted-foreground first-letter:uppercase"
+                  className="min-w-0 truncate text-xs font-semibold tracking-wide text-muted-foreground uppercase"
                 >
-                  {formatDay(day)}
+                  {statementDayLabel(day, today)}
                 </h2>
                 <DayTotal items={items} currency={currency} />
               </div>
-              <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
+              <ul className="divide-y">
                 {items.map((transaction) => (
                   <li key={transaction.id}>
                     <TransactionRow
@@ -179,16 +206,13 @@ function DayTotal({
   items: { tipo: string; valor_centavos: number }[]
   currency: Currency
 }) {
-  const total = items.reduce(
-    (sum, item) => sum + (item.tipo === 'despesa' ? -item.valor_centavos : item.valor_centavos),
-    0,
-  )
+  const text = formatMoney(statementTotals(items).saldo, currency, { signDisplay: 'exceptZero' })
   return (
     <span
-      aria-label={`Saldo do dia: ${formatMoney(total, currency, { signDisplay: 'exceptZero' })}`}
-      className="shrink-0 text-xs font-medium text-muted-foreground tabular-nums"
+      aria-label={`Saldo do dia: ${text}`}
+      className="shrink-0 text-xs font-semibold text-muted-foreground tabular-nums"
     >
-      {formatMoney(total, currency, { signDisplay: 'exceptZero' })}
+      {text}
     </span>
   )
 }

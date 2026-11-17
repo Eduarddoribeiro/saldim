@@ -1,4 +1,3 @@
-import { ChevronRight } from 'lucide-react'
 import type { Account } from '@/features/accounts/accounts-api'
 import type { Category } from '@/features/categories/categories-api'
 import { CategoryBadge } from '@/features/categories/CategoryBadge'
@@ -50,7 +49,8 @@ export function TransactionRow({
   const cardItem =
     transaction.tipo === 'estorno'
       ? 'Estorno'
-      : transaction.parcela_numero !== null && !transaction.recorrencia_id
+      : // À vista (1/1) não diz "Parcela": o nome do cartão já aparece na linha
+        transaction.parcela_numero !== null && !transaction.recorrencia_id && totalParcelas !== 1
         ? `Parcela ${transaction.parcela_numero}/${totalParcelas ?? '?'}${
             purchaseDate && purchaseDate !== transaction.data
               ? ` · compra de ${purchaseDate.slice(8, 10)}/${purchaseDate.slice(5, 7)}`
@@ -104,10 +104,9 @@ export function TransactionRow({
       onClick={onSelect}
       // Nome explícito e bem pontuado para leitores de ecrã (texto sr-only solto fica colado ao resto)
       aria-label={`${title}: ${tipoLabel} de ${formatMoney(transaction.valor_centavos, currency)}${subtitle ? `, ${subtitle}` : ''}. ${transaction.compra_id ? 'Ver compra' : 'Editar'}`}
-      className="flex min-h-16 w-full items-center gap-3 px-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none"
+      className="flex min-h-16 w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none"
     >
       {content}
-      <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
     </button>
   )
 }
