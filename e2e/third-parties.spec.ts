@@ -59,7 +59,8 @@ test('compra da mãe: fora dos gastos, a receber no Início, pagamento recebido'
   await expect(tile('Saldo líquido')).toContainText(money('R$ 0,00'))
 
   // A mãe devolve 100,00 por Pix
-  await tile('A receber').getByRole('link', { name: 'Ver quem deve' }).click()
+  // O cartão inteiro de "A receber" é um link para a página de quem deve
+  await page.getByRole('link', { name: /^A receber: .*Ver quem deve$/ }).click()
   const mae = page.getByRole('region', { name: 'Mãe' })
   await expect(mae).toContainText(money('Deve R$ 300,00'))
   // Próximas faturas: as 3 parcelas ainda não venceram, uma por mês

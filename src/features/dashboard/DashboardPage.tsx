@@ -1,12 +1,4 @@
-import {
-  ArrowDownRight,
-  ArrowUpRight,
-  ChevronRight,
-  CreditCard,
-  HandCoins,
-  Landmark,
-  Scale,
-} from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight, ChevronRight, HandCoins, Scale } from 'lucide-react'
 import { Link } from 'react-router'
 import { FormAlert } from '@/components/form/FormAlert'
 import { MonthPicker } from '@/components/month/MonthPicker'
@@ -43,11 +35,11 @@ import {
 import { formatMoney, type Currency } from '@/lib/money'
 import { CategorySpendingList } from './CategorySpendingList'
 import { comparisonText, previousMonthLabel } from './comparison-text'
-import { BalanceHero, HeroNumber } from './BalanceHero'
+import { BalanceHero, HeroNumber, HeroStat } from './BalanceHero'
 import { BalanceEvolutionPanel, MonthlyComparisonPanel } from './DashboardCharts'
+import { MonthStat } from './MonthStat'
 import { Panel } from './Panel'
 import { QuickActions } from './QuickActions'
-import { StatTile } from './StatTile'
 
 /** Meses dos gráficos de evolução: o mês escolhido e os 5 anteriores. */
 const CHART_MONTHS = 6
@@ -176,15 +168,40 @@ export function DashboardPage() {
     <>
       <BalanceHero greeting={greeting}>
         {hasCards ? (
-          <HeroNumber
-            label="Dinheiro disponível"
-            value={formatMoney(position.disponivel, currency)}
-            hint={
-              positionPrevista.disponivel !== position.disponivel
-                ? `Com os lançamentos futuros: ${formatMoney(positionPrevista.disponivel, currency)}`
-                : 'Nas suas contas, sem os cartões, até hoje.'
-            }
-          />
+          <>
+            <HeroNumber
+              label="Dinheiro disponível"
+              value={formatMoney(position.disponivel, currency)}
+              hint={
+                positionPrevista.disponivel !== position.disponivel
+                  ? `Com os lançamentos futuros: ${formatMoney(positionPrevista.disponivel, currency)}`
+                  : 'Nas suas contas, sem os cartões, até hoje.'
+              }
+            />
+            {/* Os dois números que completam o retrato (D4a): o líquido e a dívida nos cartões */}
+            <div className="mt-4 grid grid-cols-2 gap-4 border-t border-white/15 pt-3">
+              <HeroStat
+                label="Saldo líquido"
+                value={formatMoney(position.liquido, currency)}
+                hint={
+                  positionPrevista.liquido !== position.liquido
+                    ? `Previsto: ${formatMoney(positionPrevista.liquido, currency)}`
+                    : aReceber !== 0
+                      ? 'Com os cartões pagos e o que te devem.'
+                      : 'Com os cartões pagos.'
+                }
+              />
+              <HeroStat
+                label={position.dividaCartoes < 0 ? 'Crédito nos cartões' : 'Dívida nos cartões'}
+                value={formatMoney(Math.abs(position.dividaCartoes), currency)}
+                hint={
+                  positionPrevista.dividaCartoes !== position.dividaCartoes
+                    ? `Com as parcelas futuras: ${formatMoney(positionPrevista.dividaCartoes, currency)}`
+                    : 'Compras até hoje por pagar.'
+                }
+              />
+            </div>
+          </>
         ) : (
           <HeroNumber
             label="Saldo atual"
@@ -208,90 +225,65 @@ export function DashboardPage() {
         />
       )}
 
-      {hasCards && (
-        <div className="mb-3 grid grid-cols-2 gap-3">
-          {/* Dívida e líquido têm dicas longas: no telemóvel ocupam a linha toda (a meia largura
-              o título partia em duas linhas e a dica em cinco) */}
-          <StatTile
-            label={position.dividaCartoes < 0 ? 'Crédito nos cartões' : 'Dívida nos cartões'}
-            icon={CreditCard}
-            className="col-span-2 sm:col-span-1"
-            value={formatMoney(Math.abs(position.dividaCartoes), currency)}
-            hint={
-              positionPrevista.dividaCartoes !== position.dividaCartoes
-                ? `Com as parcelas futuras: ${formatMoney(positionPrevista.dividaCartoes, currency)}`
-                : 'Compras até hoje que você ainda não pagou.'
-            }
-          />
-          <StatTile
-            label="Saldo líquido"
-            icon={Landmark}
-            className="col-span-2 sm:col-span-1"
-            value={formatMoney(position.liquido, currency)}
-            hint={
-              <>
-                <p>
-                  {aReceber !== 0
-                    ? 'O que sobra se você pagar os cartões e receber o que já te devem.'
-                    : 'O que sobra se você pagar os cartões.'}
-                </p>
-                {positionPrevista.liquido !== position.liquido && (
-                  <p>Previsto: {formatMoney(positionPrevista.liquido, currency)}</p>
-                )}
-              </>
-            }
-          />
-          {receivables.data.length > 0 && (
-            <StatTile
-              label="A receber"
-              icon={HandCoins}
-              value={formatMoney(aReceber, currency)}
-              hint={
-                <>
-                  <p>
-                    {receivables.data
-                      .map(
-                        (row) =>
-                          `${peopleById.get(row.pessoaId) ?? 'Outra pessoa'}: ${formatMoney(row.total, currency)}`,
-                      )
-                      .join(' · ')}
-                  </p>
-                  {vencidoTotal > 0 && <p>Já vencido: {formatMoney(vencidoTotal, currency)}</p>}
-                  <Link to="/a-receber" className="font-medium underline underline-offset-4">
-                    Ver quem deve
-                  </Link>
-                </>
-              }
-              className="col-span-2"
-            />
-          )}
-        </div>
+      {receivables.data.length > 0 && (
+        // A receber (T1) numa linha, como um cartão de banco: quem deve, quanto e um toque para ver
+        <Link
+          to="/a-receber"
+          aria-label={`A receber: ${formatMoney(aReceber, currency)}. Ver quem deve`}
+          className="mb-4 flex items-center gap-3 rounded-2xl border bg-card p-4 transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+        >
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <HandCoins className="size-5" aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs text-muted-foreground">A receber</p>
+            <p className="truncate text-lg font-semibold tracking-tight tabular-nums">
+              {formatMoney(aReceber, currency)}
+            </p>
+            <p className="truncate text-xs text-muted-foreground">
+              {receivables.data
+                .map(
+                  (row) =>
+                    `${peopleById.get(row.pessoaId) ?? 'Outra pessoa'}: ${formatMoney(row.total, currency)}`,
+                )
+                .join(' · ')}
+            </p>
+            {vencidoTotal > 0 && (
+              <p className="text-xs font-medium text-destructive">
+                Já vencido: {formatMoney(vencidoTotal, currency)}
+              </p>
+            )}
+          </div>
+          <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+        </Link>
       )}
 
-      {/* O mês fica num título: "Receitas · este mês" partia em duas linhas a meia largura */}
-      <section aria-labelledby="resumo-mes" className="mt-6">
+      {/* "Este mês" num só cartão: o mês, o que entrou e saiu lado a lado e o resultado por baixo */}
+      <section aria-labelledby="resumo-mes" className="rounded-2xl border bg-card p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 id="resumo-mes" className="font-semibold first-letter:uppercase">
             {monthLabel}
           </h2>
           <MonthPicker month={month} onChange={setMonth} />
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <StatTile
+        <div className="grid grid-cols-2 gap-2">
+          <MonthStat
             label="Receitas"
             icon={ArrowUpRight}
+            tone="positive"
             value={formatMoney(summary.receitas, currency)}
             hint={vsPrevious('receitas')}
           />
-          <StatTile
+          <MonthStat
             label="Despesas"
             icon={ArrowDownRight}
             value={formatMoney(summary.despesas, currency)}
             hint={vsPrevious('despesas')}
           />
-          <StatTile
+          <MonthStat
             label="Resultado"
             icon={Scale}
+            className="col-span-2"
             value={formatMoney(summary.resultado, currency, { signDisplay: 'exceptZero' })}
             hint={
               <>
@@ -300,7 +292,6 @@ export function DashboardPage() {
                 <p>{vsPrevious('resultado')}</p>
               </>
             }
-            className="col-span-2 sm:col-span-1"
           />
         </div>
       </section>

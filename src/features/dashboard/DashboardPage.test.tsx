@@ -264,8 +264,6 @@ describe('início (dashboard)', () => {
     // Líquido = 3051,00 − 100,00; previsto = 2851,00 − 300,00
     expect(tile(/^Saldo líquido$/)).toContain('R$ 2.951,00')
     expect(tile(/^Saldo líquido$/)).toContain('Previsto: R$ 2.551,00')
-    // A explicação continua visível quando há previsão
-    expect(tile(/^Saldo líquido$/)).toContain('O que sobra se você pagar os cartões.')
     // A parcela nas últimas transações mostra o total de parcelas da compra
     expect(
       within(screen.getByRole('region', { name: 'Últimas transações' })).getByText(/Parcela 1\/3/),
@@ -312,6 +310,15 @@ describe('início (dashboard)', () => {
     expect(within(dialog).getByLabelText('Valor')).toHaveValue('100,00')
     expect(within(dialog).getByLabelText('Pagar com a conta')).toHaveValue('banco')
     expect(within(dialog).getByRole('button', { name: 'Registrar pagamento' })).toBeInTheDocument()
+  })
+
+  it('sem previsão, o saldo líquido explica-se numa linha; a receber leva à página de quem deve', async () => {
+    store.accounts.push(visa())
+    store.transactions = store.transactions.filter((t) => t.data <= '2026-10-14')
+    renderApp('/')
+    await screen.findByText('Dinheiro disponível')
+    expect(tile(/^Saldo líquido$/)).toContain('Com os cartões pagos.')
+    expect(tile(/^Dívida nos cartões$/)).toContain('Compras até hoje por pagar.')
   })
 
   it('sem faturas a vencer nos próximos dias, não há aviso', async () => {
@@ -381,9 +388,7 @@ describe('início (dashboard)', () => {
     // Líquido de hoje = 3101,00 − 100,00 + 50,00: do que a mãe deve, só a parcela até hoje (100,00)
     // menos o que devolveu, o mesmo corte da dívida do cartão (D20). Previsto: com as 3 parcelas
     expect(tile(/^Saldo líquido$/)).toContain('R$ 3.051,00')
-    expect(tile(/^Saldo líquido$/)).toContain(
-      'O que sobra se você pagar os cartões e receber o que já te devem.',
-    )
+    expect(tile(/^Saldo líquido$/)).toContain('Previsto: R$ 2.851,00')
     expect(
       within(screen.getByRole('region', { name: 'Últimas transações' })).getByText(
         /Para Mãe · Parcela 1\/3/,

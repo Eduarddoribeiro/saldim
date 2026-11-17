@@ -52,3 +52,16 @@ export function HeroNumber({
     </div>
   )
 }
+
+/** Número secundário da faixa (saldo líquido, dívida nos cartões), em letra mais pequena. */
+export function HeroStat({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="truncate text-xs text-hero-foreground/75">{label}</p>
+      <p className="truncate text-lg font-semibold tracking-tight tabular-nums" title={value}>
+        {value}
+      </p>
+      {hint && <p className="text-[11px] leading-snug text-hero-foreground/70">{hint}</p>}
+    </div>
+  )
+}
