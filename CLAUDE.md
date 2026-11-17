@@ -62,13 +62,15 @@ financas/                     # raiz do repositório Git
       month/                  # MonthPicker, useMonthParam (mês no endereço: ?mes=YYYY-MM)
       layout/                 # AppShell, Sidebar, BottomNav, AppLogo, PageHeader, EmptyState, FullScreenLoader, NotFoundPage, nav-items.ts
       theme/                  # ThemeProvider, theme-context (useTheme), ThemeToggle
+      privacy/                # PrivacyToggle (o olho: esconder valores)
     features/<área>/          # páginas e lógica por funcionalidade
       auth/                   # AuthProvider, auth-context (useAuth), route-guards, UserCacheBoundary, schemas, auth-errors, páginas
       categories/             # categories-api, hooks, schemas, category-options (cores/ícones), CategoriesPage, CategoryFormDialog
       accounts/               # accounts-api (accountRow, mensagens por regra), card-days-api + card-days (histórico de dias dos cartões), hooks, schemas (campos do cartão), account-options (tipos de conta, isCreditCard), AccountsPage, AccountFormDialog (aviso ao mudar os dias)
       profile/                # profile-api, hooks (useProfile, useCurrency)
-      transactions/           # transactions-api (paginado), hooks (useTransactions, useBalanceMovements), schemas, TransactionsPage, TransactionRow, TransactionFormDialog
-      dashboard/              # DashboardPage, StatTile, CategorySpendingList, category-ranking (top 5 + "Outras")
+      transactions/           # transactions-api (paginado), hooks (useTransactions, useBalanceMovements), schemas, TransactionsPage (Extrato, saldo do dia), TransactionRow, TransactionFormDialog (só editar)
+      quick-entry/            # lançamento rápido (o `+`): QuickEntryProvider/quick-entry-context (useQuickEntry), QuickEntrySheet (receita, despesa e compra no cartão num só formulário), schema (reusa os schemas de transações e compras), usage-ranking (mais usados em 90 dias), CategoryPicker, ChoiceChips, ParcelasStepper
+      dashboard/              # DashboardPage, BalanceHero (faixa do saldo + olho), QuickActions (atalhos), StatTile, CategorySpendingList, category-ranking (top 5 + "Outras")
       budgets/                # budgets-api (inclui copyBudgets), hooks, budget-status (cor+ícone+texto), BudgetsPage, BudgetFormDialog
       people/                 # people-api (pessoas, reembolsos), hooks, use-receivables (a receber, D22), receivable-details (por compra e por cartão, filtros, próximas faturas por mês), UpcomingInvoices, schemas, ReceivablesPage (/a-receber), PersonDebtDetails, PersonFormDialog, ReimbursementFormDialog
       recurring/              # recurring-api, generate-api (RPC gerar_recorrencias; simulado em src/test/setup.ts), hooks, schemas, recurring-options (textos), RecurringPage, RecurringFormDialog, RecurringGenerator (no AppShell)
@@ -85,6 +87,7 @@ financas/                     # raiz do repositório Git
       recurrence.ts           # recorrentes: nextOccurrence (= SQL recorrencia_seguinte), nextOnOrAfter, occurrencesUntil
       pagination.ts           # fetchAllPages: junta páginas de 1000 linhas (limite max_rows do Supabase)
       database.types.ts       # GERADO por `npm run db:types` — não editar à mão
+      privacy.ts              # esconder valores: localStorage 'saldim-ocultar-valores' + classe valores-ocultos no <html>
       theme.ts, utils.ts      # funções puras + testes ao lado
     test/setup.ts             # jest-dom + cleanup após cada teste
     test/render-app.tsx       # renderApp(path, fakeAuth(...)): app completa com autenticação falsa
@@ -99,8 +102,8 @@ financas/                     # raiz do repositório Git
 | `/recuperar-senha`           | `ForgotPasswordPage` | `PublicOnly`                             | feito                                                    |
 | `/nova-senha`                | `ResetPasswordPage`  | sessão temporária do link de recuperação | feito                                                    |
 | `/`                          | `DashboardPage`      | `RequireAuth` (sem sessão → `/entrar`)   | feito (`?mes=YYYY-MM`)                                   |
-| `/transacoes`                | `TransactionsPage`   | `RequireAuth`                            | feito (`?mes=YYYY-MM`)                                   |
-| `/faturas`                   | `InvoicesPage`       | `RequireAuth`                            | feito (por cartão; filtros Por pagar/Pagas/Todas)        |
+| `/transacoes`                | `TransactionsPage`   | `RequireAuth`                            | feito (`?mes=YYYY-MM`); na interface chama-se "Extrato"  |
+| `/faturas`                   | `InvoicesPage`       | `RequireAuth`                            | feito (por cartão); na interface chama-se "Cartões"      |
 | `/orcamentos`                | `BudgetsPage`        | `RequireAuth`                            | feito (`?mes=YYYY-MM`)                                   |
 | `/configuracoes`             | `SettingsPage`       | `RequireAuth`                            | Aparência, Organização, Conta                            |
 | `/configuracoes/categorias`  | `CategoriesPage`     | `RequireAuth`                            | feito                                                    |
@@ -111,7 +114,9 @@ financas/                     # raiz do repositório Git
 
 **Autenticação:** só o `AuthProvider` chama `supabase.auth`; páginas e componentes usam `useAuth()` (ações devolvem `{ error }` já traduzido por `auth-errors.ts`, pelo `code` do erro). `RequireAuth` guarda a página pedida em `location.state.from` e o login volta lá — exceto quando a sessão termina dentro da app (botão Sair), para o próximo login começar no Início. Recuperação de senha: e-mail com link → `/nova-senha` (o supabase-js lê o token do URL). Nos testes de componentes usa-se `renderApp(path, fakeAuth({...}))`, sem rede.
 
-**Navegação:** `nav-items.ts` é a fonte única de links (Início, Transações, Faturas, Orçamentos, Configurações; a barra inferior tem 5 colunas com rótulos de 10px, verificada a 360px — rever se crescer). `Sidebar` (visível a partir de `md`, 768px) e `BottomNav` (fixa em baixo, `md:hidden`, respeita `safe-area-inset-bottom`) usam `NavLink`, que marca o ativo com `aria-current="page"`. No telemóvel há um cabeçalho com logo + botão de tema; o `<main>` tem `pb-24` para não ficar por baixo da barra inferior.
+**Navegação:** `nav-items.ts` é a fonte única de links (Início, Extrato, Cartões, Orçamentos, Configurações; `MOBILE_NAV_ITEMS` para a barra inferior). `Sidebar` (visível a partir de `md`, 768px; botão "Novo lançamento" no topo) e `BottomNav` (fixa em baixo, `md:hidden`, respeita `safe-area-inset-bottom`: Início · Extrato · `+` · Cartões · Mais, com Mais = Configurações, que abre com Orçamentos e A receber) usam `NavLink`, que marca o ativo com `aria-current="page"`. O `+` abre o lançamento rápido (`useQuickEntry()`, disponível em todas as páginas). No telemóvel há um cabeçalho com logo + botão de tema (no Início com a cor da faixa do saldo); o `<main>` tem `pb-24` para não ficar por baixo da barra inferior. Plano e regras: `docs/features/lancamento-rapido.md`.
+
+**Visual:** paleta Azul-petróleo (tokens em `src/index.css`): `--primary` petróleo, neutros com tom azul, fundo levemente cinzento com cartões `bg-card` `rounded-2xl`; `--hero*` para a faixa escura do Início e o cartão desenhado em Cartões (igual nos dois temas); `--positive` para dinheiro que entra (`text-positive`). O verde `--brand` só no logo. Números de dinheiro levam `tabular-nums` (é o que o olho desfoca).
 
 **Tema:** valores `light | dark | system`, guardados em `localStorage` na chave `financas-theme`. Regras puras em `src/lib/theme.ts`; `ThemeProvider` aplica a classe `dark` no `<html>` e segue mudanças do sistema. A mesma chave e lógica estão duplicadas no script de `index.html` — se mudar uma, mudar a outra. Acessos a `localStorage` sempre em `try/catch`.
 
@@ -123,33 +128,34 @@ financas/                     # raiz do repositório Git
 
 - `npm test` — unitários + componentes (`src/**/*.test.ts(x)`, sem rede: `src/test/setup.ts` bloqueia qualquer `fetch` real; variáveis VITE_* fixas em `vite.config.ts`; acesso a dados simulado com `vi.mock('./<área>-api')`; ficheiros do projeto lidos com `import x from '...?raw'`, nunca `node:fs`). `src/test/source-hygiene.test.ts` falha se houver caracteres invisíveis (ex.: espaço não separável) no código — usar a sequência de escape.
 - `npm run test:rls` — integração em `tests/rls/` contra o Supabase local (config `vitest.rls.config.ts`, ficheiros em série, recusa URLs não locais).
-- `npm run test:e2e` — Playwright em `e2e/`, desktop e telemóvel, contra o Supabase local; lê os e-mails do Mailpit; `expectNoHorizontalScroll(page)` apanha conteúdo mais largo do que o ecrã (usar em páginas com listas). Relatórios em `test-results/` (ignorado).
+- `npm run test:e2e` — Playwright em `e2e/`, desktop e telemóvel, contra o Supabase local; lê os e-mails do Mailpit; `expectNoHorizontalScroll(page)` apanha conteúdo mais largo do que o ecrã (usar em páginas com listas). Lançamentos com `openNewEntry`, `pick`, `pickDate`, `setParcelas`; páginas fora da barra do telemóvel com `goToSection`. Sem Edge (ex.: contentor Linux): `PW_EXECUTABLE=/caminho/do/chromium` (também no script de capturas). Relatórios em `test-results/` (ignorado).
 
 Os tipos de `tests/` e `e2e/` são verificados por `tsconfig.tests.json`.
 
 ## Comandos (dentro de `financas/`)
 
-| Comando                              | O que faz                                                                                                                                    |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run dev`                        | Servidor de desenvolvimento (localhost:5173)                                                                                                 |
-| `npm run build`                      | `tsc -b` + build Vite (verifica tipos de src, tests e configs)                                                                               |
-| `npm run preview`                    | Serve a build                                                                                                                                |
-| `npm run lint`                       | oxlint com `--deny-warnings` (avisos contam como erro)                                                                                       |
-| `npm test`                           | Vitest uma vez (`npm run test:watch` em modo contínuo)                                                                                       |
-| `npm run test:rls`                   | Testes de integração/RLS contra o Supabase local                                                                                             |
-| `npm run test:e2e`                   | Testes E2E (Playwright + Edge) contra o Supabase local; arranca o seu próprio Vite na 5173 (porta ocupada → erro; `E2E_PORT=5174` usa outra) |
-| `npm run format`                     | Prettier (escreve)                                                                                                                           |
-| `npm run format:check`               | Prettier (só verifica)                                                                                                                       |
-| `npm run db:start` / `db:stop`       | Liga / desliga o Supabase local (Docker)                                                                                                     |
-| `npm run db:status`                  | Mostra URLs e chaves locais                                                                                                                  |
-| `npm run db:reset`                   | Recria a base local e aplica todas as migrations (apaga dados locais)                                                                        |
-| `npx supabase migration up --local`  | Aplica só as migrations novas, **sem apagar** os dados locais                                                                                |
-| `npm run demo:seed`                  | Recria a conta de demonstração `demo@saldim.app` no Supabase LOCAL (6 meses inventados, datas relativas a hoje)                              |
-| `npm run demo:screenshots`           | Capturas do README em `docs/screenshots/` (app a correr; `APP_URL` muda o endereço)                                                          |
-| `npm run db:types`                   | Regenera `src/lib/database.types.ts` a partir da base local                                                                                  |
-| `npm run env:local`                  | Escreve `.env` com o URL e a chave pública locais                                                                                            |
-| `npx supabase migration new <nome>`  | Cria uma migration vazia em `supabase/migrations/`                                                                                           |
-| `npx shadcn@latest add <componente>` | Acrescenta um componente shadcn a `components/ui/`                                                                                           |
+| Comando                                        | O que faz                                                                                                                                    |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`                                  | Servidor de desenvolvimento (localhost:5173)                                                                                                 |
+| `npm run build`                                | `tsc -b` + build Vite (verifica tipos de src, tests e configs)                                                                               |
+| `npm run preview`                              | Serve a build                                                                                                                                |
+| `npm run lint`                                 | oxlint com `--deny-warnings` (avisos contam como erro)                                                                                       |
+| `npm test`                                     | Vitest uma vez (`npm run test:watch` em modo contínuo)                                                                                       |
+| `npm run test:rls`                             | Testes de integração/RLS contra o Supabase local                                                                                             |
+| `npm run test:e2e`                             | Testes E2E (Playwright + Edge) contra o Supabase local; arranca o seu próprio Vite na 5173 (porta ocupada → erro; `E2E_PORT=5174` usa outra) |
+| `npm run format`                               | Prettier (escreve)                                                                                                                           |
+| `npm run format:check`                         | Prettier (só verifica)                                                                                                                       |
+| `npm run db:start` / `db:stop`                 | Liga / desliga o Supabase local (Docker)                                                                                                     |
+| `npm run db:status`                            | Mostra URLs e chaves locais                                                                                                                  |
+| `npm run db:reset`                             | Recria a base local e aplica todas as migrations (apaga dados locais)                                                                        |
+| `npx supabase migration up --local`            | Aplica só as migrations novas, **sem apagar** os dados locais                                                                                |
+| `npm run demo:seed`                            | Recria a conta de demonstração `demo@saldim.app` no Supabase LOCAL (6 meses inventados, datas relativas a hoje)                              |
+| `npm run demo:screenshots`                     | Capturas do README em `docs/screenshots/` (app a correr; `APP_URL` muda o endereço)                                                          |
+| `node scripts/compare-screenshots.mjs <pasta>` | Capturas para comparar versões (Início, Extrato, Cartões, A receber, lançamento; celular e desktop, claro e escuro)                          |
+| `npm run db:types`                             | Regenera `src/lib/database.types.ts` a partir da base local                                                                                  |
+| `npm run env:local`                            | Escreve `.env` com o URL e a chave pública locais                                                                                            |
+| `npx supabase migration new <nome>`            | Cria uma migration vazia em `supabase/migrations/`                                                                                           |
+| `npx shadcn@latest add <componente>`           | Acrescenta um componente shadcn a `components/ui/`                                                                                           |
 
 **Primeira vez / outro computador:** `npm install` → `npm run db:start` → `npm run env:local` → `npm run dev`.
 
@@ -218,6 +224,8 @@ Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etap
 - [x] **T1. Compras de outras pessoas** (branch `feat/terceiros`; migrations `terceiros` e `pessoas_divida_anterior`; D19–D23 em `docs/plano.md`): tabelas `pessoas` e `reembolsos` (RLS, FKs compostas, reembolso só em conta de dinheiro e sem data futura); `pessoa_id` nas compras e nas transações (copiada pela trigger, não se altera); `registar_compra_cartao` com `p_pessoa_id` opcional; `finance.ts`: `isOwn` tira-as dos relatórios, `receivables`, `reimbursementMovements`, `netPosition` com a receber; formulário da compra com "De quem é a compra?" (cria a pessoa); "Para <nome>" nas linhas e nos detalhes; quadro "A receber" no Início (soma ao líquido); página `/a-receber` (deve, já vencido, dívida anterior, resumo por cartão, compras filtráveis por cartão/tipo/situação, pagamentos recebidos); testes RLS, unitários, componentes e E2E
 
 - [x] **Próximas faturas por pessoa** (plano e regras em `docs/features/proximas-faturas.md`): em A receber, quanto cada pessoa deve em cada mês que vem (pelo vencimento da fatura, cartões juntos, 3 meses + "depois"), "para ficar em dia até…" e as compras de cada mês por cartão; sem mudanças na base de dados
+
+- [ ] **Menos toques + nova cara** (`docs/features/lancamento-rapido.md`; branch `claude/saldim-mobile-ux-fqs7g7`): Fase 1 (lançamento rápido: `+` em todas as páginas, formulário único para conta e cartão, categorias em botões pelas mais usadas, Hoje/Ontem, folha que sobe de baixo) e identidade Azul-petróleo (faixa do saldo, olho, atalhos, Extrato e Cartões, barra com `+` ao centro) feitas; capturas antes/depois em `docs/screenshots/comparacao/`. Faltam a Fase 2 (pagar/receber em 2 toques) e o Início mais curto da Fase 3.
 
 **Seguintes:** 13. Filtros e relatórios · 14. Deploy · 15. Google login, PWA, importar/exportar CSV, atualizações otimistas, metas · 16. Importação automática via Open Finance · 17. Claude sobre os dados da app (ideias futuras, ver `docs/plano.md`).
 
