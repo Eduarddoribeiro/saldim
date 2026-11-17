@@ -169,7 +169,7 @@ describe('A receber', () => {
     const mae = await screen.findByRole('region', { name: 'Mãe' })
     const proximas = within(mae).getByRole('region', { name: 'Próximas faturas' })
     // Já vencido 70,00 (100,00 − 30,00 devolvidos) + novembro 200,00
-    expect(plain(mae.textContent)).toContain('Para ficar em dia até 10/11: R$ 270,00')
+    expect(plain(mae.textContent)).toContain('Para ficar em dia até 10/11R$ 270,00')
     expect(
       within(proximas)
         .getAllByRole('group')
@@ -190,7 +190,7 @@ describe('A receber', () => {
     const mae = await screen.findByRole('region', { name: 'Mãe' })
     // 300,00 − 30,00; vencido 100,00 − 30,00
     expect(plain(mae.textContent)).toContain('Deve R$ 270,00')
-    expect(plain(mae.textContent)).toContain('Já vencido: R$ 70,00 · em faturas futuras: R$ 200,00')
+    expect(plain(mae.textContent)).toContain('Já vencido: R$ 70,00Em faturas futuras: R$ 200,00')
     const compras = within(mae).getByRole('list', { name: 'Compras de Mãe' })
     expect(plain(compras.textContent)).toBe(
       'SofáR$ 300,00Visa · 28/09/2026 · 2× · faltam 1 de 2Faturas vencidas R$ 100,00 · Faturas futuras R$ 200,00',
@@ -264,7 +264,7 @@ describe('A receber', () => {
     await userEvent.click(within(mae).getByRole('button', { name: 'Recebi de Mãe' }))
     const dialog = await screen.findByRole('dialog', { name: 'Pagamento de Mãe' })
     expect(within(dialog).getByLabelText('Valor')).toHaveValue('70,00')
-    expect(within(dialog).getByLabelText('Conta onde entrou')).toHaveValue('picpay')
+    expect(within(dialog).getByRole('radio', { name: 'PicPay' })).toBeChecked()
     await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar pagamento' }))
     await waitFor(() =>
       expect(createReimbursement).toHaveBeenCalledWith({
@@ -282,7 +282,8 @@ describe('A receber', () => {
     const mae = await screen.findByRole('region', { name: 'Mãe' })
     await userEvent.click(within(mae).getByRole('button', { name: 'Recebi de Mãe' }))
     const dialog = await screen.findByRole('dialog', { name: 'Pagamento de Mãe' })
-    const data = within(dialog).getByLabelText('Data')
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Outra data' }))
+    const data = within(dialog).getByLabelText('Qual data?')
     await userEvent.clear(data)
     await userEvent.type(data, '2026-10-25')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar pagamento' }))

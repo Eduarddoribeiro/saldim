@@ -338,7 +338,7 @@ describe('compras no cartão', () => {
     await userEvent.click(await screen.findByRole('button', { name: /Televisão/ }))
     const dialog = await screen.findByRole('dialog', { name: 'Televisão' })
     expect(plain(dialog.textContent)).toContain('CartãoVisa')
-    expect(plain(dialog.textContent)).toContain('Valor totalR$ 100,00')
+    expect(plain(dialog.textContent)).toContain('TelevisãoR$ 100,003× no Visa')
     expect(
       within(within(dialog).getByRole('list', { name: 'Parcelas' })).getAllByRole('listitem'),
     ).toHaveLength(3)

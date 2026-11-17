@@ -426,7 +426,7 @@ describe('página de transações', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Editar transação' })
     const valor = within(dialog).getByLabelText('Valor')
     expect(valor).toHaveValue('123,45')
-    expect(within(dialog).getByLabelText('Categoria')).toHaveValue('alim')
+    expect(within(dialog).getByRole('radio', { name: 'Alimentação' })).toBeChecked()
 
     await userEvent.clear(valor)
     await userEvent.type(valor, '99')
@@ -441,8 +441,7 @@ describe('página de transações', () => {
     renderApp('/transacoes')
     await userEvent.click(await screen.findByRole('button', { name: /Antiga/ }))
     const dialog = await screen.findByRole('dialog')
-    expect(within(dialog).getByLabelText('Categoria')).toHaveValue('velha')
-    expect(within(dialog).getByRole('option', { name: 'Antiga (arquivada)' })).toBeInTheDocument()
+    expect(within(dialog).getByRole('radio', { name: 'Antiga (arquivada)' })).toBeChecked()
   })
 
   it('apaga depois de confirmar', async () => {

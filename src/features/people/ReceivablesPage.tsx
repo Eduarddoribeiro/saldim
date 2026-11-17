@@ -1,16 +1,18 @@
-import { HandCoins, Pencil, Plus } from 'lucide-react'
+import { ChevronDown, HandCoins, Pencil, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { ConfirmDeleteButton } from '@/components/form/ConfirmDeleteButton'
 import { FormAlert } from '@/components/form/FormAlert'
 import { useServerAction } from '@/components/form/use-server-action'
 import { EmptyState } from '@/components/layout/EmptyState'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { PrivacyToggle } from '@/components/privacy/PrivacyToggle'
 import { Button } from '@/components/ui/button'
 import { useAccounts } from '@/features/accounts/hooks'
 import { usePurchases } from '@/features/card-purchases/hooks'
 import type { Account } from '@/features/accounts/accounts-api'
 import type { CardPurchase } from '@/features/card-purchases/purchases-api'
 import { useCategories } from '@/features/categories/hooks'
+import { HeroStat } from '@/features/dashboard/BalanceHero'
 import { useCurrency } from '@/features/profile/hooks'
 import { errorMessage } from '@/lib/db-errors'
 import type { Receivable } from '@/lib/finance'
@@ -55,15 +57,16 @@ export function ReceivablesPage() {
 
   return (
     <>
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3">
         <PageHeader
           title="A receber"
           description="Compras de outras pessoas no seu cartão e o que já te devolveram."
         />
         <Button
+          variant="outline"
           size="lg"
           onClick={() => setPersonDialog({ open: true, person: null })}
-          className="max-sm:mb-3 max-sm:w-full"
+          className="shrink-0 rounded-full"
         >
           <Plus aria-hidden />
           Nova pessoa
@@ -93,6 +96,10 @@ export function ReceivablesPage() {
         />
       ) : (
         <div className="grid min-w-0 gap-4 *:min-w-0">
+          <ReceivablesSummary
+            rows={visible.map((person) => byPerson.get(person.id))}
+            currency={currency}
+          />
           {visible.map((person) => (
             <PersonCard
               key={person.id}
@@ -189,17 +196,38 @@ function PersonCard({
   const headingId = `pessoa-${person.id}`
 
   return (
-    <section aria-labelledby={headingId} className="rounded-2xl border bg-card p-4">
-      {/* Valores em cima e ações sempre numa linha própria: antes os botões saltavam para o lado ou
-          para baixo conforme o tamanho do valor, e os cartões ficavam desiguais */}
-      <div className="grid gap-3">
+    <section aria-labelledby={headingId} className="rounded-2xl border bg-card">
+      <div className="grid gap-4 p-4 pb-0">
+        <div className="flex items-center gap-3">
+          <span
+            aria-hidden
+            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary"
+          >
+            {person.nome.charAt(0).toUpperCase()}
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 id={headingId} className="truncate font-medium">
+              {person.nome}
+            </h2>
+            <p className="truncate text-xs text-muted-foreground">
+              {purchases.length === 1 ? '1 compra' : `${purchases.length} compras`} no seu cartão
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon-lg"
+            className="-mr-2 shrink-0 rounded-full"
+            onClick={onEdit}
+            aria-label={`Editar ${person.nome}`}
+          >
+            <Pencil aria-hidden />
+          </Button>
+        </div>
+
         <div className="min-w-0">
-          <h2 id={headingId} className="truncate font-medium">
-            {person.nome}
-          </h2>
           <p
             className={cn(
-              'text-2xl font-semibold tracking-tight tabular-nums',
+              'truncate text-3xl font-semibold tracking-tight tabular-nums',
               total < 0 && 'text-positive',
             )}
           >
@@ -210,101 +238,173 @@ function PersonCard({
                 : 'Em dia'}
           </p>
           {total > 0 && (
-            <p className="text-xs text-muted-foreground">
-              {vencido > 0 ? `Já vencido: ${money(vencido)}` : 'Nada vencido ainda'}
-              {futuro > 0 ? ` · em faturas futuras: ${money(futuro)}` : ''}
+            // O que já venceu e o que vem: em "pílulas", o vencido em destaque
+            <p className="mt-2 flex flex-wrap gap-2 text-xs font-medium">
+              <span
+                className={cn(
+                  'rounded-full px-2.5 py-1',
+                  vencido > 0
+                    ? 'bg-destructive/10 text-destructive'
+                    : 'bg-muted text-muted-foreground',
+                )}
+              >
+                {vencido > 0 ? (
+                  <>
+                    Já vencido: <span className="tabular-nums">{money(vencido)}</span>
+                  </>
+                ) : (
+                  'Nada vencido ainda'
+                )}
+              </span>
+              {futuro > 0 && (
+                <span className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
+                  Em faturas futuras: <span className="tabular-nums">{money(futuro)}</span>
+                </span>
+              )}
             </p>
           )}
         </div>
-        <div className="flex gap-2">
-          <Button
-            size="lg"
-            onClick={() => onPay(vencido > 0 ? vencido : Math.max(total, 0))}
-            aria-label={`Recebi de ${person.nome}`}
-            className="max-sm:flex-1"
-          >
-            <HandCoins aria-hidden />
-            Recebi
-          </Button>
-          <Button variant="outline" size="lg" onClick={onEdit} aria-label={`Editar ${person.nome}`}>
-            <Pencil aria-hidden />
-          </Button>
-        </div>
+
+        <Button
+          size="lg"
+          onClick={() => onPay(vencido > 0 ? vencido : Math.max(total, 0))}
+          aria-label={`Recebi de ${person.nome}`}
+          className="h-12 w-full rounded-full text-base"
+        >
+          <HandCoins aria-hidden />
+          Recebi
+        </Button>
       </div>
 
-      <UpcomingInvoices
-        personId={person.id}
-        vencido={vencido}
-        futuro={futuro}
-        movements={movements}
-        purchases={purchases}
-        invoices={invoices}
-        accounts={accounts}
-        categories={categories.data ?? []}
-        currency={currency}
-      />
-
-      {serverError && (
-        <div className="mt-3">
-          <FormAlert>{serverError}</FormAlert>
-        </div>
-      )}
-
-      <details className="mt-3">
-        <summary className="cursor-pointer text-sm font-medium text-muted-foreground select-none">
-          Ver detalhes: {purchases.length === 1 ? '1 compra' : `${purchases.length} compras`} ·{' '}
-          {reimbursements.length === 1
-            ? '1 pagamento recebido'
-            : `${reimbursements.length} pagamentos recebidos`}
-        </summary>
-        {person.divida_anterior_centavos > 0 && (
-          <p className="mt-2 text-sm">
-            Dívida anterior:{' '}
-            <span className="tabular-nums">{money(person.divida_anterior_centavos)}</span>
-          </p>
-        )}
-        <PersonDebtDetails
+      <div className="px-4">
+        <UpcomingInvoices
           personId={person.id}
-          personName={person.nome}
-          purchases={purchases}
+          vencido={vencido}
+          futuro={futuro}
           movements={movements}
-          dueInvoiceIds={dueInvoiceIds}
+          purchases={purchases}
+          invoices={invoices}
           accounts={accounts}
           categories={categories.data ?? []}
           currency={currency}
         />
-        {reimbursements.length > 0 && (
-          <h3 className="mt-4 mb-1 text-sm font-medium">Pagamentos recebidos</h3>
+
+        {serverError && (
+          <div className="mt-3">
+            <FormAlert>{serverError}</FormAlert>
+          </div>
         )}
-        {reimbursements.length > 0 && (
-          <ul
-            aria-label={`Pagamentos de ${person.nome}`}
-            className="divide-y rounded-lg border text-sm"
-          >
-            {reimbursements.map((item) => (
-              <li key={item.id} className="flex items-center justify-between gap-3 py-1 pr-1 pl-3">
-                <span className="min-w-0">
-                  <span className="block truncate">{item.descricao || 'Pagamento recebido'}</span>
-                  <span className="block text-xs text-muted-foreground">
-                    {shortDate(item.data)} · {accountName(item.account_id) ?? '—'}
+      </div>
+
+      <details className="group mt-4 border-t">
+        <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-4 text-sm font-medium text-muted-foreground select-none hover:bg-muted/50 [&::-webkit-details-marker]:hidden">
+          <span className="min-w-0 flex-1 truncate">
+            Ver detalhes: {purchases.length === 1 ? '1 compra' : `${purchases.length} compras`} ·{' '}
+            {reimbursements.length === 1
+              ? '1 pagamento recebido'
+              : `${reimbursements.length} pagamentos recebidos`}
+          </span>
+          <ChevronDown
+            className="size-4 shrink-0 transition-transform group-open:rotate-180"
+            aria-hidden
+          />
+        </summary>
+        <div className="px-4 pb-4">
+          {person.divida_anterior_centavos > 0 && (
+            <p className="mt-2 text-sm">
+              Dívida anterior:{' '}
+              <span className="tabular-nums">{money(person.divida_anterior_centavos)}</span>
+            </p>
+          )}
+          <PersonDebtDetails
+            personId={person.id}
+            personName={person.nome}
+            purchases={purchases}
+            movements={movements}
+            dueInvoiceIds={dueInvoiceIds}
+            accounts={accounts}
+            categories={categories.data ?? []}
+            currency={currency}
+          />
+          {reimbursements.length > 0 && (
+            <h3 className="mt-4 mb-1 text-sm font-medium">Pagamentos recebidos</h3>
+          )}
+          {reimbursements.length > 0 && (
+            <ul
+              aria-label={`Pagamentos de ${person.nome}`}
+              className="divide-y rounded-xl border text-sm"
+            >
+              {reimbursements.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex items-center justify-between gap-3 py-1 pr-1 pl-3"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate">{item.descricao || 'Pagamento recebido'}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {shortDate(item.data)} · {accountName(item.account_id) ?? '—'}
+                    </span>
                   </span>
-                </span>
-                <span className="flex shrink-0 items-center gap-1">
-                  <span className="text-positive tabular-nums">
-                    {formatMoney(item.valor_centavos, currency, { signDisplay: 'always' })}
+                  <span className="flex shrink-0 items-center gap-1">
+                    <span className="text-positive tabular-nums">
+                      {formatMoney(item.valor_centavos, currency, { signDisplay: 'always' })}
+                    </span>
+                    <ConfirmDeleteButton
+                      what={`o pagamento de ${money(item.valor_centavos)} de ${shortDate(item.data)}`}
+                      consequence={`O valor volta a contar no que ${person.nome} te deve e sai do saldo da conta.`}
+                      disabled={remove.isPending}
+                      onConfirm={() => run(() => remove.mutateAsync(item.id))}
+                    />
                   </span>
-                  <ConfirmDeleteButton
-                    what={`o pagamento de ${money(item.valor_centavos)} de ${shortDate(item.data)}`}
-                    consequence={`O valor volta a contar no que ${person.nome} te deve e sai do saldo da conta.`}
-                    disabled={remove.isPending}
-                    onConfirm={() => run(() => remove.mutateAsync(item.id))}
-                  />
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </details>
+    </section>
+  )
+}
+
+/**
+ * Faixa do topo (como o saldo no Início): quanto te devem no total, com o que já venceu e o que
+ * vem nas próximas faturas. Só os valores positivos: quem pagou a mais não desconta dos outros.
+ */
+function ReceivablesSummary({
+  rows,
+  currency,
+}: {
+  rows: (Receivable | undefined)[]
+  currency: Currency
+}) {
+  let total = 0
+  let vencido = 0
+  for (const row of rows) {
+    if (!row || row.total <= 0) continue
+    total += row.total
+    vencido += Math.min(row.vencido, row.total)
+  }
+  const money = (cents: number) => formatMoney(cents, currency)
+  return (
+    <section
+      aria-label="Total a receber"
+      className="rounded-3xl bg-linear-to-b from-hero to-hero-2 px-5 pt-4 pb-5 text-hero-foreground"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm text-hero-foreground/80">Te devem no total</p>
+          <p className="mt-1 truncate text-4xl font-bold tracking-tight tabular-nums">
+            {money(total)}
+          </p>
+        </div>
+        <PrivacyToggle className="-mt-1 -mr-2" />
+      </div>
+      {total > 0 && (
+        <div className="mt-4 grid grid-cols-2 gap-3 border-t border-white/15 pt-3">
+          <HeroStat label="Já vencido" value={money(vencido)} />
+          <HeroStat label="Em faturas futuras" value={money(total - vencido)} />
+        </div>
+      )}
     </section>
   )
 }

@@ -60,7 +60,7 @@ financas/                     # raiz do repositório Git
       ui/                     # gerado pelo shadcn (button, input, label, card, dialog, alert-dialog) — textos traduzidos, lint relaxado
       form/                   # TextField, SelectField (select nativo, placeholder), SegmentedControl, FormAlert, ArchiveDeleteActions (arquivar opcional), ConfirmDeleteButton, use-server-action
       month/                  # MonthPicker, useMonthParam (mês no endereço: ?mes=YYYY-MM)
-      layout/                 # AppShell, Sidebar, BottomNav, AppLogo, PageHeader, EmptyState, FullScreenLoader, NotFoundPage, nav-items.ts
+      layout/                 # AppShell, Sidebar, BottomNav, AppLogo, PageHeader, EmptyState, FullScreenLoader, NotFoundPage, nav-items.ts, SheetContent (diálogo que no telemóvel é folha de baixo + SheetFooter com a ação fixa)
       theme/                  # ThemeProvider, theme-context (useTheme), ThemeToggle
       privacy/                # PrivacyToggle (o olho: esconder valores)
     features/<área>/          # páginas e lógica por funcionalidade
@@ -69,7 +69,7 @@ financas/                     # raiz do repositório Git
       accounts/               # accounts-api (accountRow, mensagens por regra), card-days-api + card-days (histórico de dias dos cartões), hooks, schemas (campos do cartão), account-options (tipos de conta, isCreditCard), AccountsPage, AccountFormDialog (aviso ao mudar os dias)
       profile/                # profile-api, hooks (useProfile, useCurrency)
       transactions/           # transactions-api (paginado), hooks (useTransactions, useBalanceMovements), schemas, TransactionsPage (Extrato estilo banco: resumo entrou/saiu até hoje, bloco "Previsto" no topo para datas depois de hoje, lista contínua com faixas de dia fixas no topo e saldo do dia), statement (statementTotals, statementDayLabel, splitByToday), TransactionRow, TransactionFormDialog (só editar)
-      quick-entry/            # lançamento rápido (o `+`): QuickEntryProvider/quick-entry-context (useQuickEntry), QuickEntrySheet (receita, despesa e compra no cartão num só formulário), schema (reusa os schemas de transações e compras), usage-ranking (mais usados em 90 dias), CategoryPicker, ChoiceChips, ParcelasStepper
+      quick-entry/            # lançamento rápido (o `+`): QuickEntryProvider/quick-entry-context (useQuickEntry), QuickEntrySheet (receita, despesa e compra no cartão num só formulário), schema (reusa os schemas de transações e compras), usage-ranking (mais usados em 90 dias), CategoryPicker, ChoiceChips, DateChips (Hoje/Ontem/Outra), ParcelasStepper — reusados na edição de transações e no Recebi
       dashboard/              # DashboardPage (no telemóvel: últimas transações antes dos gráficos), BalanceHero (faixa: disponível + HeroStat líquido/dívida + olho), QuickActions (atalhos), MonthStat (cartão "Este mês"), CategorySpendingList, category-ranking (top 5 + "Outras")
       budgets/                # budgets-api (inclui copyBudgets), hooks, budget-status (cor+ícone+texto), BudgetsPage, BudgetFormDialog
       people/                 # people-api (pessoas, reembolsos), hooks, use-receivables (a receber, D22), receivable-details (por compra e por cartão, filtros, próximas faturas por mês), UpcomingInvoices, schemas, ReceivablesPage (/a-receber), PersonDebtDetails, PersonFormDialog, ReimbursementFormDialog

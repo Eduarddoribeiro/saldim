@@ -6,26 +6,22 @@ import { ConfirmDeleteButton } from '@/components/form/ConfirmDeleteButton'
 import { FormAlert } from '@/components/form/FormAlert'
 import { TextField } from '@/components/form/TextField'
 import { useServerAction } from '@/components/form/use-server-action'
+import { SheetContent, SheetFooter } from '@/components/layout/SheetContent'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import type { Account } from '@/features/accounts/accounts-api'
 import type { Category } from '@/features/categories/categories-api'
+import { CategoryBadge } from '@/features/categories/CategoryBadge'
 import { usePeople } from '@/features/people/hooks'
 import { useCurrency } from '@/features/profile/hooks'
 import { formatDay, todayIso } from '@/lib/dates'
 import { centsToInput, formatMoney } from '@/lib/money'
-import { MONEY_EXAMPLE } from '@/lib/money-schema'
 import { useDeletePurchase, useDeleteRefund, useRefunds, useRegisterRefund } from './hooks'
 import { InstallmentPreview } from './InstallmentPreview'
 import type { CardPurchase, Refund } from './purchases-api'
 import { refundFormSchema, type RefundFormInput, type RefundFormValues } from './schemas'
+
+const shortDate = (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}/${date.slice(0, 4)}`
 
 type Props = {
   open: boolean
@@ -43,11 +39,11 @@ type Props = {
 export function PurchaseDetailsDialog(props: Props) {
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-md">
+      <SheetContent className="pb-0">
         {props.open && props.purchase && (
           <PurchaseDetails key={props.purchase.id} {...props} purchase={props.purchase} />
         )}
-      </DialogContent>
+      </SheetContent>
     </Dialog>
   )
 }
@@ -104,42 +100,50 @@ function Summary({
 
   const person = people.data?.find((item) => item.id === purchase.pessoa_id)
   const details: [string, string][] = [
-    ...(purchase.pessoa_id
-      ? [
-          ['De quem', `${person?.nome ?? 'Outra pessoa'} (não conta nos seus gastos)`] as [
-            string,
-            string,
-          ],
-        ]
-      : []),
     ['Cartão', card?.nome ?? '—'],
     ['Categoria', category?.nome ?? 'Sem categoria'],
-    ['Data da compra', formatDay(purchase.data_compra)],
-    ['Valor total', money(purchase.valor_total_centavos)],
-    [
+  ]
+  // À vista já se lê no topo; só uma compra parcelada (ou em curso) precisa da linha das parcelas
+  if (purchase.parcelas > 1)
+    details.push([
       'Parcelas',
       purchase.parcela_inicial > 1
         ? `${purchase.parcelas}× (registradas da ${purchase.parcela_inicial}.ª à ${purchase.parcelas}.ª)`
         : `${purchase.parcelas}×`,
-    ],
-  ]
+    ])
   if (estornado > 0) details.push(['Estornado', money(estornado)])
 
   return (
-    <div className="grid gap-4">
-      <DialogHeader>
-        <DialogTitle>{name}</DialogTitle>
+    <div className="grid gap-5">
+      {/* Como no detalhe de um lançamento no app do banco: ícone, nome e o valor em destaque */}
+      <DialogHeader className="items-center gap-1 text-center">
+        <CategoryBadge
+          cor={category?.cor ?? 'slate'}
+          icone={category?.icone ?? 'tag'}
+          className="mb-2 size-14 rounded-2xl [&_svg]:size-6"
+        />
+        <DialogTitle className="text-lg font-semibold">{name}</DialogTitle>
+        <p className="text-3xl font-semibold tracking-tight tabular-nums">
+          {money(purchase.valor_total_centavos)}
+        </p>
         <DialogDescription>
-          Compra no cartão. Se foi devolvida ou cancelada, registre um estorno; se registrou errado,
-          exclua e registre de novo.
+          {purchase.parcelas > 1
+            ? `${purchase.parcelas}× no ${card?.nome ?? 'cartão'}`
+            : `À vista no ${card?.nome ?? 'cartão'}`}{' '}
+          · compra de {shortDate(purchase.data_compra)}
         </DialogDescription>
+        {purchase.pessoa_id && (
+          <span className="mt-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+            Para {person?.nome ?? 'outra pessoa'} · não conta nos seus gastos
+          </span>
+        )}
       </DialogHeader>
 
       {serverError && <FormAlert>{serverError}</FormAlert>}
       {deleteRefund.serverError && <FormAlert>{deleteRefund.serverError}</FormAlert>}
       {refundsError && <FormAlert>Não foi possível carregar os estornos desta compra.</FormAlert>}
 
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
+      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 rounded-2xl bg-muted/60 p-4 text-sm">
         {details.map(([term, value]) => (
           <div key={term} className="contents">
             <dt className="text-muted-foreground">{term}</dt>
@@ -168,7 +172,7 @@ function Summary({
           <h3 id="compra-estornos" className="text-sm font-medium">
             Estornos ({refunds.length})
           </h3>
-          <ul aria-label="Estornos da compra" className="divide-y rounded-lg border text-sm">
+          <ul aria-label="Estornos da compra" className="divide-y rounded-2xl border text-sm">
             {refunds.map((refund) => (
               <li key={refund.id} className="flex items-center justify-between gap-2 px-3 py-1.5">
                 <span className="min-w-0">
@@ -203,16 +207,33 @@ function Summary({
         onDelete={() => run(() => remove.mutateAsync(purchase.id))}
       />
 
-      <DialogFooter>
-        <Button type="button" variant="outline" size="lg" onClick={() => onOpenChange(false)}>
-          Fechar
-        </Button>
-        {porEstornar > 0 && (
-          <Button type="button" size="lg" onClick={onRefund}>
+      <p className="text-xs text-muted-foreground">
+        Uma compra não se edita: se foi devolvida ou cancelada, registre um estorno; se registrou
+        errado, exclua e registre de novo.
+      </p>
+
+      <SheetFooter>
+        {porEstornar > 0 ? (
+          <Button
+            type="button"
+            size="lg"
+            className="h-12 rounded-full text-base"
+            onClick={onRefund}
+          >
             Registrar estorno
           </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="h-12 rounded-full text-base"
+            onClick={() => onOpenChange(false)}
+          >
+            Fechar
+          </Button>
         )}
-      </DialogFooter>
+      </SheetFooter>
     </div>
   )
 }
@@ -252,9 +273,9 @@ function RefundForm({
   )
 
   return (
-    <form onSubmit={onSubmit} noValidate className="grid gap-4">
+    <form onSubmit={onSubmit} noValidate className="grid gap-5">
       <DialogHeader>
-        <DialogTitle>Estorno de {name}</DialogTitle>
+        <DialogTitle className="text-lg font-semibold">Estorno de {name}</DialogTitle>
         <DialogDescription>
           {card?.nome ?? 'Cartão'} · falta estornar {formatMoney(porEstornar, currency)}. Use o
           valor e a data do extrato: o estorno entra na fatura dessa data e desconta dos gastos
@@ -269,8 +290,8 @@ function RefundForm({
         label="Valor"
         inputMode="decimal"
         autoComplete="off"
-        className="text-lg font-medium tabular-nums"
-        hint={`Pode ser parcial. ${MONEY_EXAMPLE}`}
+        className="h-16 text-center text-4xl font-semibold tracking-tight tabular-nums md:text-4xl"
+        hint="Pode ser parcial."
         error={errors.valor?.message}
         {...register('valor')}
       />
@@ -295,14 +316,25 @@ function RefundForm({
         />
       </div>
 
-      <DialogFooter>
-        <Button type="button" variant="outline" size="lg" onClick={onBack}>
+      <SheetFooter className="grid-cols-[auto_1fr]">
+        <Button
+          type="button"
+          variant="outline"
+          size="lg"
+          className="h-12 rounded-full"
+          onClick={onBack}
+        >
           Voltar
         </Button>
-        <Button type="submit" size="lg" disabled={isSubmitting || create.isPending}>
+        <Button
+          type="submit"
+          size="lg"
+          className="h-12 rounded-full text-base"
+          disabled={isSubmitting || create.isPending}
+        >
           {isSubmitting ? 'Registrando…' : 'Registrar estorno'}
         </Button>
-      </DialogFooter>
+      </SheetFooter>
     </form>
   )
 }

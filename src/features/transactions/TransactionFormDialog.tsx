@@ -1,30 +1,31 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Link } from 'react-router'
 import { ArchiveDeleteActions } from '@/components/form/ArchiveDeleteActions'
 import { FormAlert } from '@/components/form/FormAlert'
 import { SegmentedControl } from '@/components/form/SegmentedControl'
-import { SelectField } from '@/components/form/SelectField'
 import { TextField } from '@/components/form/TextField'
 import { useServerAction } from '@/components/form/use-server-action'
+import { SheetContent, SheetFooter } from '@/components/layout/SheetContent'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { isCreditCard } from '@/features/accounts/account-options'
+import { Dialog, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { isCreditCard, TIPO_CONTA_OPTIONS } from '@/features/accounts/account-options'
 import type { Account } from '@/features/accounts/accounts-api'
 import type { Category } from '@/features/categories/categories-api'
 import { TIPO_LABELS, TIPOS } from '@/features/categories/schemas'
+import { CategoryPicker } from '@/features/quick-entry/CategoryPicker'
+import { ChoiceChips } from '@/features/quick-entry/ChoiceChips'
+import { DateChips } from '@/features/quick-entry/DateChips'
+import { rankByUsage, usageCounts } from '@/features/quick-entry/usage-ranking'
 import { todayIso } from '@/lib/dates'
 import { centsToInput } from '@/lib/money'
-import { MONEY_EXAMPLE } from '@/lib/money-schema'
-import { useCreateTransaction, useDeleteTransaction, useUpdateTransaction } from './hooks'
+import {
+  useBalanceMovements,
+  useCreateTransaction,
+  useDeleteTransaction,
+  useUpdateTransaction,
+} from './hooks'
 import {
   transactionFormSchema,
   type TransactionFormInput,
@@ -44,9 +45,9 @@ type Props = {
 export function TransactionFormDialog(props: Props) {
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-md">
+      <SheetContent className="pb-0">
         {props.open && <TransactionForm key={props.transaction?.id ?? 'nova'} {...props} />}
-      </DialogContent>
+      </SheetContent>
     </Dialog>
   )
 }
@@ -58,13 +59,10 @@ export function TransactionFormDialog(props: Props) {
 function selectable<T extends { id: string; nome: string; arquivada: boolean }>(
   items: T[],
   currentId: string | undefined,
-) {
+): T[] {
   return items
     .filter((item) => !item.arquivada || item.id === currentId)
-    .map((item) => ({
-      value: item.id,
-      label: item.arquivada ? `${item.nome} (arquivada)` : item.nome,
-    }))
+    .map((item) => (item.arquivada ? { ...item, nome: `${item.nome} (arquivada)` } : item))
 }
 
 function TransactionForm({ onOpenChange, transaction, categories, accounts }: Props) {
@@ -72,11 +70,11 @@ function TransactionForm({ onOpenChange, transaction, categories, accounts }: Pr
   const create = useCreateTransaction()
   const update = useUpdateTransaction()
   const remove = useDeleteTransaction()
+  const movements = useBalanceMovements()
+  const today = todayIso()
   const firstActiveAccount = accounts.find(
     (account) => !account.arquivada && !isCreditCard(account),
   )
-  // Com cartões, a descrição explica onde ficam as compras no cartão (não aparecem em "Conta")
-  const hasCards = accounts.some((account) => isCreditCard(account) && !account.arquivada)
 
   const {
     register,
@@ -99,24 +97,36 @@ function TransactionForm({ onOpenChange, transaction, categories, accounts }: Pr
       : {
           tipo: 'despesa',
           valor: '',
-          data: todayIso(),
+          data: today,
           categoryId: '',
           accountId: firstActiveAccount?.id ?? '',
           descricao: '',
         },
   })
 
-  const tipo = useWatch({ control, name: 'tipo' })
-  const categoryOptions = selectable(
-    categories.filter((category) => category.tipo === tipo),
-    transaction?.category_id,
+  const [tipo, categoryId] = useWatch({ control, name: ['tipo', 'categoryId'] })
+  // Pelas mais usadas, como no lançamento rápido: a categoria certa costuma estar à vista
+  const counts = useMemo(
+    () => usageCounts(movements.data ?? [], (movement) => movement.category_id, { today }),
+    [movements.data, today],
+  )
+  const categoryOptions = rankByUsage(
+    selectable(
+      categories.filter((category) => category.tipo === tipo),
+      transaction?.category_id,
+    ),
+    counts,
   )
   // Cartões ficam de fora: as compras no cartão têm fatura e parcelas e um fluxo próprio (a base de
   // dados também o recusa — trigger transactions_check_cartao)
   const accountOptions = selectable(
     accounts.filter((account) => !isCreditCard(account)),
     transaction?.account_id,
-  )
+  ).map((account) => ({
+    value: account.id,
+    label: account.nome,
+    icon: TIPO_CONTA_OPTIONS[account.tipo].icon,
+  }))
 
   // Se o diálogo abriu antes de as contas chegarem do servidor, pré-seleciona a primeira assim que chegam.
   useEffect(() => {
@@ -141,15 +151,15 @@ function TransactionForm({ onOpenChange, transaction, categories, accounts }: Pr
   const missingSetup = categoryOptions.length === 0 || accountOptions.length === 0
 
   return (
-    <form onSubmit={onSubmit} noValidate className="grid gap-4">
+    <form onSubmit={onSubmit} noValidate className="grid gap-5">
       <DialogHeader>
-        <DialogTitle>{transaction ? 'Editar transação' : 'Nova transação'}</DialogTitle>
+        <DialogTitle className="text-lg font-semibold">
+          {transaction ? 'Editar transação' : 'Nova transação'}
+        </DialogTitle>
         <DialogDescription>
           {transaction
             ? 'As mudanças entram no saldo e nos relatórios do mês.'
-            : hasCards
-              ? 'Compras no cartão de crédito ficam em “Compra no cartão”.'
-              : 'Dinheiro que entrou ou saiu de uma conta.'}
+            : 'Dinheiro que entrou ou saiu de uma conta.'}
         </DialogDescription>
       </DialogHeader>
 
@@ -157,6 +167,7 @@ function TransactionForm({ onOpenChange, transaction, categories, accounts }: Pr
 
       <SegmentedControl
         legend="Tipo"
+        className="[&>legend]:sr-only"
         options={TIPOS.map((value) => ({ value, label: TIPO_LABELS[value].singular }))}
         {...register('tipo')}
       />
@@ -167,42 +178,12 @@ function TransactionForm({ onOpenChange, transaction, categories, accounts }: Pr
         inputMode="decimal"
         autoComplete="off"
         placeholder="0,00"
-        className="text-lg font-medium tabular-nums"
-        hint={MONEY_EXAMPLE}
+        className="h-16 text-center text-4xl font-semibold tracking-tight tabular-nums md:text-4xl"
         error={errors.valor?.message}
         {...register('valor')}
       />
 
-      <TextField
-        id="transacao-descricao"
-        label="Descrição (opcional)"
-        autoComplete="off"
-        maxLength={120}
-        placeholder="Ex.: Supermercado"
-        error={errors.descricao?.message}
-        {...register('descricao')}
-      />
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <SelectField
-          id="transacao-categoria"
-          label="Categoria"
-          placeholder="Escolha…"
-          options={categoryOptions}
-          error={errors.categoryId?.message}
-          {...register('categoryId')}
-        />
-        <SelectField
-          id="transacao-conta"
-          label="Conta"
-          placeholder="Escolha…"
-          options={accountOptions}
-          error={errors.accountId?.message}
-          {...register('accountId')}
-        />
-      </div>
-
-      {missingSetup && (
+      {missingSetup ? (
         <FormAlert>
           {accountOptions.length === 0
             ? 'Para registrar, você precisa de uma conta ativa.'
@@ -214,14 +195,42 @@ function TransactionForm({ onOpenChange, transaction, categories, accounts }: Pr
             {accountOptions.length === 0 ? 'Criar conta' : 'Criar categoria'}
           </Link>
         </FormAlert>
+      ) : (
+        <>
+          <CategoryPicker
+            categories={categoryOptions}
+            selectedId={categoryId}
+            error={errors.categoryId?.message}
+            {...register('categoryId')}
+          />
+          <ChoiceChips
+            legend={tipo === 'receita' ? 'Receber em' : 'Pagar com'}
+            options={accountOptions}
+            error={errors.accountId?.message}
+            errorId="transacao-conta-erro"
+            {...register('accountId')}
+          />
+        </>
       )}
 
-      <TextField
-        id="transacao-data"
-        label="Data"
-        type="date"
+      <DateChips
+        name="transacao-data-escolha"
+        fieldId="transacao-data"
+        today={today}
+        initial={getValues('data')}
+        setDate={(date) => setValue('data', date)}
+        field={register('data')}
         error={errors.data?.message}
-        {...register('data')}
+      />
+
+      <TextField
+        id="transacao-descricao"
+        label="Descrição (opcional)"
+        autoComplete="off"
+        maxLength={120}
+        placeholder="Ex.: Supermercado"
+        error={errors.descricao?.message}
+        {...register('descricao')}
       />
 
       {transaction && (
@@ -237,14 +246,16 @@ function TransactionForm({ onOpenChange, transaction, categories, accounts }: Pr
         />
       )}
 
-      <DialogFooter>
-        <Button type="button" variant="outline" size="lg" onClick={() => onOpenChange(false)}>
-          Cancelar
-        </Button>
-        <Button type="submit" size="lg" disabled={busy}>
+      <SheetFooter>
+        <Button
+          type="submit"
+          size="lg"
+          className="h-12 w-full rounded-full text-base"
+          disabled={busy || missingSetup}
+        >
           {isSubmitting ? 'Salvando…' : transaction ? 'Salvar' : `Registrar ${tipo}`}
         </Button>
-      </DialogFooter>
+      </SheetFooter>
     </form>
   )
 }

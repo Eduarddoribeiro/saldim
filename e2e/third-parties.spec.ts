@@ -68,7 +68,7 @@ test('compra da mãe: fora dos gastos, a receber no Início, pagamento recebido'
   await expect(proximas.locator('summary')).toHaveCount(3)
   for (const summary of await proximas.locator('summary').all())
     await expect(summary).toContainText(money('R$ 100,00'))
-  await expect(mae).toContainText(/Para ficar em dia até \d{2}\/\d{2}:/)
+  await expect(mae).toContainText(/Para ficar em dia até \d{2}\/\d{2}R\$/)
   // Abrir um mês mostra a compra e não alarga a página (nomes longos de cartão encolhem)
   await proximas.locator('summary').first().click()
   await expect(proximas.getByRole('list', { name: 'Compras no Visa' })).toContainText('Sofá')

@@ -68,17 +68,17 @@ export function UpcomingInvoices({
   const headingId = `proximas-${personId}`
 
   return (
-    <section aria-labelledby={headingId} className="mt-3 grid min-w-0 gap-2 *:min-w-0">
-      <p className="text-sm">
-        Para ficar em dia até {dayMonth(next.ultimoVencimento)}:{' '}
-        <span className="font-semibold tabular-nums">
+    <section aria-labelledby={headingId} className="mt-4 grid min-w-0 gap-2 *:min-w-0">
+      <p className="flex items-baseline justify-between gap-3 rounded-xl bg-muted/60 px-3 py-2.5 text-sm">
+        <span className="min-w-0">Para ficar em dia até {dayMonth(next.ultimoVencimento)}</span>
+        <span className="shrink-0 font-semibold tabular-nums">
           {money(Math.max(vencido, 0) + next.total)}
         </span>
       </p>
       <h3 id={headingId} className="text-sm font-medium text-muted-foreground">
         Próximas faturas
       </h3>
-      <ul className="divide-y rounded-lg border text-sm">
+      <ul className="divide-y rounded-xl border text-sm">
         {shown.map((month) => (
           <li key={month.month}>
             <MonthDetails label={monthLabel(month.month, today)} total={money(month.total)}>

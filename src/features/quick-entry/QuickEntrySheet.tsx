@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Link } from 'react-router'
 import { FormAlert } from '@/components/form/FormAlert'
@@ -8,7 +8,8 @@ import { SelectField } from '@/components/form/SelectField'
 import { TextField } from '@/components/form/TextField'
 import { useServerAction } from '@/components/form/use-server-action'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { SheetContent, SheetFooter } from '@/components/layout/SheetContent'
+import { Dialog, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { isCreditCard, TIPO_CONTA_OPTIONS } from '@/features/accounts/account-options'
 import type { Account } from '@/features/accounts/accounts-api'
 import { useAccounts } from '@/features/accounts/hooks'
@@ -21,10 +22,11 @@ import { TIPO_LABELS, TIPOS } from '@/features/categories/schemas'
 import { useCreatePerson, usePeople } from '@/features/people/hooks'
 import { useCurrency } from '@/features/profile/hooks'
 import { useBalanceMovements, useCreateTransaction } from '@/features/transactions/hooks'
-import { addDays, todayIso } from '@/lib/dates'
+import { todayIso } from '@/lib/dates'
 import { parseMoney } from '@/lib/money'
 import { CategoryPicker } from './CategoryPicker'
 import { ChoiceChips } from './ChoiceChips'
+import { DateChips } from './DateChips'
 import { ParcelasStepper } from './ParcelasStepper'
 import type { QuickEntryOptions } from './quick-entry-context'
 import { quickEntrySchema, type QuickEntryInput, type QuickEntryValues } from './schema'
@@ -45,20 +47,16 @@ export function QuickEntrySheet({ open, onOpenChange, options }: Props) {
   const valorRef = useRef<HTMLInputElement | null>(null)
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        initialFocus={valorRef}
-        className="max-h-[calc(100svh-2rem)] overflow-y-auto pb-0 max-md:top-auto max-md:bottom-0 max-md:left-0 max-md:max-h-[92svh] max-md:max-w-full max-md:translate-x-0 max-md:translate-y-0 max-md:rounded-t-3xl max-md:rounded-b-none sm:max-w-md max-md:data-open:zoom-in-100 max-md:data-open:slide-in-from-bottom-8"
-      >
+      <SheetContent initialFocus={valorRef} className="pb-0">
         {open && (
           <QuickEntryForm onOpenChange={onOpenChange} options={options} valorRef={valorRef} />
         )}
-      </DialogContent>
+      </SheetContent>
     </Dialog>
   )
 }
 
 const today = () => todayIso()
-type DateChoice = 'hoje' | 'ontem' | 'outra'
 
 function QuickEntryForm({
   onOpenChange,
@@ -202,13 +200,6 @@ function LoadedForm({
     }),
   )
 
-  const [dateChoice, setDateChoice] = useState<DateChoice>('hoje')
-  const chooseDate = (choice: DateChoice) => {
-    setDateChoice(choice)
-    if (choice === 'hoje') setValue('data', now)
-    if (choice === 'ontem') setValue('data', addDays(now, -1))
-  }
-
   const total = parseMoney(valor)
   const previewInput: PreviewInput | null =
     card?.dia_fechamento && card.dia_vencimento && total !== null && total > 0
@@ -256,8 +247,6 @@ function LoadedForm({
 
   return (
     <form onSubmit={onSubmit} noValidate className="grid gap-5">
-      {/* Puxador: só desenho, indica que a folha se arrasta/fecha para baixo */}
-      <span aria-hidden className="mx-auto -mt-1 h-1 w-10 rounded-full bg-border md:hidden" />
       <DialogHeader>
         <DialogTitle className="text-lg font-semibold">Novo lançamento</DialogTitle>
       </DialogHeader>
@@ -393,31 +382,16 @@ function LoadedForm({
         </div>
       )}
 
-      <div className="grid gap-3">
-        <ChoiceChips
-          legend={card ? 'Data da compra' : 'Data'}
-          name="lancamento-data-escolha"
-          selected={dateChoice}
-          onChange={(event) => chooseDate(event.target.value as DateChoice)}
-          options={[
-            { value: 'hoje', label: 'Hoje' },
-            { value: 'ontem', label: 'Ontem' },
-            { value: 'outra', label: 'Outra data' },
-          ]}
-        />
-        {dateChoice === 'outra' && (
-          <TextField
-            id="lancamento-data"
-            label="Qual data?"
-            type="date"
-            error={errors.data?.message}
-            {...register('data')}
-          />
-        )}
-        {dateChoice !== 'outra' && errors.data?.message && (
-          <p className="text-sm text-destructive">{errors.data.message}</p>
-        )}
-      </div>
+      <DateChips
+        legend={card ? 'Data da compra' : 'Data'}
+        name="lancamento-data-escolha"
+        fieldId="lancamento-data"
+        today={now}
+        initial={now}
+        setDate={(date) => setValue('data', date)}
+        field={register('data')}
+        error={errors.data?.message}
+      />
 
       <TextField
         id="lancamento-descricao"
@@ -429,8 +403,7 @@ function LoadedForm({
         {...register('descricao')}
       />
 
-      {/* Fica colado ao fundo da folha: visível mesmo com o teclado aberto */}
-      <div className="sticky bottom-0 -mx-4 border-t bg-popover/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur">
+      <SheetFooter>
         <Button
           type="submit"
           size="lg"
@@ -439,7 +412,7 @@ function LoadedForm({
         >
           {isSubmitting ? 'Registrando…' : card ? 'Registrar compra' : `Registrar ${tipo}`}
         </Button>
-      </div>
+      </SheetFooter>
     </form>
   )
 }

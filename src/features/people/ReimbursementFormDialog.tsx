@@ -2,23 +2,17 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { FormAlert } from '@/components/form/FormAlert'
-import { SelectField } from '@/components/form/SelectField'
 import { TextField } from '@/components/form/TextField'
 import { useServerAction } from '@/components/form/use-server-action'
+import { SheetContent, SheetFooter } from '@/components/layout/SheetContent'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { isCreditCard } from '@/features/accounts/account-options'
+import { Dialog, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { isCreditCard, TIPO_CONTA_OPTIONS } from '@/features/accounts/account-options'
 import type { Account } from '@/features/accounts/accounts-api'
+import { ChoiceChips } from '@/features/quick-entry/ChoiceChips'
+import { DateChips } from '@/features/quick-entry/DateChips'
 import { todayIso } from '@/lib/dates'
 import { centsToInput } from '@/lib/money'
-import { MONEY_EXAMPLE } from '@/lib/money-schema'
 import { useCreateReimbursement } from './hooks'
 import type { Person } from './people-api'
 import {
@@ -39,11 +33,11 @@ type Props = {
 export function ReimbursementFormDialog(props: Props) {
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-md">
+      <SheetContent className="pb-0">
         {props.open && props.person && (
           <ReimbursementForm key={props.person.id} {...props} person={props.person} />
         )}
-      </DialogContent>
+      </SheetContent>
     </Dialog>
   )
 }
@@ -61,11 +55,16 @@ function ReimbursementForm({
   // O dinheiro entra numa conta de dinheiro (a base de dados recusa cartões)
   const accountOptions = accounts
     .filter((account) => !isCreditCard(account) && !account.arquivada)
-    .map((account) => ({ value: account.id, label: account.nome }))
+    .map((account) => ({
+      value: account.id,
+      label: account.nome,
+      icon: TIPO_CONTA_OPTIONS[account.tipo].icon,
+    }))
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ReimbursementFormInput, unknown, ReimbursementFormOutput>({
     resolver: zodResolver(schema),
@@ -82,9 +81,9 @@ function ReimbursementForm({
   )
 
   return (
-    <form onSubmit={onSubmit} noValidate className="grid gap-4">
+    <form onSubmit={onSubmit} noValidate className="grid gap-5">
       <DialogHeader>
-        <DialogTitle>Pagamento de {person.nome}</DialogTitle>
+        <DialogTitle className="text-lg font-semibold">Pagamento de {person.nome}</DialogTitle>
         <DialogDescription>
           Dinheiro que {person.nome} te devolveu. Entra na conta, mas não conta como receita.
         </DialogDescription>
@@ -98,26 +97,30 @@ function ReimbursementForm({
         inputMode="decimal"
         autoComplete="off"
         placeholder="0,00"
-        className="text-lg font-medium tabular-nums"
-        hint={MONEY_EXAMPLE}
+        className="h-16 text-center text-4xl font-semibold tracking-tight tabular-nums md:text-4xl"
         error={errors.valor?.message}
         {...register('valor')}
       />
-      <SelectField
-        id="reembolso-conta"
-        label="Conta onde entrou"
-        placeholder="Escolha…"
-        options={accountOptions}
-        error={errors.accountId?.message}
-        {...register('accountId')}
-      />
-      <TextField
-        id="reembolso-data"
-        label="Data"
-        type="date"
+      {accountOptions.length === 0 ? (
+        <FormAlert>Para registrar, você precisa de uma conta de dinheiro ativa.</FormAlert>
+      ) : (
+        <ChoiceChips
+          legend="Entrou em"
+          options={accountOptions}
+          error={errors.accountId?.message}
+          errorId="reembolso-conta-erro"
+          {...register('accountId')}
+        />
+      )}
+      <DateChips
+        name="reembolso-data-escolha"
+        fieldId="reembolso-data"
+        today={today}
+        initial={today}
         max={today}
+        setDate={(date) => setValue('data', date)}
+        field={register('data')}
         error={errors.data?.message}
-        {...register('data')}
       />
       <TextField
         id="reembolso-descricao"
@@ -129,14 +132,16 @@ function ReimbursementForm({
         {...register('descricao')}
       />
 
-      <DialogFooter>
-        <Button type="button" variant="outline" size="lg" onClick={() => onOpenChange(false)}>
-          Cancelar
-        </Button>
-        <Button type="submit" size="lg" disabled={isSubmitting || create.isPending}>
+      <SheetFooter>
+        <Button
+          type="submit"
+          size="lg"
+          className="h-12 w-full rounded-full text-base"
+          disabled={isSubmitting || create.isPending || accountOptions.length === 0}
+        >
           {isSubmitting ? 'Registrando…' : 'Registrar pagamento'}
         </Button>
-      </DialogFooter>
+      </SheetFooter>
     </form>
   )
 }
