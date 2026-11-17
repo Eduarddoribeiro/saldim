@@ -53,6 +53,12 @@ vi.mock('@/features/card-purchases/purchases-api', () => ({
   ]),
 }))
 vi.mock('./invoices-api', () => ({ listInvoices: vi.fn(async () => store.invoices) }))
+// T1: compras de outras pessoas no cartão
+vi.mock('@/features/people/people-api', () => ({
+  listPeople: vi.fn(async () => [
+    { id: 'mae', user_id: 'u', nome: 'Mãe', arquivada: false, created_at: '' },
+  ]),
+}))
 vi.mock('@/features/transactions/transactions-api', () => ({
   listInvoiceItems: vi.fn(async () => store.items),
 }))
@@ -173,6 +179,41 @@ describe('página de faturas', () => {
     expect(createPayment).toHaveBeenCalledWith(expect.objectContaining({ valor: 15000 }))
   })
 
+  it('mostra quanto de cada fatura é da mãe, na lista e no detalhe (T1)', async () => {
+    store.items.push({
+      ...parcela('nov', 1, 7915),
+      id: 'mae-1',
+      compra_id: 'celular',
+      descricao: 'Celular',
+      pessoa_id: 'mae',
+    })
+    renderApp('/faturas')
+    const lista = await screen.findByRole('list', { name: 'Faturas' })
+    const novembro = within(lista).getByRole('button', { name: /^Fatura de novembro/ })
+    await waitFor(() => expect(plain(novembro.textContent)).toContain('Mãe: R$ 79,15'))
+    // Setembro não tem nada da mãe
+    expect(
+      plain(within(lista).getByRole('button', { name: /^Fatura de setembro/ }).textContent),
+    ).not.toContain('Mãe')
+
+    await userEvent.click(novembro)
+    const dialog = await screen.findByRole('dialog', { name: 'Fatura de novembro de 2026' })
+    const partes = within(within(dialog).getByRole('list', { name: 'De quem é esta fatura' }))
+      .getAllByRole('listitem')
+      .map((li) => plain(li.textContent))
+    // 200,00 seus + 79,15 da mãe = o total da fatura
+    expect(partes).toEqual(['SeuR$ 200,00', 'MãeR$ 79,15'])
+  })
+
+  it('sem compras de outras pessoas, o detalhe não mostra a divisão', async () => {
+    renderApp('/faturas')
+    await userEvent.click(await screen.findByRole('button', { name: /^Fatura de novembro/ }))
+    const dialog = await screen.findByRole('dialog', { name: 'Fatura de novembro de 2026' })
+    expect(
+      within(dialog).queryByRole('list', { name: 'De quem é esta fatura' }),
+    ).not.toBeInTheDocument()
+  })
+
   it('por pagar: a que vence primeiro em cima, com o estado escrito e o total em aberto', async () => {
     renderApp('/faturas')
     await screen.findByRole('list', { name: 'Faturas' })
@@ -206,7 +247,8 @@ describe('página de faturas', () => {
     const compras = within(within(dialog).getByRole('list', { name: 'Compras da fatura' }))
       .getAllByRole('listitem')
       .map((li) => plain(li.textContent))
-    expect(compras).toEqual(['Televisão20/09/2026 · parcela 2/3R$ 200,00'])
+    // A data é a da compra (não a da parcela)
+    expect(compras).toEqual(['Televisãocompra de 20/09/2026 · parcela 2/3R$ 200,00'])
     expect(within(dialog).getByRole('list', { name: 'Pagamentos da fatura' })).toHaveTextContent(
       'Conta principal',
     )

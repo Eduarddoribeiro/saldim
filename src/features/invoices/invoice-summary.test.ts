@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dueSoon, isToPay, summarizeInvoices } from './invoice-summary'
+import { dueSoon, isToPay, summarizeInvoices, totalsByPerson } from './invoice-summary'
 
 const fatura = (id: string, fechamento: string, vencimento: string) => ({
   id,
@@ -138,5 +138,36 @@ describe('dueSoon', () => {
         hoje,
       ),
     ).toEqual([])
+  })
+})
+
+describe('totalsByPerson', () => {
+  const item = (pessoa_id: string | null, valor_centavos: number, tipo = 'despesa') => ({
+    pessoa_id,
+    valor_centavos,
+    tipo,
+  })
+
+  it('separa o que é de cada pessoa; quem usa a app primeiro; a soma é o total da fatura', () => {
+    const items = [
+      item(null, 5000),
+      item('mae', 7915),
+      item('ana', 2000),
+      item('mae', 1000),
+      item(null, 1000, 'estorno'),
+    ]
+    const result = totalsByPerson(items)
+    expect(result).toEqual([
+      { pessoaId: null, centavos: 4000 },
+      { pessoaId: 'mae', centavos: 8915 },
+      { pessoaId: 'ana', centavos: 2000 },
+    ])
+    expect(result.reduce((sum, row) => sum + row.centavos, 0)).toBe(14915)
+  })
+
+  it('omite quem ficou a zero (compra estornada por inteiro)', () => {
+    expect(
+      totalsByPerson([item('mae', 3000), item('mae', 3000, 'estorno'), item(null, 100)]),
+    ).toEqual([{ pessoaId: null, centavos: 100 }])
   })
 })

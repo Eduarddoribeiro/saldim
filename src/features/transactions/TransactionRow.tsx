@@ -2,6 +2,7 @@ import { ChevronRight } from 'lucide-react'
 import type { Account } from '@/features/accounts/accounts-api'
 import type { Category } from '@/features/categories/categories-api'
 import { CategoryBadge } from '@/features/categories/CategoryBadge'
+import type { IsoDate } from '@/lib/dates'
 import { formatMoney, type Currency } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import type { Transaction } from './transactions-api'
@@ -25,6 +26,7 @@ export function TransactionRow({
   account,
   currency,
   totalParcelas,
+  purchaseDate,
   personName,
   onSelect,
 }: {
@@ -34,6 +36,8 @@ export function TransactionRow({
   currency: Currency
   /** Número total de parcelas da compra (só para parcelas) */
   totalParcelas?: number
+  /** Data da compra (só parcelas): a 2/2 de 19/09 é uma compra de 19/08, não desse dia */
+  purchaseDate?: IsoDate
   /** Nome da pessoa a quem pertence a compra (T1), se não for de quem usa a app */
   personName?: string
   onSelect?: () => void
@@ -47,7 +51,11 @@ export function TransactionRow({
     transaction.tipo === 'estorno'
       ? 'Estorno'
       : transaction.parcela_numero !== null && !transaction.recorrencia_id
-        ? `Parcela ${transaction.parcela_numero}/${totalParcelas ?? '?'}`
+        ? `Parcela ${transaction.parcela_numero}/${totalParcelas ?? '?'}${
+            purchaseDate && purchaseDate !== transaction.data
+              ? ` · compra de ${purchaseDate.slice(8, 10)}/${purchaseDate.slice(5, 7)}`
+              : ''
+          }`
         : null
   // Uma compra à vista criada por uma recorrência mostra só "Recorrente" (não "Parcela 1/1")
   const recurringItem = transaction.recorrencia_id ? 'Recorrente' : null
@@ -71,9 +79,7 @@ export function TransactionRow({
       <CategoryBadge cor={category?.cor ?? 'slate'} icone={category?.icone ?? 'tag'} />
       <span className="min-w-0 flex-1">
         <span className="block truncate font-medium">{title}</span>
-        {subtitle && (
-          <span className="block truncate text-xs text-muted-foreground">{subtitle}</span>
-        )}
+        {subtitle && <span className="line-clamp-2 text-xs text-muted-foreground">{subtitle}</span>}
       </span>
       <span
         className={cn(

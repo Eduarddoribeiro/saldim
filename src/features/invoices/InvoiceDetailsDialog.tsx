@@ -34,7 +34,7 @@ import {
   invoiceTitle,
   shortDate,
 } from './invoice-options'
-import type { InvoiceSummary } from './invoice-summary'
+import { totalsByPerson, type InvoiceSummary } from './invoice-summary'
 import type { Invoice } from './invoices-api'
 import { paymentFormSchema, type PaymentFormInput, type PaymentFormValues } from './schemas'
 
@@ -93,6 +93,8 @@ function Summary({
   const { serverError, run } = useServerAction(() => {})
   const remove = useDeletePayment()
   const compras = invoice.parcelas.filter((item) => item.tipo !== 'estorno')
+  // T1: quanto desta fatura é de cada pessoa (a mãe paga a parte dela)
+  const byPerson = totalsByPerson(invoice.parcelas)
   const estornos = invoice.parcelas.filter((item) => item.tipo === 'estorno')
   const itemName = (item: InvoiceItem) =>
     item.descricao || categoriesById.get(item.category_id)?.nome || 'Compra'
@@ -136,6 +138,27 @@ function Summary({
         ))}
       </dl>
 
+      {byPerson.some((row) => row.pessoaId !== null) && (
+        <section aria-labelledby="fatura-pessoas" className="grid gap-1.5">
+          <h3 id="fatura-pessoas" className="text-sm font-medium">
+            De quem é esta fatura
+          </h3>
+          <ul aria-label="De quem é esta fatura" className="divide-y rounded-lg border text-sm">
+            {byPerson.map((row) => (
+              <li
+                key={row.pessoaId ?? 'eu'}
+                className="flex items-baseline justify-between gap-3 px-3 py-2"
+              >
+                <span className="min-w-0 truncate">
+                  {row.pessoaId === null ? 'Seu' : personName(row.pessoaId)}
+                </span>
+                <span className="shrink-0 font-medium tabular-nums">{money(row.centavos)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section aria-labelledby="fatura-compras" className="grid gap-1.5">
         <h3 id="fatura-compras" className="text-sm font-medium">
           Compras ({compras.length})
@@ -151,7 +174,10 @@ function Summary({
                   <span className="min-w-0">
                     <span className="block truncate">{itemName(item)}</span>
                     <span className="block text-xs text-muted-foreground">
-                      {shortDate(item.data)}
+                      {/* A data da compra, não a da parcela: a 2/2 de 19/09 é a compra de 19/08 */}
+                      {purchase
+                        ? `compra de ${shortDate(purchase.data_compra)}`
+                        : shortDate(item.data)}
                       {purchase && purchase.parcelas > 1
                         ? ` · parcela ${item.parcela_numero}/${purchase.parcelas}`
                         : ''}

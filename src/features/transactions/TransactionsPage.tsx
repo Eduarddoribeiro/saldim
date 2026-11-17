@@ -129,6 +129,11 @@ export function TransactionsPage() {
                           ? purchasesById.get(transaction.compra_id)?.parcelas
                           : undefined
                       }
+                      purchaseDate={
+                        transaction.compra_id
+                          ? purchasesById.get(transaction.compra_id)?.data_compra
+                          : undefined
+                      }
                       personName={
                         people.data?.find((person) => person.id === transaction.pessoa_id)?.nome
                       }

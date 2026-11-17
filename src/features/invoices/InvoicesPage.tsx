@@ -9,6 +9,7 @@ import { isCreditCard } from '@/features/accounts/account-options'
 import { useAccounts } from '@/features/accounts/hooks'
 import { usePurchases } from '@/features/card-purchases/hooks'
 import { useCategories } from '@/features/categories/hooks'
+import { usePeople } from '@/features/people/hooks'
 import { useCurrency } from '@/features/profile/hooks'
 import { todayIso } from '@/lib/dates'
 import { errorMessage } from '@/lib/db-errors'
@@ -23,7 +24,7 @@ import {
   invoiceMonth,
   invoiceTitle,
 } from './invoice-options'
-import { isToPay, summarizeInvoices } from './invoice-summary'
+import { isToPay, summarizeInvoices, totalsByPerson } from './invoice-summary'
 
 type Filter = 'por_pagar' | 'pagas' | 'todas'
 const FILTERS: { value: Filter; label: string }[] = [
@@ -53,6 +54,9 @@ export function InvoicesPage() {
   const purchases = usePurchases()
   const { invoices, items, payments } = useInvoiceData()
   const currency = useCurrency()
+  const people = usePeople()
+  const personName = (id: string) =>
+    people.data?.find((person) => person.id === id)?.nome ?? 'Outra pessoa'
   const [chosenCardId, setChosenCardId] = useState<string | null>(null)
   const [filter, setFilter] = useState<Filter>('por_pagar')
   // Fatura aberta: no resumo, ou logo no pagamento (botão "Pagar" da linha)
@@ -239,6 +243,7 @@ export function InvoicesPage() {
                 currency={currency}
                 onSelect={() => open(invoice.id, false)}
                 onPay={() => open(invoice.id, true)}
+                personName={personName}
               />
             </li>
           ))}
@@ -264,12 +269,16 @@ function InvoiceRow({
   currency,
   onSelect,
   onPay,
+  personName,
 }: {
   invoice: InvoiceView
   currency: Currency
   onSelect: () => void
   onPay: () => void
+  personName: (id: string) => string
 }) {
+  // T1: a parte de cada outra pessoa nesta fatura (ex.: "Mãe: R$ 79,15")
+  const others = totalsByPerson(invoice.parcelas).filter((row) => row.pessoaId !== null)
   const title = invoiceTitle(invoice.mes_referencia)
   const state = INVOICE_STATE_LABELS[invoice.estado]
   const partial = invoice.pagoCentavos > 0 && invoice.emAbertoCentavos > 0
@@ -279,7 +288,7 @@ function InvoiceRow({
       <button
         type="button"
         onClick={onSelect}
-        aria-label={`${title}: ${state.toLowerCase()}, total ${formatMoney(invoice.totalCentavos, currency)}${partial ? `, falta ${formatMoney(invoice.emAbertoCentavos, currency)}` : ''}. Ver detalhes`}
+        aria-label={`${title}: ${state.toLowerCase()}, total ${formatMoney(invoice.totalCentavos, currency)}${partial ? `, falta ${formatMoney(invoice.emAbertoCentavos, currency)}` : ''}${others.map((row) => `, ${personName(row.pessoaId ?? '')}: ${formatMoney(row.centavos, currency)}`).join('')}. Ver detalhes`}
         className="flex min-h-16 min-w-0 flex-1 items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none"
       >
         <span className="min-w-0 flex-1">
@@ -287,6 +296,16 @@ function InvoiceRow({
           <span className="block truncate text-xs text-muted-foreground">
             Fecha {dayMonth(invoice.data_fechamento)} · vence {dayMonth(invoice.data_vencimento)}
           </span>
+          {others.length > 0 && (
+            <span className="block truncate text-xs text-muted-foreground">
+              {others
+                .map(
+                  (row) =>
+                    `${personName(row.pessoaId ?? '')}: ${formatMoney(row.centavos, currency)}`,
+                )
+                .join(' · ')}
+            </span>
+          )}
           {/* Estado e valor na mesma linha: deixa a largura para o mês quando há o botão "Pagar" */}
           <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
             <span

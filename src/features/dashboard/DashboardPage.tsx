@@ -168,9 +168,7 @@ export function DashboardPage() {
   const categoriesById = new Map((categories.data ?? []).map((category) => [category.id, category]))
   const accountsById = new Map(allAccounts.map((account) => [account.id, account]))
   // Para mostrar "Parcela k/n" nas últimas transações
-  const parcelasByPurchase = new Map(
-    (purchases.data ?? []).map((purchase) => [purchase.id, purchase.parcelas]),
-  )
+  const purchasesById = new Map((purchases.data ?? []).map((purchase) => [purchase.id, purchase]))
   const monthLabel = month === currentMonth() ? 'este mês' : formatMonth(month)
   const transactionsLink = month === currentMonth() ? '/transacoes' : `/transacoes?mes=${month}`
 
@@ -370,7 +368,12 @@ export function DashboardPage() {
                     account={accountsById.get(transaction.account_id)}
                     totalParcelas={
                       transaction.compra_id
-                        ? parcelasByPurchase.get(transaction.compra_id)
+                        ? purchasesById.get(transaction.compra_id)?.parcelas
+                        : undefined
+                    }
+                    purchaseDate={
+                      transaction.compra_id
+                        ? purchasesById.get(transaction.compra_id)?.data_compra
                         : undefined
                     }
                     personName={

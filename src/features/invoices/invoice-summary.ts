@@ -67,6 +67,25 @@ export const isToPay = (summary: { estado: InvoiceState; emAbertoCentavos: numbe
   (summary.estado === 'aberta' || summary.estado === 'fechada' || summary.estado === 'vencida') &&
   summary.emAbertoCentavos > 0
 
+/**
+ * Quanto da fatura é de cada pessoa (T1): parcelas − estornos por `pessoa_id`; `null` = de quem usa a
+ * app. Só pessoas com valor diferente de zero; a pessoa de quem usa a app primeiro, depois as outras
+ * pelo valor (maior primeiro). A soma das partes é sempre o total da fatura.
+ */
+export function totalsByPerson(
+  items: readonly { pessoa_id: string | null; valor_centavos: number; tipo: string }[],
+): { pessoaId: string | null; centavos: number }[] {
+  const totals = new Map<string | null, number>()
+  for (const item of items) {
+    const signed = item.tipo === 'estorno' ? -item.valor_centavos : item.valor_centavos
+    totals.set(item.pessoa_id, (totals.get(item.pessoa_id) ?? 0) + signed)
+  }
+  return [...totals]
+    .filter(([, centavos]) => centavos !== 0)
+    .map(([pessoaId, centavos]) => ({ pessoaId, centavos }))
+    .sort((a, b) => (a.pessoaId === null ? -1 : b.pessoaId === null ? 1 : b.centavos - a.centavos))
+}
+
 /** Quantos dias antes do vencimento o Início avisa da fatura (docs/features/lancamento-rapido.md). */
 export const DUE_SOON_DAYS = 7
 

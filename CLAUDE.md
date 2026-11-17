@@ -225,11 +225,11 @@ Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etap
 
 - [x] **Próximas faturas por pessoa** (plano e regras em `docs/features/proximas-faturas.md`): em A receber, quanto cada pessoa deve em cada mês que vem (pelo vencimento da fatura, cartões juntos, 3 meses + "depois"), "para ficar em dia até…" e as compras de cada mês por cartão; sem mudanças na base de dados
 
-- [x] **Menos toques + nova cara** (`docs/features/lancamento-rapido.md`; branch `claude/saldim-mobile-ux-fqs7g7`): lançamento rápido (`+` em todas as páginas, formulário único para conta e cartão, categorias em botões pelas mais usadas, Hoje/Ontem, folha que sobe de baixo), identidade Azul-petróleo (faixa do saldo, olho, atalhos, Extrato e Cartões, barra com `+` ao centro), "Pagar" nas linhas de Cartões e aviso de faturas a vencer em 7 dias no Início, Início reordenado no telemóvel; capturas antes/depois em `docs/screenshots/comparacao/`. Falta juntar à `main` (precisa de autorização).
+- [x] **Menos toques + nova cara** (`docs/features/lancamento-rapido.md`; branch `claude/saldim-mobile-ux-fqs7g7`): lançamento rápido (`+` em todas as páginas, formulário único para conta e cartão, categorias em botões pelas mais usadas, Hoje/Ontem, folha que sobe de baixo), identidade Azul-petróleo (faixa do saldo, olho, atalhos, Extrato e Cartões, barra com `+` ao centro), "Pagar" nas linhas de Cartões e aviso de faturas a vencer em 7 dias no Início, Início reordenado no telemóvel; capturas antes/depois em `docs/screenshots/comparacao/`. Na `main` desde 2026-11-17. Depois: parcelas mostram a data da compra ("Parcela 2/2 · compra de 19/08") e cada fatura mostra quanto é de cada pessoa (`totalsByPerson`, na lista e no detalhe "De quem é esta fatura").
 
 **Seguintes:** 13. Filtros e relatórios · 14. Deploy · 15. Google login, PWA, importar/exportar CSV, atualizações otimistas, metas · 16. Importação automática via Open Finance · 17. Claude sobre os dados da app (ideias futuras, ver `docs/plano.md`).
 
-**Próxima etapa:** juntar `feat/terceiros` à `main` (precisa de autorização), o resto da 13 (filtros e pesquisa nas transações) e a 14 (deploy, precisa de autorização e credenciais).
+**Próxima etapa:** o resto da 13 (filtros e pesquisa nas transações) e a 14 (deploy, precisa de autorização e credenciais).
 
 ### Decisões em aberto (precisam do utilizador)
 

@@ -235,10 +235,13 @@ describe('compras no cartão', () => {
     expect(within(dialog).queryByRole('radio', { name: 'Visa' })).not.toBeInTheDocument()
   })
 
-  it('a parcela aparece na lista como "Parcela 2/3" do cartão', async () => {
+  it('a parcela aparece na lista como "Parcela 2/3" com a data da compra', async () => {
     renderApp('/transacoes')
     const linha = await screen.findByRole('button', { name: /Televisão/ })
-    await waitFor(() => expect(linha).toHaveTextContent('Parcela 2/3 · Alimentação · Visa'))
+    // A 2.ª parcela cai a 10/10, mas a compra foi a 10/09: não parece uma compra nova
+    await waitFor(() =>
+      expect(linha).toHaveTextContent('Parcela 2/3 · compra de 10/09 · Alimentação · Visa'),
+    )
     expect(plain(linha.textContent)).toContain('-R$ 33,33')
     expect(linha).toHaveAccessibleName(/Ver compra$/)
   })
