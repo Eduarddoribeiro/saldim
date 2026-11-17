@@ -96,7 +96,7 @@ export function RecurringPage() {
           description="Crie um para a Netflix, o aluguel ou o salário: o lançamento aparece sozinho todo mês."
         />
       ) : (
-        <ul aria-label="Recorrentes" className="divide-y rounded-xl border">
+        <ul aria-label="Recorrentes" className="divide-y rounded-2xl border bg-card">
           {sorted.map((item) => {
             const itemCategory = category(item.category_id)
             const isCredit = item.tipo === 'receita'

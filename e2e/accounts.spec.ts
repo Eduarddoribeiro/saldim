@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { expectNoHorizontalScroll, signUp, uniqueEmail } from './helpers'
+import { expectNoHorizontalScroll, openNewEntry, signUp, uniqueEmail } from './helpers'
 
 // Intl usa espaços não separáveis entre "R$" e o número
 const money = (text: string) => new RegExp(text.replace(/[.$]/g, '\\$&').replace(' ', '\\s'))
@@ -77,10 +77,10 @@ test('cartão de crédito: configurar, ver na lista e não aparecer nas transaç
   await expect(editar.getByText(/paga a fatura de um cartão/)).toBeVisible()
   await editar.getByRole('button', { name: 'Cancelar' }).click()
 
-  // Nas transações, o cartão não é uma conta possível
+  // No lançamento, o cartão é uma opção de "Pagar com", mas a escolhida é a conta de dinheiro
   await page.goto('/transacoes')
-  await page.getByRole('button', { name: 'Nova transação' }).locator('visible=true').first().click()
-  const conta = page.getByRole('dialog', { name: 'Nova transação' }).getByLabel('Conta')
-  await expect(conta).toHaveValue(/.+/)
-  await expect(conta.locator('option', { hasText: 'Visa' })).toHaveCount(0)
+  const lancamento = await openNewEntry(page)
+  const pagarCom = lancamento.getByRole('group', { name: 'Pagar com' })
+  await expect(pagarCom.getByRole('radio', { name: 'Conta principal' })).toBeChecked()
+  await expect(pagarCom.getByRole('radio', { name: 'Visa' })).not.toBeChecked()
 })

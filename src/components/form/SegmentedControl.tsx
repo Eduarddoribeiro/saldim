@@ -22,7 +22,7 @@ export function SegmentedControl<T extends string>({
   return (
     <fieldset className={cn('grid gap-1.5', className)}>
       <legend className="mb-1.5 text-sm font-medium">{legend}</legend>
-      <div className="grid auto-cols-fr grid-flow-col gap-1 rounded-lg bg-muted p-1">
+      <div className="grid auto-cols-fr grid-flow-col gap-1 rounded-full bg-muted p-1">
         {options.map((option) => (
           <label key={option.value} className="relative">
             <input
@@ -34,8 +34,8 @@ export function SegmentedControl<T extends string>({
             />
             <span
               className={cn(
-                'flex h-9 cursor-pointer items-center justify-center rounded-md text-sm font-medium text-muted-foreground transition-colors',
-                'peer-checked:bg-background peer-checked:text-foreground peer-checked:shadow-sm',
+                'flex h-9 cursor-pointer items-center justify-center rounded-full text-sm font-medium text-muted-foreground transition-colors',
+                'peer-checked:bg-card peer-checked:text-foreground peer-checked:shadow-sm',
                 'peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50',
                 'peer-disabled:cursor-not-allowed peer-disabled:opacity-50',
               )}

@@ -6,11 +6,9 @@ import {
   HandCoins,
   Landmark,
   Scale,
-  Wallet,
 } from 'lucide-react'
 import { Link } from 'react-router'
 import { FormAlert } from '@/components/form/FormAlert'
-import { PageHeader } from '@/components/layout/PageHeader'
 import { MonthPicker } from '@/components/month/MonthPicker'
 import { useMonthParam } from '@/components/month/use-month-param'
 import { Button } from '@/components/ui/button'
@@ -21,6 +19,7 @@ import { useCategories } from '@/features/categories/hooks'
 import { usePeople } from '@/features/people/hooks'
 import { useReceivables } from '@/features/people/use-receivables'
 import { useProfile } from '@/features/profile/hooks'
+import { useQuickEntry } from '@/features/quick-entry/quick-entry-context'
 import { useBalanceMovements, useTransactions } from '@/features/transactions/hooks'
 import { useTransfers } from '@/features/transfers/hooks'
 import { TransactionRow } from '@/features/transactions/TransactionRow'
@@ -43,8 +42,10 @@ import {
 import { formatMoney, type Currency } from '@/lib/money'
 import { CategorySpendingList } from './CategorySpendingList'
 import { comparisonText, previousMonthLabel } from './comparison-text'
+import { BalanceHero, HeroNumber } from './BalanceHero'
 import { BalanceEvolutionPanel, MonthlyComparisonPanel } from './DashboardCharts'
 import { Panel } from './Panel'
+import { QuickActions } from './QuickActions'
 import { StatTile } from './StatTile'
 
 /** Meses dos gráficos de evolução: o mês escolhido e os 5 anteriores. */
@@ -76,25 +77,15 @@ export function DashboardPage() {
   const currency = profile.data?.moeda === 'EUR' ? 'EUR' : 'BRL'
   const firstName = profile.data?.nome.split(' ')[0]
 
-  const header = (
-    <>
-      <PageHeader
-        title="Início"
-        description={
-          firstName
-            ? `Olá, ${firstName}. Este é o resumo das suas finanças.`
-            : 'Resumo das suas finanças.'
-        }
-      />
-      <MonthPicker month={month} onChange={setMonth} className="mb-6 max-sm:justify-center" />
-    </>
-  )
+  const openQuickEntry = useQuickEntry()
+  const greeting = firstName ? `Olá, ${firstName}` : 'Olá'
+  const header = <BalanceHero greeting={greeting} />
 
   if (isPending) {
     return (
       <>
         {header}
-        <p role="status" className="text-sm text-muted-foreground">
+        <p role="status" className="mt-4 text-sm text-muted-foreground">
           Carregando o resumo…
         </p>
       </>
@@ -105,7 +96,7 @@ export function DashboardPage() {
     return (
       <>
         {header}
-        <div className="grid gap-3">
+        <div className="mt-4 grid gap-3">
           <FormAlert>{errorMessage(error)}</FormAlert>
           <Button
             variant="outline"
@@ -184,22 +175,34 @@ export function DashboardPage() {
 
   return (
     <>
-      {header}
-
-      {hasCards && (
-        <div className="mb-3 grid grid-cols-2 gap-3">
-          <StatTile
-            hero
+      <BalanceHero greeting={greeting}>
+        {hasCards ? (
+          <HeroNumber
             label="Dinheiro disponível"
-            icon={Wallet}
             value={formatMoney(position.disponivel, currency)}
             hint={
               positionPrevista.disponivel !== position.disponivel
                 ? `Com os lançamentos futuros: ${formatMoney(positionPrevista.disponivel, currency)}`
                 : 'Nas suas contas, sem os cartões, até hoje.'
             }
-            className="col-span-2"
           />
+        ) : (
+          <HeroNumber
+            label="Saldo atual"
+            value={formatMoney(saldoAtual, currency)}
+            hint={
+              saldoPrevisto !== saldoAtual
+                ? `Com os lançamentos futuros: ${formatMoney(saldoPrevisto, currency)}`
+                : 'Soma de todas as contas, até hoje.'
+            }
+          />
+        )}
+      </BalanceHero>
+
+      <QuickActions hasCards={hasCards} />
+
+      {hasCards && (
+        <div className="mb-3 grid grid-cols-2 gap-3">
           {/* Dívida e líquido têm dicas longas: no telemóvel ocupam a linha toda (a meia largura
               o título partia em duas linhas e a dica em cinco) */}
           <StatTile
@@ -258,29 +261,14 @@ export function DashboardPage() {
         </div>
       )}
 
-      {!hasCards && (
-        <StatTile
-          hero
-          label="Saldo atual"
-          icon={Wallet}
-          value={formatMoney(saldoAtual, currency)}
-          hint={
-            saldoPrevisto !== saldoAtual
-              ? `Com os lançamentos futuros: ${formatMoney(saldoPrevisto, currency)}`
-              : 'Soma de todas as contas, até hoje.'
-          }
-          className="mb-3"
-        />
-      )}
-
       {/* O mês fica num título: "Receitas · este mês" partia em duas linhas a meia largura */}
-      <section aria-labelledby="resumo-mes" className="mt-3">
-        <h2
-          id="resumo-mes"
-          className="mb-2 text-sm font-medium text-muted-foreground first-letter:uppercase"
-        >
-          {monthLabel}
-        </h2>
+      <section aria-labelledby="resumo-mes" className="mt-6">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 id="resumo-mes" className="font-semibold first-letter:uppercase">
+            {monthLabel}
+          </h2>
+          <MonthPicker month={month} onChange={setMonth} />
+        </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <StatTile
             label="Receitas"
@@ -348,12 +336,13 @@ export function DashboardPage() {
           {transactions.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Nenhuma transação em {formatMonth(month)}.{' '}
-              <Link
-                to={transactionsLink}
+              <button
+                type="button"
+                onClick={() => openQuickEntry()}
                 className="font-medium text-foreground underline underline-offset-4"
               >
-                Registrar transação
-              </Link>
+                Novo lançamento
+              </button>
             </p>
           ) : (
             <ul className="-mx-3 divide-y">

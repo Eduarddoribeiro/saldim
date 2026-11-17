@@ -1,14 +1,13 @@
 import { expect, test, type Page } from '@playwright/test'
-import { expectNoHorizontalScroll, signUp, uniqueEmail } from './helpers'
+import { expectNoHorizontalScroll, openNewEntry, pick, signUp, uniqueEmail } from './helpers'
 
 const money = (text: string) => new RegExp(text.replace(/[.$+]/g, '\\$&').replace(' ', '\\s'))
 
 async function register(page: Page, tipo: 'Despesa' | 'Receita', valor: string, categoria: string) {
-  await page.getByRole('button', { name: 'Nova transação' }).locator('visible=true').first().click()
-  const dialogo = page.getByRole('dialog', { name: 'Nova transação' })
+  const dialogo = await openNewEntry(page)
   if (tipo === 'Receita') await dialogo.locator('label', { hasText: 'Receita' }).click()
   await dialogo.getByLabel('Valor').fill(valor)
-  await dialogo.getByLabel('Categoria').selectOption({ label: categoria })
+  await pick(dialogo, categoria)
   await dialogo.getByRole('button', { name: `Registrar ${tipo.toLowerCase()}` }).click()
   await expect(dialogo).toBeHidden()
 }
@@ -17,7 +16,7 @@ test('início: saldo, resumo do mês, gastos por categoria e contas batem com o 
   page,
 }) => {
   await signUp(page, uniqueEmail('inicio'), 'Bruno Costa')
-  await expect(page.getByText('Olá, Bruno.')).toBeVisible()
+  await expect(page.getByText('Olá, Bruno', { exact: true })).toBeVisible()
 
   // Saldo inicial da conta: 1.000,00
   await page.goto('/configuracoes/contas')

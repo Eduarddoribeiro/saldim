@@ -120,7 +120,7 @@ export function ReceivablesPage() {
           <summary className="cursor-pointer text-sm font-medium text-muted-foreground select-none">
             Pessoas arquivadas ({archived.length})
           </summary>
-          <ul className="mt-2 divide-y rounded-xl border opacity-70">
+          <ul className="mt-2 divide-y rounded-2xl border bg-card opacity-70">
             {archived.map((person) => (
               <li key={person.id}>
                 <button
@@ -189,7 +189,7 @@ function PersonCard({
   const headingId = `pessoa-${person.id}`
 
   return (
-    <section aria-labelledby={headingId} className="rounded-xl border p-4">
+    <section aria-labelledby={headingId} className="rounded-2xl border bg-card p-4">
       {/* Valores em cima e ações sempre numa linha própria: antes os botões saltavam para o lado ou
           para baixo conforme o tamanho do valor, e os cartões ficavam desiguais */}
       <div className="grid gap-3">

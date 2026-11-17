@@ -10,21 +10,45 @@ beforeEach(() => {
 })
 
 describe('AppShell', () => {
-  it('mostra a navegação com as cinco secções', () => {
+  it('mostra a navegação: cinco secções no desktop, quatro + o lançamento no telemóvel', () => {
     renderApp()
     // Há duas navegações (sidebar e barra inferior); o CSS decide qual se vê
-    const navs = screen.getAllByRole('navigation', { name: 'Navegação principal' })
-    expect(navs).toHaveLength(2)
-    for (const nav of navs) {
-      const links = within(nav).getAllByRole('link')
-      expect(links.map((link) => link.textContent)).toEqual([
-        'Início',
-        'Transações',
-        'Faturas',
-        'Orçamentos',
-        'Configurações',
-      ])
-    }
+    const [sidebarNav, bottomNav] = screen.getAllByRole('navigation', {
+      name: 'Navegação principal',
+    })
+    expect(
+      within(sidebarNav)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Início', 'Extrato', 'Cartões', 'Orçamentos', 'Configurações'])
+    // No telemóvel, Orçamentos e A receber ficam em "Mais" (Configurações)
+    expect(
+      within(bottomNav)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Início', 'Extrato', 'Cartões', 'Mais'])
+    expect(within(bottomNav).getByRole('link', { name: 'Mais' })).toHaveAttribute(
+      'href',
+      '/configuracoes',
+    )
+    expect(within(bottomNav).getByRole('button', { name: 'Novo lançamento' })).toBeInTheDocument()
+  })
+
+  it('o + abre o lançamento rápido a partir de qualquer página', async () => {
+    renderApp('/configuracoes')
+    const [, bottomNav] = screen.getAllByRole('navigation', { name: 'Navegação principal' })
+    await userEvent.click(within(bottomNav).getByRole('button', { name: 'Novo lançamento' }))
+    expect(await screen.findByRole('dialog', { name: 'Novo lançamento' })).toBeInTheDocument()
+  })
+
+  it('Mais (Configurações) leva a Orçamentos e A receber', () => {
+    renderApp('/configuracoes')
+    const main = within(screen.getByRole('main'))
+    expect(main.getByRole('link', { name: 'Orçamentos' })).toHaveAttribute('href', '/orcamentos')
+    expect(main.getByRole('link', { name: 'Pessoas e a receber' })).toHaveAttribute(
+      'href',
+      '/a-receber',
+    )
   })
 
   it('navega entre páginas e marca o link ativo', async () => {
@@ -32,11 +56,11 @@ describe('AppShell', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Início')
 
     const [sidebarNav] = screen.getAllByRole('navigation', { name: 'Navegação principal' })
-    await userEvent.click(within(sidebarNav).getByRole('link', { name: 'Transações' }))
+    await userEvent.click(within(sidebarNav).getByRole('link', { name: 'Extrato' }))
 
     expect(router.state.location.pathname).toBe('/transacoes')
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Transações')
-    expect(within(sidebarNav).getByRole('link', { name: 'Transações' })).toHaveAttribute(
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Extrato')
+    expect(within(sidebarNav).getByRole('link', { name: 'Extrato' })).toHaveAttribute(
       'aria-current',
       'page',
     )

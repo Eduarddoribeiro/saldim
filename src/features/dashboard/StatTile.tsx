@@ -19,7 +19,7 @@ export function StatTile({
   className?: string
 }) {
   return (
-    <div className={cn('min-w-0 rounded-xl border bg-card p-4', className)}>
+    <div className={cn('min-w-0 rounded-2xl border bg-card p-4', className)}>
       <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
         {Icon && <Icon className="size-4" aria-hidden />}
         {label}

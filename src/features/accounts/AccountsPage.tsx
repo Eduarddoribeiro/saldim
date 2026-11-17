@@ -110,7 +110,7 @@ function AccountList({
     return <p className="text-sm text-muted-foreground">Todas as contas estão arquivadas.</p>
   }
   return (
-    <ul className={cn('divide-y rounded-xl border', className)}>
+    <ul className={cn('divide-y rounded-2xl border bg-card', className)}>
       {accounts.map((account) => {
         const { icon: Icon, label } = TIPO_CONTA_OPTIONS[account.tipo]
         // Cartão: mostra o limite e os dias da fatura; as outras contas mostram o saldo inicial

@@ -14,6 +14,7 @@ import {
   monthRange,
   monthsEndingAt,
   todayIso,
+  addDays,
 } from './dates'
 
 describe('todayIso', () => {
@@ -146,5 +147,20 @@ describe('formatação', () => {
   it('formatDay mostra o dia da semana e omite o ano de referência', () => {
     expect(formatDay('2026-10-14', 2026)).toBe('quarta-feira, 14 de outubro')
     expect(formatDay('2025-12-31', 2026)).toBe('quarta-feira, 31 de dezembro de 2025')
+  })
+})
+
+describe('addDays', () => {
+  it('anda dias para a frente e para trás, atravessando meses e anos', () => {
+    expect(addDays('2026-11-17', -1)).toBe('2026-11-16')
+    expect(addDays('2026-11-01', -1)).toBe('2026-10-31')
+    expect(addDays('2027-01-01', -1)).toBe('2026-12-31')
+    expect(addDays('2028-02-28', 1)).toBe('2028-02-29')
+    expect(addDays('2026-12-31', 1)).toBe('2027-01-01')
+  })
+
+  it('não é afetado pela mudança de hora (dias de 23 e 25 horas)', () => {
+    expect(addDays('2026-10-25', 1)).toBe('2026-10-26')
+    expect(addDays('2026-03-29', -1)).toBe('2026-03-28')
   })
 })

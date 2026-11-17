@@ -128,7 +128,7 @@ function CategoryList({
     )
   }
   return (
-    <ul className={cn('divide-y rounded-xl border', className)}>
+    <ul className={cn('divide-y rounded-2xl border bg-card', className)}>
       {categories.map((category) => (
         <li key={category.id}>
           <button
@@ -149,7 +149,11 @@ function CategoryList({
 
 function CategoryListSkeleton() {
   return (
-    <ul aria-busy="true" aria-label="Carregando categorias" className="divide-y rounded-xl border">
+    <ul
+      aria-busy="true"
+      aria-label="Carregando categorias"
+      className="divide-y rounded-2xl border bg-card"
+    >
       {Array.from({ length: 5 }, (_, index) => (
         <li key={index} className="flex min-h-14 items-center gap-3 px-3">
           <span className="size-9 animate-pulse rounded-full bg-muted" />

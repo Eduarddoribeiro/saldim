@@ -1,14 +1,17 @@
-import { expect, test, type Page } from '@playwright/test'
-import { expectNoHorizontalScroll, signUp, uniqueEmail } from './helpers'
+import { expect, test } from '@playwright/test'
+import {
+  expectNoHorizontalScroll,
+  openNewEntry,
+  pick,
+  pickDate,
+  signUp,
+  uniqueEmail,
+} from './helpers'
 
 // Intl usa espaços não separáveis entre "R$" e o número
 const money = (text: string) => new RegExp(text.replace(/[.$+]/g, '\\$&').replace(' ', '\\s'))
 
-/** No telemóvel é o botão flutuante; no desktop o do cabeçalho. Usamos o que estiver visível. */
-async function openNew(page: Page) {
-  await page.getByRole('button', { name: 'Nova transação' }).locator('visible=true').first().click()
-  return page.getByRole('dialog', { name: 'Nova transação' })
-}
+const openNew = openNewEntry
 
 function isoDate(date: Date) {
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -26,7 +29,8 @@ test('transações: registrar, ver por mês, editar, excluir', async ({ page }) 
   await dialogo
     .getByLabel('Descrição (opcional)')
     .fill('Supermercado do bairro com um nome muito comprido para testar o ecrã')
-  await dialogo.getByLabel('Categoria').selectOption({ label: 'Alimentação' })
+  await pick(dialogo, 'Alimentação')
+  await expectNoHorizontalScroll(page)
   await dialogo.getByRole('button', { name: 'Registrar despesa' }).click()
   await expect(dialogo).toBeHidden()
   const despesa = page.getByRole('button', { name: /Supermercado/ })
@@ -38,7 +42,7 @@ test('transações: registrar, ver por mês, editar, excluir', async ({ page }) 
   dialogo = await openNew(page)
   await dialogo.locator('label', { hasText: 'Receita' }).click()
   await dialogo.getByLabel('Valor').fill('3.000')
-  await dialogo.getByLabel('Categoria').selectOption({ label: 'Salário' })
+  await pick(dialogo, 'Salário')
   await dialogo.getByRole('button', { name: 'Registrar receita' }).click()
   await expect(page.getByRole('button', { name: /Salário/ })).toContainText(money('+R$ 3.000,00'))
 
@@ -48,8 +52,8 @@ test('transações: registrar, ver por mês, editar, excluir', async ({ page }) 
   dialogo = await openNew(page)
   await dialogo.getByLabel('Valor').fill('800')
   await dialogo.getByLabel('Descrição (opcional)').fill('Renda antiga')
-  await dialogo.getByLabel('Categoria').selectOption({ label: 'Moradia' })
-  await dialogo.getByLabel('Data').fill(lastMonth)
+  await pick(dialogo, 'Moradia')
+  await pickDate(dialogo, lastMonth)
   await dialogo.getByRole('button', { name: 'Registrar despesa' }).click()
   await expect(dialogo).toBeHidden()
   await expect(page.getByText('Renda antiga')).toBeHidden()
@@ -85,7 +89,7 @@ test('uma categoria com transações não pode ser excluída (mensagem clara)', 
   await page.goto('/transacoes')
   const dialogo = await openNew(page)
   await dialogo.getByLabel('Valor').fill('10')
-  await dialogo.getByLabel('Categoria').selectOption({ label: 'Lazer' })
+  await pick(dialogo, 'Lazer')
   await dialogo.getByRole('button', { name: 'Registrar despesa' }).click()
   await expect(dialogo).toBeHidden()
 

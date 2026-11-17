@@ -78,7 +78,7 @@ export function TransactionRow({
       <span
         className={cn(
           'shrink-0 text-right font-medium tabular-nums',
-          isCredit ? 'text-emerald-700 dark:text-emerald-400' : 'text-foreground',
+          isCredit ? 'text-positive' : 'text-foreground',
         )}
       >
         <span className="sr-only">

@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test'
-import { expectNoHorizontalScroll, signUp, uniqueEmail } from './helpers'
+import {
+  expectNoHorizontalScroll,
+  openNewEntry,
+  pick,
+  setParcelas,
+  signUp,
+  uniqueEmail,
+} from './helpers'
 
 // Etapa C4: compra parcelada no cartão, do formulário até à lista, ao Início e ao apagar.
 
@@ -26,13 +33,12 @@ test('compra no cartão: 3 parcelas, uma por mês, sem duplicar a despesa; exclu
 
   // Compra de 300,00 em 3× com a data de hoje (a que vem preenchida)
   await page.goto('/transacoes')
-  await page.getByRole('button', { name: 'Compra no cartão' }).click()
-  const compra = page.getByRole('dialog', { name: 'Compra no cartão' })
-  await expect(compra.getByLabel('Cartão')).toHaveValue(/.+/)
+  const compra = await openNewEntry(page)
+  await pick(compra, 'Visa')
   await compra.getByLabel('Valor total').fill('300')
-  await compra.getByLabel('Número de parcelas').selectOption('3')
+  await setParcelas(compra, 3)
   await compra.getByLabel('Descrição (opcional)').fill('Bicicleta')
-  await compra.getByLabel('Categoria').selectOption({ label: 'Alimentação' })
+  await pick(compra, 'Alimentação')
   await expect(compra.getByRole('status')).toHaveText(money('3× R$ 100,00'))
   await expect(compra.getByRole('list', { name: 'Parcelas' }).getByRole('listitem')).toHaveCount(3)
   await expectNoHorizontalScroll(page)

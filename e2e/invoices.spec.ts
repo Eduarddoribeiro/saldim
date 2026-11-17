@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test'
-import { expectNoHorizontalScroll, signUp, uniqueEmail } from './helpers'
+import {
+  expectNoHorizontalScroll,
+  openNewEntry,
+  pick,
+  pickDate,
+  signUp,
+  uniqueEmail,
+} from './helpers'
 
 // Etapa C6: compra → fatura vencida → pagamento parcial → pagamento do resto → paga.
 
@@ -21,7 +28,7 @@ test('faturas: pagar em parte, pagar o resto e a fatura fica paga; o saldo não 
   await signUp(page, uniqueEmail('faturas'))
 
   // Sem cartões, a página explica o que fazer
-  await page.getByRole('link', { name: 'Faturas' }).locator('visible=true').first().click()
+  await page.getByRole('link', { name: 'Cartões' }).locator('visible=true').first().click()
   await expect(page.getByText('Você ainda não tem cartões de crédito')).toBeVisible()
 
   await page.goto('/configuracoes/contas')
@@ -38,17 +45,17 @@ test('faturas: pagar em parte, pagar o resto e a fatura fica paga; o saldo não 
 
   // Compra à vista de 300,00 há dois meses
   await page.goto('/transacoes')
-  await page.getByRole('button', { name: 'Compra no cartão' }).click()
-  const compra = page.getByRole('dialog', { name: 'Compra no cartão' })
+  const compra = await openNewEntry(page)
+  await pick(compra, 'Visa')
   await compra.getByLabel('Valor total').fill('300')
   await compra.getByLabel('Descrição (opcional)').fill('Óculos')
-  await compra.getByLabel('Categoria').selectOption({ label: 'Saúde' })
-  await compra.getByLabel('Data da compra').fill(twoMonthsAgo())
+  await pick(compra, 'Saúde')
+  await pickDate(compra, twoMonthsAgo())
   await compra.getByRole('button', { name: 'Registrar compra' }).click()
   await expect(compra).toBeHidden()
 
   // A fatura está vencida e por pagar
-  await page.getByRole('link', { name: 'Faturas' }).locator('visible=true').first().click()
+  await page.getByRole('link', { name: 'Cartões' }).locator('visible=true').first().click()
   const lista = page.getByRole('list', { name: 'Faturas' })
   const fatura = lista.getByRole('button').first()
   await expect(fatura).toContainText('Vencida')

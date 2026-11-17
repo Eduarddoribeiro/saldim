@@ -11,9 +11,9 @@ export function Panel({
   children: ReactNode
 }) {
   return (
-    <section aria-label={title} className="min-w-0 rounded-xl border p-4">
+    <section aria-label={title} className="min-w-0 rounded-2xl border bg-card p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="font-medium">{title}</h2>
+        <h2 className="font-semibold">{title}</h2>
         {action}
       </div>
       {children}

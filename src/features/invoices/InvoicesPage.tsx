@@ -97,7 +97,7 @@ export function InvoicesPage() {
 
   const header = (
     <PageHeader
-      title="Faturas"
+      title="Cartões"
       description="As faturas dos seus cartões: o que fecha, o que vence e o que você já pagou."
     />
   )
@@ -154,8 +154,32 @@ export function InvoicesPage() {
     <>
       {header}
 
-      <div className="mb-6 grid gap-4 sm:flex sm:flex-wrap sm:items-end sm:justify-between">
-        {cards.length > 1 ? (
+      <div className="mb-6 grid gap-4 sm:grid-cols-[minmax(0,22rem)_1fr] sm:items-end">
+        {/* O cartão desenhado como cartão: nome, quanto falta pagar e os dias de fecho/vencimento */}
+        <div className="relative isolate grid aspect-[1.7] max-w-full content-between overflow-hidden rounded-2xl bg-linear-to-br from-hero to-hero-2 p-5 text-hero-foreground shadow-md">
+          <span
+            aria-hidden
+            className="absolute -top-16 -right-14 -z-10 size-48 rounded-full bg-hero-accent/20"
+          />
+          <div className="flex items-start justify-between gap-3">
+            <span aria-hidden className="h-6 w-9 rounded-md bg-hero-accent/70" />
+            <p className="min-w-0 truncate text-right font-semibold">{card.nome}</p>
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm text-hero-foreground/80">
+              A pagar:{' '}
+              <span className="block truncate text-3xl font-bold tracking-tight text-hero-foreground tabular-nums">
+                {formatMoney(totalPorPagar, currency)}
+              </span>
+            </p>
+            {card.dia_fechamento && card.dia_vencimento && (
+              <p className="mt-2 text-xs text-hero-foreground/80">
+                Fecha dia {card.dia_fechamento} · vence dia {card.dia_vencimento}
+              </p>
+            )}
+          </div>
+        </div>
+        {cards.length > 1 && (
           <div className="grid gap-1.5">
             <label htmlFor="faturas-cartao" className="text-sm font-medium">
               Cartão
@@ -164,7 +188,7 @@ export function InvoicesPage() {
               id="faturas-cartao"
               value={card.id}
               onChange={(event) => setChosenCardId(event.target.value)}
-              className="h-10 rounded-lg border border-input bg-transparent px-2.5 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30"
+              className="h-11 rounded-xl border border-input bg-card px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
             >
               {cards.map((account) => (
                 <option key={account.id} value={account.id}>
@@ -173,21 +197,13 @@ export function InvoicesPage() {
               ))}
             </select>
           </div>
-        ) : (
-          <p className="font-medium">{card.nome}</p>
         )}
-        <p className="text-sm text-muted-foreground">
-          A pagar:{' '}
-          <span className="font-medium text-foreground tabular-nums">
-            {formatMoney(totalPorPagar, currency)}
-          </span>
-        </p>
       </div>
 
       <div
         role="group"
         aria-label="Mostrar faturas"
-        className="mb-4 grid grid-cols-3 gap-1 rounded-lg bg-muted p-1 sm:w-fit"
+        className="mb-4 grid grid-cols-3 gap-1 rounded-full bg-muted p-1 sm:w-fit"
       >
         {FILTERS.map((option) => (
           <button
@@ -196,9 +212,9 @@ export function InvoicesPage() {
             aria-pressed={filter === option.value}
             onClick={() => setFilter(option.value)}
             className={cn(
-              'h-9 rounded-md px-4 text-sm font-medium text-muted-foreground transition-colors',
+              'h-9 rounded-full px-4 text-sm font-medium text-muted-foreground transition-colors',
               'focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none',
-              'aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm',
+              'aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-sm',
             )}
           >
             {option.label}
@@ -252,7 +268,7 @@ function InvoiceRow({
       type="button"
       onClick={onSelect}
       aria-label={`${title}: ${state.toLowerCase()}, total ${formatMoney(invoice.totalCentavos, currency)}${partial ? `, falta ${formatMoney(invoice.emAbertoCentavos, currency)}` : ''}. Ver detalhes`}
-      className="flex min-h-16 w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none"
+      className="flex min-h-16 w-full items-center gap-3 rounded-2xl border bg-card px-3 py-2 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none"
     >
       <span className="min-w-0 flex-1">
         <span className="block truncate font-medium">{invoiceMonth(invoice.mes_referencia)}</span>

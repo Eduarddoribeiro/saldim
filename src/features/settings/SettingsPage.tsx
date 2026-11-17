@@ -1,4 +1,12 @@
-import { ChevronRight, HandCoins, Landmark, Repeat, Tags, type LucideIcon } from 'lucide-react'
+import {
+  ChevronRight,
+  HandCoins,
+  Landmark,
+  Repeat,
+  Tags,
+  Target,
+  type LucideIcon,
+} from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -16,7 +24,7 @@ function SettingsSection({
   children: ReactNode
 }) {
   return (
-    <section className="rounded-xl border p-4">
+    <section className="rounded-2xl border bg-card p-4">
       <h2 className="font-medium">{title}</h2>
       <p className="mt-1 mb-3 text-sm text-muted-foreground">{description}</p>
       {children}
@@ -46,9 +54,17 @@ export function SettingsPage() {
     <>
       <PageHeader
         title="Configurações"
-        description="Preferências, contas, categorias e recorrentes."
+        description="Orçamentos, a receber, contas, categorias e preferências."
       />
       <div className="grid gap-4">
+        {/* No telemóvel esta página é o "Mais" da barra inferior: Orçamentos e A receber vêm primeiro */}
+        <SettingsSection title="Planejamento" description="Limites de gastos e quem te deve.">
+          <ul className="-mx-1 divide-y">
+            <SettingsLink to="/orcamentos" icon={Target} label="Orçamentos" />
+            <SettingsLink to="/a-receber" icon={HandCoins} label="Pessoas e a receber" />
+          </ul>
+        </SettingsSection>
+
         <SettingsSection
           title="Aparência"
           description="Escolha entre claro, escuro ou seguir o sistema."
@@ -66,7 +82,6 @@ export function SettingsPage() {
             <SettingsLink to="/configuracoes/contas" icon={Landmark} label="Contas" />
             <SettingsLink to="/configuracoes/categorias" icon={Tags} label="Categorias" />
             <SettingsLink to="/configuracoes/recorrentes" icon={Repeat} label="Recorrentes" />
-            <SettingsLink to="/a-receber" icon={HandCoins} label="Pessoas e a receber" />
           </ul>
         </SettingsSection>
 

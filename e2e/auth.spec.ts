@@ -23,7 +23,7 @@ test('página protegida → login → volta à página pedida', async ({ page })
   await expect(page).toHaveURL(/\/entrar$/)
   await logIn(page, email)
   await expect(page).toHaveURL(/\/transacoes$/)
-  await expect(page.getByRole('heading', { level: 1, name: 'Transações' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Extrato' })).toBeVisible()
 })
 
 test('senha errada mostra erro em português', async ({ page }) => {

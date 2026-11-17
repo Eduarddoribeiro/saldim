@@ -22,6 +22,11 @@
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
   --color-brand: var(--brand);
+  --color-hero: var(--hero);
+  --color-hero-2: var(--hero-2);
+  --color-hero-foreground: var(--hero-foreground);
+  --color-hero-accent: var(--hero-accent);
+  --color-positive: var(--positive);
   --color-chart-receitas: var(--chart-receitas);
   --color-chart-despesas: var(--chart-despesas);
   --color-ring: var(--ring);
@@ -54,24 +59,26 @@
 :root {
   /* Diz ao browser o tema: listas nativas (<select>), calendários e barras de scroll seguem-no */
   color-scheme: light;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* Paleta Azul-petróleo (docs/features/lancamento-rapido.md): neutros com um leve tom azul, cartões
+     brancos sobre um fundo ligeiramente cinzento (como nos apps de banco) e o petróleo nas ações. */
+  --background: oklch(0.975 0.004 230);
+  --foreground: oklch(0.19 0.02 240);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.19 0.02 240);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.19 0.02 240);
+  --primary: oklch(0.48 0.095 228);
+  --primary-foreground: oklch(0.99 0.005 230);
+  --secondary: oklch(0.945 0.012 230);
+  --secondary-foreground: oklch(0.25 0.03 238);
+  --muted: oklch(0.945 0.008 230);
+  --muted-foreground: oklch(0.5 0.02 240);
+  --accent: oklch(0.945 0.012 230);
+  --accent-foreground: oklch(0.25 0.03 238);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: oklch(0.91 0.01 230);
+  --input: oklch(0.88 0.012 230);
+  --ring: oklch(0.6 0.09 228);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -81,55 +88,67 @@
      cartão, em cada modo. Não usar verde/vermelho: são as cores de estado (orçamentos). */
   /* Verde da marca Saldim (traço de baixo do ícone; igual a public/favicon.svg) */
   --brand: #10b981;
+  /* Faixa do saldo no Início: sempre escura (petróleo) nos dois temas, com texto claro */
+  --hero: #0b3550;
+  --hero-2: #12506f;
+  --hero-foreground: #f0f9ff;
+  --hero-accent: #7dd3fc;
+  /* Dinheiro que entra (receitas, estornos): verde, com contraste >= 4.5:1 no cartão */
+  --positive: #15803d;
   --chart-receitas: #2a78d6;
   --chart-despesas: #eb6834;
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.19 0.02 240);
+  --sidebar-primary: oklch(0.48 0.095 228);
+  --sidebar-primary-foreground: oklch(0.99 0.005 230);
+  --sidebar-accent: oklch(0.94 0.025 228);
+  --sidebar-accent-foreground: oklch(0.36 0.08 232);
+  --sidebar-border: oklch(0.91 0.01 230);
+  --sidebar-ring: oklch(0.6 0.09 228);
 }
 
 .dark {
   color-scheme: dark;
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: oklch(0.155 0.012 240);
+  --foreground: oklch(0.975 0.005 230);
+  --card: oklch(0.2 0.016 240);
+  --card-foreground: oklch(0.975 0.005 230);
+  --popover: oklch(0.2 0.016 240);
+  --popover-foreground: oklch(0.975 0.005 230);
+  --primary: oklch(0.74 0.105 222);
+  --primary-foreground: oklch(0.2 0.035 240);
+  --secondary: oklch(0.27 0.02 240);
+  --secondary-foreground: oklch(0.975 0.005 230);
+  --muted: oklch(0.27 0.018 240);
+  --muted-foreground: oklch(0.72 0.018 235);
+  --accent: oklch(0.27 0.02 240);
+  --accent-foreground: oklch(0.975 0.005 230);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --ring: oklch(0.6 0.09 225);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --brand: #059669;
+  --hero: #0b3550;
+  --hero-2: #12506f;
+  --hero-foreground: #f0f9ff;
+  --hero-accent: #7dd3fc;
+  --positive: #4ade80;
   --chart-receitas: #3987e5;
   --chart-despesas: #d95926;
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar: oklch(0.18 0.014 240);
+  --sidebar-foreground: oklch(0.975 0.005 230);
+  --sidebar-primary: oklch(0.74 0.105 222);
+  --sidebar-primary-foreground: oklch(0.2 0.035 240);
+  --sidebar-accent: oklch(0.3 0.04 232);
+  --sidebar-accent-foreground: oklch(0.9 0.04 225);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-ring: oklch(0.6 0.09 225);
 }
 
 @layer base {
@@ -145,5 +164,14 @@
   /* Opções das listas nativas com as cores do tema (o fundo do <select> é transparente) */
   option {
     @apply bg-popover text-popover-foreground;
+  }
+}
+
+/* Esconder valores (botão do olho no Início, src/lib/privacy.ts): desfoca os números de dinheiro,
+   que usam sempre tabular-nums. Os campos de formulário ficam legíveis para se poder escrever. */
+@layer components {
+  html.valores-ocultos :not(input, textarea).tabular-nums {
+    filter: blur(7px);
+    user-select: none;
   }
 }

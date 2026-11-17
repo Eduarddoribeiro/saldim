@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test'
-import { expectNoHorizontalScroll, signUp, uniqueEmail } from './helpers'
+import {
+  expectNoHorizontalScroll,
+  goToSection,
+  openNewEntry,
+  pick,
+  signUp,
+  uniqueEmail,
+} from './helpers'
 
 const money = (text: string) => new RegExp(text.replace(/[.$+]/g, '\\$&').replace(/ /g, '\\s'))
 
@@ -8,15 +15,14 @@ test('orçamentos: definir, acompanhar o estado, copiar para o mês seguinte', a
 
   // Uma despesa de 450,00 em Alimentação
   await page.goto('/transacoes')
-  await page.getByRole('button', { name: 'Nova transação' }).locator('visible=true').first().click()
-  const nova = page.getByRole('dialog', { name: 'Nova transação' })
+  const nova = await openNewEntry(page)
   await nova.getByLabel('Valor').fill('450')
-  await nova.getByLabel('Categoria').selectOption({ label: 'Alimentação' })
+  await pick(nova, 'Alimentação')
   await nova.getByRole('button', { name: 'Registrar despesa' }).click()
   await expect(nova).toBeHidden()
 
-  // Navegação: no telemóvel pela barra inferior, no desktop pela sidebar
-  await page.getByRole('link', { name: 'Orçamentos' }).locator('visible=true').first().click()
+  // Navegação: no desktop pela sidebar; no telemóvel pelo "Mais" da barra inferior
+  await goToSection(page, 'Orçamentos')
   await expect(page.getByRole('heading', { level: 1, name: 'Orçamentos' })).toBeVisible()
   await expect(page.getByText(/Sem orçamentos em/)).toBeVisible()
 

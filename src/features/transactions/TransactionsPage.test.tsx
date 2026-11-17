@@ -28,6 +28,8 @@ vi.mock('@/features/card-purchases/purchases-api', () => ({
   listPurchases: vi.fn(async () => []),
 }))
 vi.mock('./transactions-api', () => ({
+  // Movimentos de todas as datas: o lançamento rápido ordena categorias e contas pelo uso
+  listBalanceMovements: vi.fn(async () => store.transactions),
   listTransactions: vi.fn(async (month: string) => {
     store.months.push(month)
     return store.transactions
@@ -141,7 +143,16 @@ beforeEach(() => {
 
 afterEach(() => vi.useRealTimers())
 
-const newButton = () => screen.getAllByRole('button', { name: 'Nova transação' })[0]
+/** Abre o lançamento rápido pelo `+` da barra inferior (telemóvel), como faria o polegar. */
+async function openQuickEntry() {
+  const [, bottomNav] = screen.getAllByRole('navigation', { name: 'Navegação principal' })
+  await userEvent.click(within(bottomNav).getByRole('button', { name: 'Novo lançamento' }))
+  return screen.findByRole('dialog', { name: 'Novo lançamento' })
+}
+const radioNames = (group: HTMLElement) =>
+  within(group)
+    .getAllByRole('radio')
+    .map((radio) => radio.getAttribute('value') && radio.closest('label')?.textContent)
 
 describe('página de transações', () => {
   it('mostra as transações do mês atual agrupadas por dia, com sinal e moeda', async () => {
@@ -182,23 +193,22 @@ describe('página de transações', () => {
     expect(await screen.findByText('Nenhuma transação em janeiro de 2026')).toBeInTheDocument()
   })
 
-  it('regista uma despesa: valor em centavos, data de hoje e conta pré-selecionada', async () => {
+  it('regista uma despesa em 3 toques: +, categoria, Registrar (valor focado, hoje, conta habitual)', async () => {
     renderApp('/transacoes')
     await screen.findByText('Supermercado')
-    await userEvent.click(newButton())
-    const dialog = await screen.findByRole('dialog', { name: 'Nova transação' })
+    const dialog = await openQuickEntry()
 
-    expect(within(dialog).getByLabelText('Data')).toHaveValue('2026-10-14')
-    expect(within(dialog).getByLabelText('Conta')).toHaveValue('conta')
-    // Categorias: só despesas ativas
-    const categoria = within(dialog).getByLabelText('Categoria')
-    const opcoes = within(categoria)
-      .getAllByRole('option')
-      .map((o) => o.textContent)
-    expect(opcoes).toEqual(['Escolha…', 'Alimentação', 'Moradia'])
+    // O valor abre focado: escreve-se logo, sem tocar no campo
+    const valor = within(dialog).getByRole('textbox', { name: 'Valor' })
+    await waitFor(() => expect(valor).toHaveFocus())
+    expect(within(dialog).getByRole('radio', { name: 'Hoje' })).toBeChecked()
+    expect(within(dialog).getByRole('radio', { name: 'Conta principal' })).toBeChecked()
+    // Categorias em botões: só as despesas ativas
+    const categorias = within(dialog).getByRole('group', { name: 'Categoria' })
+    expect(radioNames(categorias)).toEqual(['Alimentação', 'Moradia'])
 
-    await userEvent.type(within(dialog).getByLabelText('Valor'), '1.234,50')
-    await userEvent.selectOptions(categoria, 'casa')
+    await userEvent.keyboard('1.234,50')
+    await userEvent.click(within(categorias).getByRole('radio', { name: 'Moradia' }))
     await userEvent.type(within(dialog).getByLabelText('Descrição (opcional)'), 'Renda')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar despesa' }))
 
@@ -214,7 +224,40 @@ describe('página de transações', () => {
     expect(await screen.findByRole('button', { name: /Renda/ })).toBeInTheDocument()
   })
 
-  it('cartões de crédito não aparecem na escolha de conta nem são pré-selecionados', async () => {
+  it('as categorias mais usadas nos últimos 90 dias vêm primeiro', async () => {
+    store.transactions.push(
+      transaction({ id: 'm1', category_id: 'casa', data: '2026-10-01' }),
+      transaction({ id: 'm2', category_id: 'casa', data: '2026-10-02' }),
+      // Há mais de 90 dias: não conta
+      transaction({ id: 'm3', category_id: 'alim', data: '2026-06-01' }),
+      transaction({ id: 'm4', category_id: 'alim', data: '2026-06-02' }),
+    )
+    renderApp('/transacoes')
+    const dialog = await openQuickEntry()
+    expect(radioNames(within(dialog).getByRole('group', { name: 'Categoria' }))).toEqual([
+      'Moradia',
+      'Alimentação',
+    ])
+  })
+
+  it('"Ontem" e "Outra data" mudam a data sem abrir o calendário', async () => {
+    renderApp('/transacoes')
+    const dialog = await openQuickEntry()
+    expect(within(dialog).queryByLabelText('Qual data?')).not.toBeInTheDocument()
+
+    await userEvent.keyboard('10')
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Alimentação' }))
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Ontem' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar despesa' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(store.transactions.at(-1)).toMatchObject({ data: '2026-10-13', valor_centavos: 1000 })
+
+    const again = await openQuickEntry()
+    await userEvent.click(within(again).getByRole('radio', { name: 'Outra data' }))
+    expect(within(again).getByLabelText('Qual data?')).toHaveValue('2026-10-14')
+  })
+
+  it('cartões aparecem em "Pagar com" mas não são a conta pré-escolhida; receitas não os mostram', async () => {
     // O cartão vem primeiro na lista: se não fosse excluído, seria o pré-selecionado
     store.accounts.unshift({
       ...store.accounts[0],
@@ -227,24 +270,20 @@ describe('página de transações', () => {
       conta_pagamento_id: 'conta',
     })
     renderApp('/transacoes')
-    await screen.findByText('Supermercado')
-    await userEvent.click(newButton())
-    const dialog = await screen.findByRole('dialog', { name: 'Nova transação' })
-    const conta = within(dialog).getByLabelText('Conta')
-    expect(conta).toHaveValue('conta')
-    expect(within(conta).queryByRole('option', { name: 'A Visa' })).not.toBeInTheDocument()
-    // A descrição explica onde ficam as compras no cartão
-    expect(dialog).toHaveAccessibleDescription(
-      'Compras no cartão de crédito ficam em “Compra no cartão”.',
-    )
+    const dialog = await openQuickEntry()
+    const pagarCom = within(dialog).getByRole('group', { name: 'Pagar com' })
+    expect(radioNames(pagarCom)).toEqual(['Conta principal', 'A Visa'])
+    expect(within(pagarCom).getByRole('radio', { name: 'Conta principal' })).toBeChecked()
+
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Receita' }))
+    expect(radioNames(within(dialog).getByRole('group', { name: 'Receber em' }))).toEqual([
+      'Conta principal',
+    ])
   })
 
   it('o botão de registrar diz o tipo escolhido', async () => {
     renderApp('/transacoes')
-    await screen.findByText('Supermercado')
-    await userEvent.click(newButton())
-    const dialog = await screen.findByRole('dialog', { name: 'Nova transação' })
-    expect(dialog).toHaveAccessibleDescription('Dinheiro que entrou ou saiu de uma conta.')
+    const dialog = await openQuickEntry()
     expect(within(dialog).getByRole('button', { name: 'Registrar despesa' })).toBeInTheDocument()
 
     await userEvent.click(within(dialog).getByRole('radio', { name: 'Receita' }))
@@ -253,48 +292,67 @@ describe('página de transações', () => {
 
   it('ao mudar para receita, mostra só categorias de receita e limpa a escolha anterior', async () => {
     renderApp('/transacoes')
-    await screen.findByText('Supermercado')
-    await userEvent.click(newButton())
-    const dialog = await screen.findByRole('dialog')
-    const categoria = within(dialog).getByLabelText('Categoria')
-    await userEvent.selectOptions(categoria, 'alim')
+    const dialog = await openQuickEntry()
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Alimentação' }))
 
     await userEvent.click(within(dialog).getByRole('radio', { name: 'Receita' }))
-    expect(categoria).toHaveValue('')
-    expect(
-      within(categoria)
-        .getAllByRole('option')
-        .map((o) => o.textContent),
-    ).toEqual(['Escolha…', 'Salário'])
+    const categorias = within(dialog).getByRole('group', { name: 'Categoria' })
+    expect(radioNames(categorias)).toEqual(['Salário'])
+    expect(within(categorias).getByRole('radio', { name: 'Salário' })).not.toBeChecked()
+
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Despesa' }))
+    expect(within(dialog).getByRole('radio', { name: 'Alimentação' })).not.toBeChecked()
   })
 
-  it('pré-seleciona a conta mesmo que as contas cheguem depois de abrir o diálogo', async () => {
+  it('pré-seleciona a conta mesmo que as contas cheguem depois de abrir', async () => {
     const accountsApi = await import('@/features/accounts/accounts-api')
     let release!: () => void
     vi.mocked(accountsApi.listAccounts).mockImplementationOnce(
       () => new Promise((resolve) => (release = () => resolve(store.accounts))),
     )
     renderApp('/transacoes')
-    // O botão flutuante (telemóvel) está disponível antes de as contas carregarem
-    await userEvent.click(screen.getAllByRole('button', { name: 'Nova transação' })[1])
-    const dialog = await screen.findByRole('dialog')
-    expect(within(dialog).getByLabelText('Conta')).toHaveValue('')
+    // O `+` está disponível antes de as contas carregarem
+    const dialog = await openQuickEntry()
+    expect(within(dialog).getByRole('status')).toHaveTextContent('Carregando…')
 
     release()
-    await waitFor(() => expect(within(dialog).getByLabelText('Conta')).toHaveValue('conta'))
+    expect(await within(dialog).findByRole('radio', { name: 'Conta principal' })).toBeChecked()
   })
 
   it('valida antes de enviar', async () => {
     const api = await import('./transactions-api')
     renderApp('/transacoes')
-    await screen.findByText('Supermercado')
-    await userEvent.click(newButton())
-    const dialog = await screen.findByRole('dialog')
+    const dialog = await openQuickEntry()
     await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar despesa' }))
 
     expect(within(dialog).getByText('Informe o valor.')).toBeInTheDocument()
     expect(within(dialog).getByText('Escolha uma categoria.')).toBeInTheDocument()
     expect(api.createTransaction).not.toHaveBeenCalled()
+  })
+
+  it('no mês sem transações, o estado vazio oferece o lançamento', async () => {
+    renderApp('/transacoes?mes=2026-01')
+    await screen.findByText('Nenhuma transação em janeiro de 2026')
+    await userEvent.click(
+      within(screen.getByRole('main')).getByRole('button', { name: 'Novo lançamento' }),
+    )
+    expect(await screen.findByRole('dialog', { name: 'Novo lançamento' })).toBeInTheDocument()
+  })
+
+  it('mostra o saldo de cada dia ao lado da data', async () => {
+    store.transactions.push(
+      transaction({
+        id: 'r',
+        tipo: 'receita',
+        category_id: 'sal',
+        valor_centavos: 2000,
+        data: '2026-10-14',
+      }),
+    )
+    renderApp('/transacoes')
+    const dia14 = await screen.findByRole('region', { name: /14 de outubro/ })
+    // 20,00 − 123,45
+    expect(plain(within(dia14).getByLabelText(/^Saldo do dia/).textContent)).toBe('-R$ 103,45')
   })
 
   it('edita uma transação existente com os valores preenchidos', async () => {

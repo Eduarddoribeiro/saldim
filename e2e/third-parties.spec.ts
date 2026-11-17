@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test'
-import { expectNoHorizontalScroll, signUp, uniqueEmail } from './helpers'
+import {
+  expectNoHorizontalScroll,
+  openNewEntry,
+  pick,
+  setParcelas,
+  signUp,
+  uniqueEmail,
+} from './helpers'
 
 // Etapa T1: uma compra da mãe no cartão conta na dívida e no limite, não nos gastos; o que ela deve
 // aparece no Início e na página "A receber"; o pagamento dela entra na conta sem ser receita.
@@ -26,14 +33,14 @@ test('compra da mãe: fora dos gastos, a receber no Início, pagamento recebido'
 
   // Compra de 300,00 em 3× para a mãe (pessoa nova, criada ao registar)
   await page.goto('/transacoes')
-  await page.getByRole('button', { name: 'Compra no cartão' }).click()
-  const compra = page.getByRole('dialog', { name: 'Compra no cartão' })
+  const compra = await openNewEntry(page)
+  await pick(compra, 'Visa')
   await compra.getByLabel('Valor total').fill('300')
-  await compra.getByLabel('Número de parcelas').selectOption('3')
+  await setParcelas(compra, 3)
   await compra.getByLabel('De quem é a compra?').selectOption({ label: 'Outra pessoa…' })
   await compra.getByLabel('Nome da pessoa').fill('Mãe')
   await compra.getByLabel('Descrição (opcional)').fill('Sofá')
-  await compra.getByLabel('Categoria').selectOption({ label: 'Moradia' })
+  await pick(compra, 'Moradia')
   await compra.getByRole('button', { name: 'Registrar compra' }).click()
   await expect(compra).toBeHidden()
   await expect(page.getByRole('button', { name: /^Sofá: despesa/ })).toContainText('Para Mãe')

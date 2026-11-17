@@ -1,7 +1,10 @@
+import { Plus } from 'lucide-react'
 import { NavLink } from 'react-router'
+import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import { useAuth } from '@/features/auth/auth-context'
 import { SignOutButton } from '@/features/auth/SignOutButton'
+import { useQuickEntry } from '@/features/quick-entry/quick-entry-context'
 import { cn } from '@/lib/utils'
 import { AppLogo } from './AppLogo'
 import { NAV_ITEMS } from './nav-items'
@@ -9,12 +12,22 @@ import { NAV_ITEMS } from './nav-items'
 /** Navegação lateral — só visível a partir de 768px (md). */
 export function Sidebar() {
   const { user } = useAuth()
+  const openQuickEntry = useQuickEntry()
 
   return (
     <aside className="sticky top-0 hidden h-svh w-60 shrink-0 flex-col border-r bg-sidebar p-4 text-sidebar-foreground md:flex">
       <AppLogo className="px-2 py-1" />
 
-      <nav aria-label="Navegação principal" className="mt-6 flex flex-1 flex-col gap-1">
+      <Button
+        size="lg"
+        className="mt-6 h-10 justify-start gap-2 rounded-full px-4"
+        onClick={() => openQuickEntry()}
+      >
+        <Plus aria-hidden />
+        Novo lançamento
+      </Button>
+
+      <nav aria-label="Navegação principal" className="mt-4 flex flex-1 flex-col gap-1">
         {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
@@ -26,7 +39,7 @@ export function Sidebar() {
                 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
                 'focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none',
                 isActive
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                  ? 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground'
                   : 'text-muted-foreground',
               )
             }

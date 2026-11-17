@@ -1,6 +1,13 @@
 import { expect, test, type Page } from '@playwright/test'
 import { previewDaysChange, validateCardConfig } from '../src/lib/credit-card'
-import { expectNoHorizontalScroll, signUp, uniqueEmail } from './helpers'
+import {
+  expectNoHorizontalScroll,
+  openNewEntry,
+  pick,
+  setParcelas,
+  signUp,
+  uniqueEmail,
+} from './helpers'
 
 // Etapa C8: estorno de uma compra parcelada e mudança dos dias de um cartão com faturas.
 
@@ -30,12 +37,12 @@ async function criarCartao(page: Page) {
 
 async function comprar(page: Page) {
   await page.goto('/transacoes')
-  await page.getByRole('button', { name: 'Compra no cartão' }).click()
-  const compra = page.getByRole('dialog', { name: 'Compra no cartão' })
+  const compra = await openNewEntry(page)
+  await pick(compra, 'Visa')
   await compra.getByLabel('Valor total').fill('300')
-  await compra.getByLabel('Número de parcelas').selectOption('3')
+  await setParcelas(compra, 3)
   await compra.getByLabel('Descrição (opcional)').fill('Sofá')
-  await compra.getByLabel('Categoria').selectOption({ label: 'Moradia' })
+  await pick(compra, 'Moradia')
   await compra.getByRole('button', { name: 'Registrar compra' }).click()
   await expect(compra).toBeHidden()
 }
@@ -65,7 +72,7 @@ test('estorno parcial: crédito na fatura, desconta dos gastos e da dívida', as
   await expectNoHorizontalScroll(page)
 
   // Na fatura do mês: a parcela de 100,00 e o estorno de 100,00 → total 0
-  await page.getByRole('link', { name: 'Faturas' }).locator('visible=true').first().click()
+  await page.getByRole('link', { name: 'Cartões' }).locator('visible=true').first().click()
   await page.getByRole('button', { name: 'Todas' }).click()
   const lista = page.getByRole('list', { name: 'Faturas' })
   await lista
@@ -125,7 +132,7 @@ test('mudar os dias de um cartão com faturas: avisa e recalcula a fatura aberta
   await expect(editar).toBeHidden()
 
   // A fatura aberta passou aos dias novos
-  await page.getByRole('link', { name: 'Faturas' }).locator('visible=true').first().click()
+  await page.getByRole('link', { name: 'Cartões' }).locator('visible=true').first().click()
   await page.getByRole('button', { name: 'Todas' }).click()
   await expect(
     page

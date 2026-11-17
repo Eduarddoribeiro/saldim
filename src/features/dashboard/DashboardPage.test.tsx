@@ -161,7 +161,33 @@ afterEach(() => vi.useRealTimers())
 describe('início (dashboard)', () => {
   it('cumprimenta pelo primeiro nome', async () => {
     renderApp('/')
-    expect(await screen.findByText(/Olá, Ana\./)).toBeInTheDocument()
+    expect(await screen.findByText(/^Olá, Ana$/)).toBeInTheDocument()
+  })
+
+  it('os atalhos abrem o lançamento já no tipo certo; sem cartões, não há atalhos de cartão', async () => {
+    renderApp('/')
+    await screen.findByText('Saldo atual')
+    const atalhos = screen.getByRole('navigation', { name: 'Atalhos' })
+    expect(within(atalhos).queryByRole('button', { name: 'No cartão' })).not.toBeInTheDocument()
+    expect(within(atalhos).getByRole('link', { name: 'Receber' })).toHaveAttribute(
+      'href',
+      '/a-receber',
+    )
+
+    await userEvent.click(within(atalhos).getByRole('button', { name: 'Receita' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Novo lançamento' })
+    expect(within(dialog).getByRole('radio', { name: 'Receita' })).toBeChecked()
+    expect(await within(dialog).findByRole('button', { name: 'Registrar receita' })).toBeVisible()
+  })
+
+  it('o olho esconde os valores em toda a app e lembra a escolha', async () => {
+    renderApp('/')
+    await screen.findByText('Saldo atual')
+    await userEvent.click(screen.getByRole('button', { name: 'Esconder valores' }))
+    expect(document.documentElement).toHaveClass('valores-ocultos')
+    expect(localStorage.getItem('saldim-ocultar-valores')).toBe('1')
+    await userEvent.click(screen.getByRole('button', { name: 'Mostrar valores' }))
+    expect(document.documentElement).not.toHaveClass('valores-ocultos')
   })
 
   it('saldo atual = saldos iniciais (todas as contas) + movimentos até hoje; mostra o previsto', async () => {

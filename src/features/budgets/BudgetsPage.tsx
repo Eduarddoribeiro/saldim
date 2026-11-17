@@ -137,7 +137,7 @@ export function BudgetsPage() {
                 </span>{' '}
                 gasto de <span className="tabular-nums">{formatMoney(totalLimit, currency)}</span>
               </p>
-              <ul className="divide-y rounded-xl border">
+              <ul className="divide-y rounded-2xl border bg-card">
                 {withBudget.map((category) => (
                   <li key={category.id}>
                     <BudgetRow
@@ -156,7 +156,7 @@ export function BudgetsPage() {
           {withoutBudget.length > 0 && (
             <section aria-label="Sem orçamento">
               <h2 className="mb-2 text-sm font-medium text-muted-foreground">Sem orçamento</h2>
-              <ul className="divide-y rounded-xl border">
+              <ul className="divide-y rounded-2xl border bg-card">
                 {withoutBudget.map((category) => (
                   <li key={category.id} className="flex min-h-14 items-center gap-3 px-3">
                     <CategoryBadge size="sm" cor={category.cor} icone={category.icone} />

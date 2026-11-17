@@ -64,6 +64,13 @@ export function addMonthsClamped(date: IsoDate, delta: number): IsoDate {
   return `${month}-${pad(day)}`
 }
 
+/** O dia `delta` dias depois de `date` (negativo = antes). Contas em UTC: a hora de verão não conta. */
+export function addDays(date: IsoDate, delta: number): IsoDate {
+  const [year, month, day] = date.split('-').map(Number)
+  const result = new Date(Date.UTC(year, month - 1, day + delta))
+  return `${result.getUTCFullYear()}-${pad(result.getUTCMonth() + 1)}-${pad(result.getUTCDate())}`
+}
+
 /** Dias de `from` até `to` (negativo se `to` for anterior). Contas em UTC: a hora de verão não conta. */
 export function daysBetween(from: IsoDate, to: IsoDate): number {
   const utc = (date: IsoDate) => {

@@ -36,6 +36,7 @@ vi.mock('@/features/accounts/card-days-api', () => ({
   listCardDaysHistory: vi.fn(async () => store.cardDays),
 }))
 vi.mock('@/features/transactions/transactions-api', () => ({
+  listBalanceMovements: vi.fn(async () => store.transactions),
   listTransactions: vi.fn(async (month: string) =>
     store.transactions.filter((t) => t.data.startsWith(month)),
   ),
@@ -176,10 +177,28 @@ beforeEach(() => {
 
 afterEach(() => vi.useRealTimers())
 
+/** Compra no cartão = lançamento rápido (o `+`) com o cartão escolhido em "Pagar com". */
 async function openPurchaseForm() {
   renderApp('/transacoes')
-  await userEvent.click(await screen.findByRole('button', { name: 'Compra no cartão' }))
-  return screen.findByRole('dialog', { name: 'Compra no cartão' })
+  const [, bottomNav] = screen.getAllByRole('navigation', { name: 'Navegação principal' })
+  await userEvent.click(within(bottomNav).getByRole('button', { name: 'Novo lançamento' }))
+  const dialog = await screen.findByRole('dialog', { name: 'Novo lançamento' })
+  await userEvent.click(await within(dialog).findByRole('radio', { name: 'Visa' }))
+  return dialog
+}
+
+async function setParcelas(dialog: HTMLElement, parcelas: number) {
+  for (let n = 1; n < parcelas; n++) {
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Mais uma parcela' }))
+  }
+}
+
+const chooseCategory = (dialog: HTMLElement) =>
+  userEvent.click(within(dialog).getByRole('radio', { name: 'Alimentação' }))
+
+async function purchaseDate(dialog: HTMLElement) {
+  await userEvent.click(within(dialog).getByRole('radio', { name: 'Outra data' }))
+  return within(dialog).getByLabelText('Qual data?')
 }
 
 describe('compras no cartão', () => {
@@ -191,7 +210,7 @@ describe('compras no cartão', () => {
     await userEvent.selectOptions(pessoa, 'Outra pessoa…')
     expect(within(dialog).getByText(/não nos seus gastos/)).toBeInTheDocument()
     await userEvent.type(within(dialog).getByLabelText('Valor total'), '50')
-    await userEvent.selectOptions(within(dialog).getByLabelText('Categoria'), 'alim')
+    await chooseCategory(dialog)
     // Sem o nome não regista
     await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar compra' }))
     expect(await within(dialog).findByText('Informe o nome da pessoa.')).toBeInTheDocument()
@@ -205,11 +224,15 @@ describe('compras no cartão', () => {
     )
   })
 
-  it('o botão só aparece com um cartão ativo', async () => {
+  it('cartões arquivados não aparecem em "Pagar com"', async () => {
     store.accounts = [account({}), { ...visa(), arquivada: true }]
     renderApp('/transacoes')
     await screen.findByRole('button', { name: /Televisão/ })
-    expect(screen.queryByRole('button', { name: 'Compra no cartão' })).not.toBeInTheDocument()
+    const [, bottomNav] = screen.getAllByRole('navigation', { name: 'Navegação principal' })
+    await userEvent.click(within(bottomNav).getByRole('button', { name: 'Novo lançamento' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Novo lançamento' })
+    await within(dialog).findByRole('group', { name: 'Pagar com' })
+    expect(within(dialog).queryByRole('radio', { name: 'Visa' })).not.toBeInTheDocument()
   })
 
   it('a parcela aparece na lista como "Parcela 2/3" do cartão', async () => {
@@ -222,15 +245,15 @@ describe('compras no cartão', () => {
 
   it('pré-visualiza as parcelas e as faturas e regista a compra em centavos', async () => {
     const dialog = await openPurchaseForm()
-    // Só há um cartão: vem escolhido
-    expect(within(dialog).getByLabelText('Cartão')).toHaveValue('visa')
+    // Escolhido o cartão, o valor passa a ser o total e aparecem as parcelas (1× por omissão)
+    expect(within(dialog).getByText('1× (à vista)')).toBeInTheDocument()
     expect(within(dialog).getByText(/Escolha o cartão e informe o valor/)).toBeInTheDocument()
 
     await userEvent.type(within(dialog).getByLabelText('Valor total'), '100,00')
-    await userEvent.selectOptions(within(dialog).getByLabelText('Número de parcelas'), '3')
+    await setParcelas(dialog, 3)
     await userEvent.type(within(dialog).getByLabelText('Descrição (opcional)'), 'Sofá')
-    await userEvent.selectOptions(within(dialog).getByLabelText('Categoria'), 'alim')
-    const data = within(dialog).getByLabelText('Data da compra')
+    await chooseCategory(dialog)
+    const data = await purchaseDate(dialog)
     await userEvent.clear(data)
     await userEvent.type(data, '2026-10-25')
 
@@ -265,8 +288,8 @@ describe('compras no cartão', () => {
   it('compra em andamento: escolha a primeira parcela por pagar e só essas aparecem', async () => {
     const dialog = await openPurchaseForm()
     await userEvent.type(within(dialog).getByLabelText('Valor total'), '600,01')
-    await userEvent.selectOptions(within(dialog).getByLabelText('Número de parcelas'), '6')
-    await userEvent.selectOptions(within(dialog).getByLabelText('Categoria'), 'alim')
+    await setParcelas(dialog, 6)
+    await chooseCategory(dialog)
     await userEvent.click(within(dialog).getByLabelText(/Compra já em andamento/))
     await userEvent.selectOptions(within(dialog).getByLabelText('Primeira parcela a pagar'), '4')
 
@@ -288,8 +311,8 @@ describe('compras no cartão', () => {
   it('valida antes de enviar e mostra o erro do servidor', async () => {
     const dialog = await openPurchaseForm()
     await userEvent.type(within(dialog).getByLabelText('Valor total'), '0,02')
-    await userEvent.selectOptions(within(dialog).getByLabelText('Número de parcelas'), '3')
-    await userEvent.selectOptions(within(dialog).getByLabelText('Categoria'), 'alim')
+    await setParcelas(dialog, 3)
+    await chooseCategory(dialog)
     await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar compra' }))
     expect(
       await within(dialog).findByText('O valor não chega para todas as parcelas (1 centavo cada).'),
@@ -304,7 +327,7 @@ describe('compras no cartão', () => {
     expect(
       await within(dialog).findByText('As parcelas passariam do ano 2999.'),
     ).toBeInTheDocument()
-    expect(screen.getByRole('dialog', { name: 'Compra no cartão' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Novo lançamento' })).toBeInTheDocument()
   })
 
   it('tocar em uma parcela abre a compra; excluir pede confirmação e apaga a compra inteira', async () => {
@@ -336,8 +359,8 @@ describe('compras no cartão', () => {
     ]
     const dialog = await openPurchaseForm()
     await userEvent.type(within(dialog).getByLabelText('Valor total'), '20,00')
-    await userEvent.selectOptions(within(dialog).getByLabelText('Número de parcelas'), '2')
-    const data = within(dialog).getByLabelText('Data da compra')
+    await setParcelas(dialog, 2)
+    const data = await purchaseDate(dialog)
     await userEvent.clear(data)
     await userEvent.type(data, '2026-09-20')
     const parcelas = () =>

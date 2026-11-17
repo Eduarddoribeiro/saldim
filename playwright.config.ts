@@ -6,6 +6,10 @@ import { defineConfig, devices } from '@playwright/test'
 // antigo (páginas em branco) ou até de outro projeto. Porta ocupada → erro claro logo no início.
 // E2E_PORT muda a porta (ex.: E2E_PORT=5174 se a 5173 estiver ocupada por outro servidor).
 const port = Number(process.env.E2E_PORT ?? 5173)
+// PW_EXECUTABLE usa outro Chromium em vez do Edge (ex.: num contentor Linux sem Edge)
+const browser = process.env.PW_EXECUTABLE
+  ? { launchOptions: { executablePath: process.env.PW_EXECUTABLE } }
+  : { channel: 'msedge' }
 
 export default defineConfig({
   testDir: 'e2e',
@@ -15,7 +19,7 @@ export default defineConfig({
   reporter: 'list',
   use: {
     baseURL: `http://localhost:${port}`,
-    channel: 'msedge',
+    ...browser,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
@@ -23,7 +27,7 @@ export default defineConfig({
     { name: 'desktop', use: { viewport: { width: 1280, height: 800 } } },
     {
       name: 'telemovel',
-      use: { ...devices['Pixel 7'], channel: 'msedge', defaultBrowserType: 'chromium' },
+      use: { ...devices['Pixel 7'], ...browser, defaultBrowserType: 'chromium' },
     },
   ],
   webServer: {
