@@ -20,7 +20,7 @@ import { formatMoney, type Currency } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import { useTransactions } from './hooks'
 import { groupByDay } from './group-by-day'
-import { statementDayLabel, statementTotals } from './statement'
+import { splitByToday, statementDayLabel, statementTotals } from './statement'
 import { TransactionFormDialog } from './TransactionFormDialog'
 import { TransactionRow } from './TransactionRow'
 import { isPlainTransaction, type PlainTransaction } from './transaction-kind'
@@ -52,8 +52,37 @@ export function TransactionsPage() {
   const error = transactions.error ?? categories.error ?? accounts.error ?? purchases.error
   const openedPurchase = details.purchaseId ? purchasesById.get(details.purchaseId) : undefined
   const list = transactions.data ?? []
-  const totals = statementTotals(list)
   const today = todayIso()
+  // O que ainda não aconteceu (parcelas por cair, agendados) fica à parte, no topo; "Entrou" e "Saiu"
+  // contam só o que já aconteceu, como num extrato de banco
+  const { previsto, realizado } = splitByToday(list, today)
+  const totals = statementTotals(realizado)
+  const plannedTotal = statementTotals(previsto).saldo
+
+  const renderRow = (transaction: (typeof list)[number], when?: string) => (
+    <li key={transaction.id}>
+      <TransactionRow
+        transaction={transaction}
+        category={categoriesById.get(transaction.category_id)}
+        account={accountsById.get(transaction.account_id)}
+        currency={currency}
+        totalParcelas={
+          transaction.compra_id ? purchasesById.get(transaction.compra_id)?.parcelas : undefined
+        }
+        purchaseDate={
+          transaction.compra_id ? purchasesById.get(transaction.compra_id)?.data_compra : undefined
+        }
+        personName={people.data?.find((person) => person.id === transaction.pessoa_id)?.nome}
+        when={when}
+        onSelect={() => {
+          // Parcelas e estornos abrem a compra; o resto edita-se no formulário
+          if (isPlainTransaction(transaction)) setDialog({ open: true, transaction })
+          else if (transaction.compra_id)
+            setDetails({ open: true, purchaseId: transaction.compra_id })
+        }}
+      />
+    </li>
+  )
 
   return (
     <>
@@ -89,6 +118,14 @@ export function TransactionsPage() {
             </div>
           </dl>
         )}
+        {!isPending && !error && previsto.length > 0 && (
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            Até hoje. Previsto até o fim do mês:{' '}
+            <span className="font-medium tabular-nums">
+              {formatMoney(plannedTotal, currency, { signDisplay: 'exceptZero' })}
+            </span>
+          </p>
+        )}
       </section>
 
       {isPending ? (
@@ -123,59 +160,60 @@ export function TransactionsPage() {
           }
         />
       ) : (
-        // Uma lista contínua (como num extrato de banco): cada dia é uma faixa fina dentro dela, que
-        // fica presa no topo ao rolar, com o saldo do dia à direita. Sem overflow-hidden: impediria o
-        // `sticky`. min-w-0: um texto longo não alarga a página.
-        <div className="min-w-0 rounded-2xl border bg-card">
-          {groupByDay(list).map(([day, items], index) => (
-            <section key={day} aria-labelledby={`dia-${day}`} className="min-w-0">
-              <div
-                className={cn(
-                  'sticky top-14 z-10 flex items-center justify-between gap-3 border-b bg-muted/95 px-4 py-2 backdrop-blur md:top-0',
-                  index === 0 ? 'rounded-t-2xl' : 'border-t',
-                )}
-              >
+        // Em cima o previsto (se houver); em baixo o que já aconteceu
+        <div className="grid min-w-0 gap-4">
+          {previsto.length > 0 && (
+            // Ainda não aconteceu: num bloco à parte, com quando cai e os valores apagados
+            <section
+              aria-labelledby="extrato-previsto"
+              className="min-w-0 rounded-2xl border border-dashed bg-card"
+            >
+              <div className="flex items-center justify-between gap-3 rounded-t-2xl border-b bg-muted/60 px-4 py-2">
                 <h2
-                  id={`dia-${day}`}
-                  className="min-w-0 truncate text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+                  id="extrato-previsto"
+                  className="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
                 >
-                  {statementDayLabel(day, today)}
+                  Previsto
                 </h2>
-                <DayTotal items={items} currency={currency} />
+                <span className="text-xs text-muted-foreground">Ainda não aconteceu</span>
               </div>
               <ul className="divide-y">
-                {items.map((transaction) => (
-                  <li key={transaction.id}>
-                    <TransactionRow
-                      transaction={transaction}
-                      category={categoriesById.get(transaction.category_id)}
-                      account={accountsById.get(transaction.account_id)}
-                      currency={currency}
-                      totalParcelas={
-                        transaction.compra_id
-                          ? purchasesById.get(transaction.compra_id)?.parcelas
-                          : undefined
-                      }
-                      purchaseDate={
-                        transaction.compra_id
-                          ? purchasesById.get(transaction.compra_id)?.data_compra
-                          : undefined
-                      }
-                      personName={
-                        people.data?.find((person) => person.id === transaction.pessoa_id)?.nome
-                      }
-                      onSelect={() => {
-                        // Parcelas e estornos abrem a compra; o resto edita-se no formulário
-                        if (isPlainTransaction(transaction)) setDialog({ open: true, transaction })
-                        else if (transaction.compra_id)
-                          setDetails({ open: true, purchaseId: transaction.compra_id })
-                      }}
-                    />
-                  </li>
-                ))}
+                {previsto.map((transaction) =>
+                  renderRow(
+                    transaction,
+                    `Cai em ${transaction.data.slice(8, 10)}/${transaction.data.slice(5, 7)}`,
+                  ),
+                )}
               </ul>
             </section>
-          ))}
+          )}
+
+          {realizado.length > 0 && (
+            // Uma lista contínua (como num extrato de banco): cada dia é uma faixa fina dentro dela,
+            // que fica presa no topo ao rolar, com o saldo do dia. Sem overflow-hidden: impediria o
+            // `sticky`. min-w-0: um texto longo não alarga a página.
+            <div className="min-w-0 rounded-2xl border bg-card">
+              {groupByDay(realizado).map(([day, items], index) => (
+                <section key={day} aria-labelledby={`dia-${day}`} className="min-w-0">
+                  <div
+                    className={cn(
+                      'sticky top-14 z-10 flex items-center justify-between gap-3 border-b bg-muted/95 px-4 py-2 backdrop-blur md:top-0',
+                      index === 0 ? 'rounded-t-2xl' : 'border-t',
+                    )}
+                  >
+                    <h2
+                      id={`dia-${day}`}
+                      className="min-w-0 truncate text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+                    >
+                      {statementDayLabel(day, today)}
+                    </h2>
+                    <DayTotal items={items} currency={currency} />
+                  </div>
+                  <ul className="divide-y">{items.map((transaction) => renderRow(transaction))}</ul>
+                </section>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

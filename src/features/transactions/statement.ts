@@ -25,3 +25,15 @@ export function statementDayLabel(day: IsoDate, today: IsoDate): string {
   // Sem o dia da semana: "Hoje, 17 de novembro"
   return `${prefix}, ${full.slice(full.indexOf(',') + 2)}`
 }
+
+/**
+ * Separa o extrato em "previsto" (datas depois de hoje: parcelas que ainda vão cair, lançamentos
+ * agendados) e o que já aconteceu. O previsto vem do mais próximo para o mais distante; o resto mantém
+ * a ordem recebida (mais recente primeiro).
+ */
+export function splitByToday<T extends { data: IsoDate }>(items: readonly T[], today: IsoDate) {
+  const previsto = items.filter((item) => item.data > today)
+  const realizado = items.filter((item) => item.data <= today)
+  previsto.sort((a, b) => a.data.localeCompare(b.data))
+  return { previsto, realizado }
+}

@@ -383,6 +383,27 @@ describe('página de transações', () => {
     expect(linha).not.toHaveTextContent('Parcela')
   })
 
+  it('o que ainda não aconteceu fica em "Previsto", no topo, e não entra em Entrou/Saiu', async () => {
+    store.transactions.push(
+      transaction({ id: 'fut', descricao: 'Academia', valor_centavos: 9990, data: '2026-10-28' }),
+    )
+    renderApp('/transacoes')
+    const previsto = await screen.findByRole('region', { name: 'Previsto' })
+    const linha = within(previsto).getByRole('button', { name: /^Academia: despesa/ })
+    expect(linha).toHaveTextContent('Cai em 28/10')
+    // Não aparece também na lista do que já aconteceu (nem com uma faixa de dia própria)
+    expect(screen.queryByRole('region', { name: /28 de outubro/ })).not.toBeInTheDocument()
+    const resumo = screen.getByRole('region', { name: 'Resumo do mês' })
+    expect(plain(resumo.textContent)).toContain('SaiuR$ 123,45')
+    expect(plain(resumo.textContent)).toContain('Previsto até o fim do mês: -R$ 99,90')
+  })
+
+  it('sem nada previsto, não há bloco "Previsto"', async () => {
+    renderApp('/transacoes')
+    await screen.findByText('Supermercado')
+    expect(screen.queryByRole('region', { name: 'Previsto' })).not.toBeInTheDocument()
+  })
+
   it('mostra o saldo de cada dia ao lado da data', async () => {
     store.transactions.push(
       transaction({

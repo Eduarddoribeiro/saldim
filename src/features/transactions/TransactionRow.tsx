@@ -27,6 +27,7 @@ export function TransactionRow({
   totalParcelas,
   purchaseDate,
   personName,
+  when,
   onSelect,
 }: {
   transaction: Transaction
@@ -39,6 +40,8 @@ export function TransactionRow({
   purchaseDate?: IsoDate
   /** Nome da pessoa a quem pertence a compra (T1), se não for de quem usa a app */
   personName?: string
+  /** Lançamento previsto (data depois de hoje): quando cai, ex. "Cai em 28/11". O valor fica apagado. */
+  when?: string
   onSelect?: () => void
 }) {
   // Receitas e estornos são créditos (+); despesas e parcelas, débitos (−)
@@ -51,25 +54,27 @@ export function TransactionRow({
       ? 'Estorno'
       : // À vista (1/1) não diz "Parcela": o nome do cartão já aparece na linha
         transaction.parcela_numero !== null && !transaction.recorrencia_id && totalParcelas !== 1
-        ? `Parcela ${transaction.parcela_numero}/${totalParcelas ?? '?'}${
+        ? // A data da compra junto da parcela: a 10/12 de 28/11 não é uma compra desse dia
+          `Parcela ${transaction.parcela_numero}/${totalParcelas ?? '?'}${
             purchaseDate && purchaseDate !== transaction.data
-              ? ` · compra de ${purchaseDate.slice(8, 10)}/${purchaseDate.slice(5, 7)}`
+              ? `, comprado em ${purchaseDate.slice(8, 10)}/${purchaseDate.slice(5, 7)}`
               : ''
           }`
         : null
   // Uma compra à vista criada por uma recorrência mostra só "Recorrente" (não "Parcela 1/1")
   const recurringItem = transaction.recorrencia_id ? 'Recorrente' : null
-  // "Estorno"/"Parcela k/n"/"Recorrente" primeiro: no telemóvel o fim da linha é cortado
   const personItem = transaction.pessoa_id ? `Para ${personName ?? 'outra pessoa'}` : null
-  const subtitle = [
+  // Em destaque, no início: quando cai (previsto) e a parcela ou o estorno — é o que explica a linha
+  const lead = [when, cardItem].filter(Boolean).join(' · ')
+  const rest = [
     personItem,
-    cardItem,
     recurringItem,
     transaction.descricao ? categoryName : null,
     account?.nome,
   ]
     .filter(Boolean)
     .join(' · ')
+  const subtitle = [lead, rest].filter(Boolean).join(' · ')
   // Valor guardado sempre positivo; o sinal só aparece na apresentação
   const signed = isCredit ? transaction.valor_centavos : -transaction.valor_centavos
   const amount = formatMoney(signed, currency, { signDisplay: 'always' })
@@ -79,12 +84,19 @@ export function TransactionRow({
       <CategoryBadge cor={category?.cor ?? 'slate'} icone={category?.icone ?? 'tag'} />
       <span className="min-w-0 flex-1">
         <span className="block truncate font-medium">{title}</span>
-        {subtitle && <span className="line-clamp-2 text-xs text-muted-foreground">{subtitle}</span>}
+        {subtitle && (
+          <span className="line-clamp-2 text-xs text-muted-foreground">
+            {lead && <span className="font-medium text-foreground/80">{lead}</span>}
+            {lead && rest && ' · '}
+            {rest}
+          </span>
+        )}
       </span>
       <span
         className={cn(
           'shrink-0 text-right font-medium tabular-nums',
           isCredit ? 'text-positive' : 'text-foreground',
+          when && 'opacity-60',
         )}
       >
         <span className="sr-only">

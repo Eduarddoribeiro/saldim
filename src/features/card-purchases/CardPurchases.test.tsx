@@ -240,7 +240,7 @@ describe('compras no cartão', () => {
     const linha = await screen.findByRole('button', { name: /Televisão/ })
     // A 2.ª parcela cai a 10/10, mas a compra foi a 10/09: não parece uma compra nova
     await waitFor(() =>
-      expect(linha).toHaveTextContent('Parcela 2/3 · compra de 10/09 · Alimentação · Visa'),
+      expect(linha).toHaveTextContent('Parcela 2/3, comprado em 10/09 · Alimentação · Visa'),
     )
     expect(plain(linha.textContent)).toContain('-R$ 33,33')
     expect(linha).toHaveAccessibleName(/Ver compra$/)

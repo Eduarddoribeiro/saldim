@@ -389,11 +389,11 @@ describe('início (dashboard)', () => {
     // menos o que devolveu, o mesmo corte da dívida do cartão (D20). Previsto: com as 3 parcelas
     expect(tile(/^Saldo líquido$/)).toContain('R$ 3.051,00')
     expect(tile(/^Saldo líquido$/)).toContain('Previsto: R$ 2.851,00')
-    expect(
-      within(screen.getByRole('region', { name: 'Últimas transações' })).getByText(
-        /Para Mãe · Parcela 1\/3/,
-      ),
-    ).toBeInTheDocument()
+    // A parcela vem primeiro (em destaque), depois a pessoa
+    const ultimas = screen.getByRole('region', { name: 'Últimas transações' })
+    expect(plain(within(ultimas).getByText(/^Parcela 1\/3/).parentElement?.textContent)).toContain(
+      'Parcela 1/3 · Para Mãe',
+    )
   })
 
   it('pagar a mais dá crédito nos cartões, que soma ao limite disponível', async () => {
