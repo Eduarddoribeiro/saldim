@@ -70,7 +70,7 @@ financas/                     # raiz do repositório Git
       profile/                # profile-api, hooks (useProfile, useCurrency)
       transactions/           # transactions-api (paginado), hooks (useTransactions, useBalanceMovements), schemas, TransactionsPage (Extrato, saldo do dia), TransactionRow, TransactionFormDialog (só editar)
       quick-entry/            # lançamento rápido (o `+`): QuickEntryProvider/quick-entry-context (useQuickEntry), QuickEntrySheet (receita, despesa e compra no cartão num só formulário), schema (reusa os schemas de transações e compras), usage-ranking (mais usados em 90 dias), CategoryPicker, ChoiceChips, ParcelasStepper
-      dashboard/              # DashboardPage, BalanceHero (faixa do saldo + olho), QuickActions (atalhos), StatTile, CategorySpendingList, category-ranking (top 5 + "Outras")
+      dashboard/              # DashboardPage (no telemóvel: últimas transações antes dos gráficos), BalanceHero (faixa do saldo + olho), QuickActions (atalhos), StatTile, CategorySpendingList, category-ranking (top 5 + "Outras")
       budgets/                # budgets-api (inclui copyBudgets), hooks, budget-status (cor+ícone+texto), BudgetsPage, BudgetFormDialog
       people/                 # people-api (pessoas, reembolsos), hooks, use-receivables (a receber, D22), receivable-details (por compra e por cartão, filtros, próximas faturas por mês), UpcomingInvoices, schemas, ReceivablesPage (/a-receber), PersonDebtDetails, PersonFormDialog, ReimbursementFormDialog
       recurring/              # recurring-api, generate-api (RPC gerar_recorrencias; simulado em src/test/setup.ts), hooks, schemas, recurring-options (textos), RecurringPage, RecurringFormDialog, RecurringGenerator (no AppShell)
@@ -225,7 +225,7 @@ Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etap
 
 - [x] **Próximas faturas por pessoa** (plano e regras em `docs/features/proximas-faturas.md`): em A receber, quanto cada pessoa deve em cada mês que vem (pelo vencimento da fatura, cartões juntos, 3 meses + "depois"), "para ficar em dia até…" e as compras de cada mês por cartão; sem mudanças na base de dados
 
-- [ ] **Menos toques + nova cara** (`docs/features/lancamento-rapido.md`; branch `claude/saldim-mobile-ux-fqs7g7`): Fase 1 (lançamento rápido: `+` em todas as páginas, formulário único para conta e cartão, categorias em botões pelas mais usadas, Hoje/Ontem, folha que sobe de baixo) e identidade Azul-petróleo (faixa do saldo, olho, atalhos, Extrato e Cartões, barra com `+` ao centro) feitas; capturas antes/depois em `docs/screenshots/comparacao/`. Faltam a Fase 2 (pagar/receber em 2 toques) e o Início mais curto da Fase 3.
+- [x] **Menos toques + nova cara** (`docs/features/lancamento-rapido.md`; branch `claude/saldim-mobile-ux-fqs7g7`): lançamento rápido (`+` em todas as páginas, formulário único para conta e cartão, categorias em botões pelas mais usadas, Hoje/Ontem, folha que sobe de baixo), identidade Azul-petróleo (faixa do saldo, olho, atalhos, Extrato e Cartões, barra com `+` ao centro), "Pagar" nas linhas de Cartões e aviso de faturas a vencer em 7 dias no Início, Início reordenado no telemóvel; capturas antes/depois em `docs/screenshots/comparacao/`. Falta juntar à `main` (precisa de autorização).
 
 **Seguintes:** 13. Filtros e relatórios · 14. Deploy · 15. Google login, PWA, importar/exportar CSV, atualizações otimistas, metas · 16. Importação automática via Open Finance · 17. Claude sobre os dados da app (ideias futuras, ver `docs/plano.md`).
 

@@ -143,9 +143,10 @@ beforeEach(() => {
 
 afterEach(() => vi.useRealTimers())
 
+// As linhas (abrem o detalhe); o botão "Pagar" ao lado de cada uma fica de fora
 const rows = () =>
   within(screen.getByRole('list', { name: 'Faturas' }))
-    .getAllByRole('button')
+    .getAllByRole('button', { name: /Ver detalhes$/ })
     .map((row) => plain(row.textContent))
 
 describe('página de faturas', () => {
@@ -157,6 +158,19 @@ describe('página de faturas', () => {
       'href',
       '/configuracoes/contas',
     )
+  })
+
+  it('"Pagar" na linha abre logo o pagamento com o valor em aberto: Pagar → Registrar', async () => {
+    renderApp('/faturas')
+    const lista = await screen.findByRole('list', { name: 'Faturas' })
+    // Só as faturas com algo em aberto têm o botão
+    expect(within(lista).getAllByRole('button', { name: /^Pagar fatura/ })).toHaveLength(2)
+    await userEvent.click(within(lista).getAllByRole('button', { name: /^Pagar fatura/ })[1])
+    const dialog = await screen.findByRole('dialog', { name: /^Pagar fatura/ })
+    expect(within(dialog).getByLabelText('Valor')).toHaveValue('150,00')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar pagamento' }))
+    await waitFor(() => expect(createPayment).toHaveBeenCalledTimes(1))
+    expect(createPayment).toHaveBeenCalledWith(expect.objectContaining({ valor: 15000 }))
   })
 
   it('por pagar: a que vence primeiro em cima, com o estado escrito e o total em aberto', async () => {

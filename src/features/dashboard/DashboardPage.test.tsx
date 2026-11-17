@@ -8,6 +8,7 @@ import type { Invoice } from '@/features/invoices/invoices-api'
 import type { Person, Reimbursement } from '@/features/people/people-api'
 import type { Transaction } from '@/features/transactions/transactions-api'
 import type { Transfer } from '@/lib/finance'
+import { addDays } from '@/lib/dates'
 import { renderApp } from '@/test/render-app'
 
 const store = vi.hoisted(() => ({
@@ -36,6 +37,7 @@ vi.mock('@/features/transactions/transactions-api', () => ({
       .sort((a, b) => b.data.localeCompare(a.data)),
   ),
   listBalanceMovements: vi.fn(async () => store.transactions),
+  listInvoiceItems: vi.fn(async () => store.transactions.filter((t) => t.fatura_id)),
 }))
 vi.mock('@/features/card-purchases/purchases-api', () => ({
   listPurchases: vi.fn(async () => [
@@ -54,15 +56,17 @@ vi.mock('@/features/card-purchases/purchases-api', () => ({
     },
   ]),
 }))
-vi.mock('@/features/transfers/transfers-api', () => ({
-  listTransfers: vi.fn(async () => store.transfers),
-}))
 vi.mock('@/features/people/people-api', () => ({
   listPeople: vi.fn(async () => store.people),
   listReimbursements: vi.fn(async () => store.reimbursements),
 }))
 vi.mock('@/features/invoices/invoices-api', () => ({
   listInvoices: vi.fn(async () => store.invoices),
+}))
+// Parcelas e pagamentos das faturas: o aviso "Faturas a pagar" do Início
+vi.mock('@/features/transfers/transfers-api', () => ({
+  listTransfers: vi.fn(async () => store.transfers),
+  listInvoicePayments: vi.fn(async () => []),
 }))
 // O Recharts precisa de um browser real para medir o espaço (testado nos E2E). Aqui o módulo dos
 // gráficos é substituído por um marcador; os números verificam-se nas tabelas alternativas.
@@ -273,6 +277,50 @@ describe('início (dashboard)', () => {
     )
   })
 
+  it('avisa das faturas vencidas ou a vencer em 7 dias; "Pagar" abre o pagamento já preenchido', async () => {
+    store.accounts.push(visa())
+    const invoice = (id: string, vencimento: string): Invoice => ({
+      id,
+      account_id: 'visa',
+      mes_referencia: `${vencimento.slice(0, 7)}-01`,
+      // O fechamento é sempre antes do vencimento (regra da base de dados)
+      data_fechamento: addDays(vencimento, -10),
+      data_vencimento: vencimento,
+    })
+    // Hoje é 14/10: f1 já venceu, f2 vence daqui a 6 dias, f3 só em novembro
+    store.invoices = [
+      invoice('f3', '2026-11-10'),
+      invoice('f2', '2026-10-20'),
+      invoice('f1', '2026-10-10'),
+    ]
+    const parcela = { account_id: 'visa', compra_id: 'c', valor_centavos: 10000 }
+    store.transactions.push(
+      tx({ ...parcela, data: '2026-09-08', fatura_id: 'f1', parcela_numero: 1 }),
+      tx({ ...parcela, data: '2026-10-08', fatura_id: 'f2', parcela_numero: 2 }),
+      tx({ ...parcela, data: '2026-11-08', fatura_id: 'f3', parcela_numero: 3 }),
+    )
+    renderApp('/')
+    const aviso = await screen.findByRole('region', { name: 'Faturas a pagar' })
+    const pagar = within(aviso).getAllByRole('button', { name: /^Pagar fatura/ })
+    expect(pagar).toHaveLength(2)
+    expect(plain(aviso.textContent)).toMatch(
+      /Venceu 10\/10 · R\$ 100,00.*Vence 20\/10 · R\$ 100,00/,
+    )
+
+    await userEvent.click(pagar[0])
+    const dialog = await screen.findByRole('dialog', { name: /^Pagar fatura/ })
+    expect(within(dialog).getByLabelText('Valor')).toHaveValue('100,00')
+    expect(within(dialog).getByLabelText('Pagar com a conta')).toHaveValue('banco')
+    expect(within(dialog).getByRole('button', { name: 'Registrar pagamento' })).toBeInTheDocument()
+  })
+
+  it('sem faturas a vencer nos próximos dias, não há aviso', async () => {
+    store.accounts.push(visa())
+    renderApp('/')
+    await screen.findByText('Dinheiro disponível')
+    expect(screen.queryByRole('region', { name: 'Faturas a pagar' })).not.toBeInTheDocument()
+  })
+
   it('compras da mãe (T1): fora das despesas, na dívida, e o que ela deve soma ao líquido', async () => {
     store.accounts.push(visa())
     store.people = [
@@ -289,7 +337,8 @@ describe('início (dashboard)', () => {
       id,
       account_id: 'visa',
       mes_referencia: `${vencimento.slice(0, 7)}-01`,
-      data_fechamento: vencimento,
+      // O fechamento é sempre antes do vencimento (regra da base de dados)
+      data_fechamento: addDays(vencimento, -10),
       data_vencimento: vencimento,
     })
     store.invoices = [

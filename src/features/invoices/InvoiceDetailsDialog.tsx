@@ -48,6 +48,8 @@ type Props = {
   accounts: Account[]
   categories: Category[]
   purchases: CardPurchase[]
+  /** Abre logo no formulário de pagamento (botão "Pagar" da lista ou do Início) */
+  startPaying?: boolean
 }
 
 export function InvoiceDetailsDialog(props: Props) {
@@ -63,7 +65,7 @@ export function InvoiceDetailsDialog(props: Props) {
 }
 
 function InvoiceDetails(props: Props & { invoice: InvoiceView }) {
-  const [paying, setPaying] = useState(false)
+  const [paying, setPaying] = useState(props.startPaying ?? false)
   return paying ? (
     <PaymentForm {...props} onBack={() => setPaying(false)} />
   ) : (
@@ -178,7 +180,7 @@ function Summary({
                     {shortDate(item.data)} · estorno
                   </span>
                 </span>
-                <span className="shrink-0 text-emerald-700 tabular-nums dark:text-emerald-400">
+                <span className="shrink-0 text-positive tabular-nums">
                   {money(-item.valor_centavos)}
                 </span>
               </li>

@@ -55,7 +55,13 @@ export function InvoicesPage() {
   const currency = useCurrency()
   const [chosenCardId, setChosenCardId] = useState<string | null>(null)
   const [filter, setFilter] = useState<Filter>('por_pagar')
+  // Fatura aberta: no resumo, ou logo no pagamento (botão "Pagar" da linha)
   const [openedId, setOpenedId] = useState<string | null>(null)
+  const [startPaying, setStartPaying] = useState(false)
+  const open = (id: string, paying: boolean) => {
+    setStartPaying(paying)
+    setOpenedId(id)
+  }
 
   const queries = [accounts, categories, purchases, invoices, items, payments]
   const isPending = queries.some((query) => query.isPending)
@@ -231,7 +237,8 @@ export function InvoicesPage() {
               <InvoiceRow
                 invoice={invoice}
                 currency={currency}
-                onSelect={() => setOpenedId(invoice.id)}
+                onSelect={() => open(invoice.id, false)}
+                onPay={() => open(invoice.id, true)}
               />
             </li>
           ))}
@@ -246,6 +253,7 @@ export function InvoicesPage() {
         accounts={allAccounts}
         categories={categories.data ?? []}
         purchases={purchases.data ?? []}
+        startPaying={startPaying}
       />
     </>
   )
@@ -255,46 +263,64 @@ function InvoiceRow({
   invoice,
   currency,
   onSelect,
+  onPay,
 }: {
   invoice: InvoiceView
   currency: Currency
   onSelect: () => void
+  onPay: () => void
 }) {
   const title = invoiceTitle(invoice.mes_referencia)
   const state = INVOICE_STATE_LABELS[invoice.estado]
   const partial = invoice.pagoCentavos > 0 && invoice.emAbertoCentavos > 0
+  const payable = invoice.totalCentavos > 0 && invoice.emAbertoCentavos > 0
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-label={`${title}: ${state.toLowerCase()}, total ${formatMoney(invoice.totalCentavos, currency)}${partial ? `, falta ${formatMoney(invoice.emAbertoCentavos, currency)}` : ''}. Ver detalhes`}
-      className="flex min-h-16 w-full items-center gap-3 rounded-2xl border bg-card px-3 py-2 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none"
-    >
-      <span className="min-w-0 flex-1">
-        <span className="block truncate font-medium">{invoiceMonth(invoice.mes_referencia)}</span>
-        <span className="block truncate text-xs text-muted-foreground">
-          Fecha {dayMonth(invoice.data_fechamento)} · vence {dayMonth(invoice.data_vencimento)}
-        </span>
-        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span
-            className={cn(
-              'rounded-full px-2 py-0.5 text-xs font-medium',
-              INVOICE_STATE_CLASSES[invoice.estado],
-            )}
-          >
-            {state}
+    <div className="flex items-stretch overflow-hidden rounded-2xl border bg-card">
+      <button
+        type="button"
+        onClick={onSelect}
+        aria-label={`${title}: ${state.toLowerCase()}, total ${formatMoney(invoice.totalCentavos, currency)}${partial ? `, falta ${formatMoney(invoice.emAbertoCentavos, currency)}` : ''}. Ver detalhes`}
+        className="flex min-h-16 min-w-0 flex-1 items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none"
+      >
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-medium">{invoiceMonth(invoice.mes_referencia)}</span>
+          <span className="block truncate text-xs text-muted-foreground">
+            Fecha {dayMonth(invoice.data_fechamento)} · vence {dayMonth(invoice.data_vencimento)}
           </span>
-          {partial && (
-            <span className="text-xs text-muted-foreground">
-              falta {formatMoney(invoice.emAbertoCentavos, currency)}
+          {/* Estado e valor na mesma linha: deixa a largura para o mês quando há o botão "Pagar" */}
+          <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span
+              className={cn(
+                'rounded-full px-2 py-0.5 text-xs font-medium',
+                INVOICE_STATE_CLASSES[invoice.estado],
+              )}
+            >
+              {state}
             </span>
-          )}
+            {partial && (
+              <span className="text-xs text-muted-foreground">
+                falta {formatMoney(invoice.emAbertoCentavos, currency)}
+              </span>
+            )}
+            <span className="ml-auto shrink-0 font-semibold tabular-nums">
+              {formatMoney(invoice.totalCentavos, currency)}
+            </span>
+          </span>
         </span>
-      </span>
-      <span className="shrink-0 font-medium tabular-nums">
-        {formatMoney(invoice.totalCentavos, currency)}
-      </span>
-      <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-    </button>
+        {!payable && <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />}
+      </button>
+      {payable && (
+        <div className="flex items-center border-l pr-3 pl-3">
+          <Button
+            size="lg"
+            className="rounded-full"
+            onClick={onPay}
+            aria-label={`Pagar ${invoiceTitle(invoice.mes_referencia).toLowerCase()}`}
+          >
+            Pagar
+          </Button>
+        </div>
+      )}
+    </div>
   )
 }

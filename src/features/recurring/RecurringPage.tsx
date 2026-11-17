@@ -149,7 +149,7 @@ export function RecurringPage() {
                   <span
                     className={
                       isCredit
-                        ? 'shrink-0 font-medium text-emerald-700 tabular-nums dark:text-emerald-400'
+                        ? 'shrink-0 font-medium text-positive tabular-nums'
                         : 'shrink-0 font-medium tabular-nums'
                     }
                   >

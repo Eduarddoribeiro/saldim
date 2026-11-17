@@ -1,6 +1,6 @@
 # Menos toques no telemóvel e nova cara (Azul-petróleo)
 
-**Status:** Em andamento (Fase 1 + identidade visual feitas; Fases 2 e 3 por fazer)
+**Status:** Concluído (Fases 1–3 + identidade visual)
 **Projeto:** Saldim · **Branch:** claude/saldim-mobile-ux-fqs7g7 · **Criado em:** 2026-11-17
 
 ## Contexto
@@ -98,18 +98,17 @@ Nenhuma.
 - **Testes:** componentes com as sequências de toques da tabela (despesa em 3, cartão em 4); E2E no telemóvel: despesa a partir do Início e compra parcelada; `expectNoHorizontalScroll` a 360px.
 - **Pronto quando:** `npm run verify` passa e as capturas a 360/1280px (claro/escuro) mostram a folha sem cortes nem o teclado a tapar o Registrar.
 
-### Fase 2 — Pagar e receber em 2 toques
+### Fase 2 — Pagar e receber em 2 toques ✅
 
-- [ ] Em `/faturas`, botão "Pagar" na própria linha de cada fatura por pagar: abre logo o formulário de pagamento já preenchido (valor em aberto, conta de pagamento do cartão, hoje) → "Registrar pagamento"
-- [ ] No Início, quando houver uma fatura a vencer nos próximos 7 dias ou já vencida, um aviso "Fatura do <cartão> vence <dia> · R$ X" com o botão "Pagar"
-- [ ] Na lista do A receber, "Receber" com o valor sugerido já preenchido (confirmar o que já existe e cortar passos a mais)
-- **Testes:** componentes (Pagar → Registrar = 2 toques; o aviso só aparece dentro dos 7 dias); E2E atualizado em `invoices.spec.ts`.
-- **Pronto quando:** `npm run verify` passa e os fluxos da tabela batem.
+- [x] Em Cartões, botão "Pagar" na própria linha de cada fatura com algo em aberto: abre logo o formulário de pagamento já preenchido (valor em aberto, conta de pagamento do cartão, hoje) → "Registrar pagamento" (`InvoiceDetailsDialog` com `startPaying`)
+- [x] No Início, aviso "Faturas a pagar" (`invoices/DueInvoices.tsx`) com as faturas vencidas ou a vencer nos próximos 7 dias (`dueSoon` em `invoice-summary.ts`, testado), cada uma com "Pagar"; sem nenhuma, não aparece
+- [x] A receber: "Recebi" já abria o formulário com o valor sugerido (já vencido, ou o total) — 2 toques, sem mudanças
+- **Testes:** `dueSoon` (unitário), `InvoicesPage.test.tsx` (Pagar → Registrar), `DashboardPage.test.tsx` (aviso só dentro dos 7 dias, pagamento preenchido)
 
 ### Fase 3 — Navegação e Início mais curtos
 
 - [x] Barra inferior com 4 destinos + `+` ao centro: **Início · Extrato · `+` · Cartões · Mais** (feito com a Fase 1).
-- [ ] Início no telemóvel por esta ordem: número principal → aviso de fatura (Fase 2) → últimas transações → gastos por categoria; os gráficos de 6 meses e os saldos por conta ficam em secções que abrem com um toque.
+- [x] Início no telemóvel por esta ordem: faixa do saldo → atalhos → aviso de faturas (Fase 2) → dívida/líquido/a receber → este mês → últimas transações → gastos por categoria → contas → gráficos de 6 meses (no fim). No desktop a grelha fica igual. _(Mudado: em vez de secções que abrem com um toque, os gráficos só descem para o fim — menos código e nada escondido.)_
 - **Testes:** `AppShell.test.tsx` (links e `aria-current`), `DashboardPage.test.tsx`; verificação visual a 360px.
 - **Pronto quando:** `npm run verify` passa e cabe tudo a 360px sem scroll horizontal.
 
@@ -127,4 +126,5 @@ Nenhuma.
 ## Registro de execução
 
 - 2026-11-17 — Plano criado.
+- 2026-11-17 — Fases 2 e 3: "Pagar" nas linhas de Cartões e aviso de faturas no Início; Início reordenado no telemóvel; verde das receitas unificado em `text-positive`.
 - 2026-11-17 — Fase 1 + identidade visual. Desvios: regra 5 (cartão nunca pré-escolhido pelo `+`); "Ontem" usa `addDays` (função geral, testada em mudanças de mês/ano/hora); a navegação da Fase 3 (barra com `+` ao centro e "Mais") entrou já, porque o `+` precisava de um lugar fixo; o Início curto da Fase 3 fica para depois. `playwright.config.ts` e o script de capturas aceitam `PW_EXECUTABLE` (Chromium em vez do Edge, para correr num contentor Linux).

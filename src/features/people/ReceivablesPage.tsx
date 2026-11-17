@@ -200,7 +200,7 @@ function PersonCard({
           <p
             className={cn(
               'text-2xl font-semibold tracking-tight tabular-nums',
-              total < 0 && 'text-emerald-700 dark:text-emerald-400',
+              total < 0 && 'text-positive',
             )}
           >
             {total > 0
@@ -290,7 +290,7 @@ function PersonCard({
                   </span>
                 </span>
                 <span className="flex shrink-0 items-center gap-1">
-                  <span className="text-emerald-700 tabular-nums dark:text-emerald-400">
+                  <span className="text-positive tabular-nums">
                     {formatMoney(item.valor_centavos, currency, { signDisplay: 'always' })}
                   </span>
                   <ConfirmDeleteButton

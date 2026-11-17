@@ -16,6 +16,7 @@ import { isCreditCard, TIPO_CONTA_OPTIONS } from '@/features/accounts/account-op
 import { useAccounts } from '@/features/accounts/hooks'
 import { usePurchases } from '@/features/card-purchases/hooks'
 import { useCategories } from '@/features/categories/hooks'
+import { DueInvoices } from '@/features/invoices/DueInvoices'
 import { usePeople } from '@/features/people/hooks'
 import { useReceivables } from '@/features/people/use-receivables'
 import { useProfile } from '@/features/profile/hooks'
@@ -202,6 +203,14 @@ export function DashboardPage() {
       <QuickActions hasCards={hasCards} />
 
       {hasCards && (
+        <DueInvoices
+          accounts={allAccounts}
+          categories={categories.data ?? []}
+          purchases={purchases.data ?? []}
+        />
+      )}
+
+      {hasCards && (
         <div className="mb-3 grid grid-cols-2 gap-3">
           {/* Dívida e líquido têm dicas longas: no telemóvel ocupam a linha toda (a meia largura
               o título partia em duas linhas e a dica em cinco) */}
@@ -298,13 +307,19 @@ export function DashboardPage() {
         </div>
       </section>
 
+      {/* No telemóvel (uma coluna), o do dia a dia vem primeiro: últimas transações, gastos e contas;
+          os gráficos de 6 meses ficam no fim. No desktop, a grelha de duas colunas fica como estava. */}
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        <MonthlyComparisonPanel series={series} currency={currency} />
-        <BalanceEvolutionPanel
-          points={balancePoints}
-          currency={currency}
-          hasAccounts={allAccounts.length > 0}
-        />
+        <div className="grid min-w-0 max-lg:order-last">
+          <MonthlyComparisonPanel series={series} currency={currency} />
+        </div>
+        <div className="grid min-w-0 max-lg:order-last">
+          <BalanceEvolutionPanel
+            points={balancePoints}
+            currency={currency}
+            hasAccounts={allAccounts.length > 0}
+          />
+        </div>
 
         <Panel title="Gastos por categoria">
           {spending.length === 0 && (
@@ -323,6 +338,7 @@ export function DashboardPage() {
 
         <Panel
           title="Últimas transações"
+          className="max-lg:order-first"
           action={
             <Link
               to={transactionsLink}

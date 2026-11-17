@@ -180,7 +180,7 @@ function Summary({
                   )}
                 </span>
                 <span className="flex shrink-0 items-center gap-1">
-                  <span className="text-emerald-700 tabular-nums dark:text-emerald-400">
+                  <span className="text-positive tabular-nums">
                     {formatMoney(refund.valor_centavos, currency, { signDisplay: 'always' })}
                   </span>
                   <ConfirmDeleteButton

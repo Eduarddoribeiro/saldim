@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isToPay, summarizeInvoices } from './invoice-summary'
+import { dueSoon, isToPay, summarizeInvoices } from './invoice-summary'
 
 const fatura = (id: string, fechamento: string, vencimento: string) => ({
   id,
@@ -101,5 +101,42 @@ describe('isToPay', () => {
     expect(isToPay({ estado: 'paga', emAbertoCentavos: 0 })).toBe(false)
     expect(isToPay({ estado: 'com_credito', emAbertoCentavos: -5 })).toBe(false)
     expect(isToPay({ estado: 'sem_compras', emAbertoCentavos: 0 })).toBe(false)
+  })
+})
+
+describe('dueSoon', () => {
+  const f = (
+    id: string,
+    data_vencimento: string,
+    estado: 'aberta' | 'fechada' | 'vencida' | 'paga',
+    emAbertoCentavos = 100,
+  ) => ({
+    id,
+    data_vencimento,
+    estado,
+    emAbertoCentavos,
+  })
+  const hoje = '2026-11-17'
+
+  it('vencidas e as que vencem até 7 dias (inclusive), a mais urgente primeiro', () => {
+    const result = dueSoon(
+      [
+        f('daqui-a-8', '2026-11-25', 'aberta'),
+        f('daqui-a-7', '2026-11-24', 'fechada'),
+        f('hoje', '2026-11-17', 'fechada'),
+        f('vencida', '2026-11-05', 'vencida'),
+      ],
+      hoje,
+    )
+    expect(result.map((invoice) => invoice.id)).toEqual(['vencida', 'hoje', 'daqui-a-7'])
+  })
+
+  it('ignora pagas e as que não têm nada em aberto', () => {
+    expect(
+      dueSoon(
+        [f('paga', '2026-11-18', 'paga', 0), f('credito', '2026-11-18', 'fechada', -50)],
+        hoje,
+      ),
+    ).toEqual([])
   })
 })

@@ -1,5 +1,5 @@
 import { invoiceStatus, type InvoiceState } from '@/lib/credit-card'
-import type { IsoDate } from '@/lib/dates'
+import { addDays, type IsoDate } from '@/lib/dates'
 
 // Totais e estado de cada fatura, calculados a partir das parcelas, dos estornos e dos pagamentos (o
 // estado nunca é guardado, para nunca ficar desatualizado). Função pura: os testes não precisam de base
@@ -66,6 +66,22 @@ export function summarizeInvoices<
 export const isToPay = (summary: { estado: InvoiceState; emAbertoCentavos: number }) =>
   (summary.estado === 'aberta' || summary.estado === 'fechada' || summary.estado === 'vencida') &&
   summary.emAbertoCentavos > 0
+
+/** Quantos dias antes do vencimento o Início avisa da fatura (docs/features/lancamento-rapido.md). */
+export const DUE_SOON_DAYS = 7
+
+/**
+ * Faturas a pagar já vencidas ou que vencem nos próximos `days` dias (inclusive), da que vence
+ * primeiro para a última: o aviso "Pagar" do Início.
+ */
+export function dueSoon<
+  T extends { estado: InvoiceState; emAbertoCentavos: number; data_vencimento: IsoDate },
+>(summaries: readonly T[], hoje: IsoDate, days = DUE_SOON_DAYS): T[] {
+  const limit = addDays(hoje, days)
+  return summaries
+    .filter((summary) => isToPay(summary) && summary.data_vencimento <= limit)
+    .sort((a, b) => a.data_vencimento.localeCompare(b.data_vencimento))
+}
 
 function groupBy<T extends { fatura_id: string | null }>(rows: T[]): Map<string, T[]> {
   const groups = new Map<string, T[]>()
