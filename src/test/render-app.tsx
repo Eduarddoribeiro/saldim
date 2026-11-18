@@ -41,6 +41,7 @@ export function fakeAuth(overrides: Partial<AuthContextValue> = {}): AuthContext
     loading: false,
     signIn: vi.fn(async () => ({ error: null })),
     signUp: vi.fn(async () => ({ error: null, needsConfirmation: false })),
+    signInDemo: vi.fn(async () => ({ error: null })),
     signOut: vi.fn(async () => ({ error: null })),
     requestPasswordReset: vi.fn(async () => ({ error: null })),
     updatePassword: vi.fn(async () => ({ error: null })),

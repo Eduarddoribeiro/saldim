@@ -5,6 +5,8 @@ import { Link } from 'react-router'
 import { FormAlert } from '@/components/form/FormAlert'
 import { TextField } from '@/components/form/TextField'
 import { Button } from '@/components/ui/button'
+import { DemoEntry } from '@/features/demo/DemoEntry'
+import { DEMO_MODE } from '@/lib/demo-mode'
 import { useAuth } from './auth-context'
 import { AuthCard } from './AuthCard'
 import { loginSchema, type LoginValues } from './schemas'
@@ -26,49 +28,55 @@ export function LoginPage() {
   })
 
   return (
-    <AuthCard
-      title="Entrar"
-      description="Acesse suas finanças."
-      footer={
-        <p>
-          Ainda não tem conta?{' '}
-          <Link to="/cadastro" className="font-medium text-foreground underline underline-offset-4">
-            Criar conta
-          </Link>
-        </p>
-      }
-    >
-      <form onSubmit={onSubmit} noValidate className="grid gap-4">
-        {serverError && <FormAlert>{serverError}</FormAlert>}
-        <TextField
-          id="email"
-          label="E-mail"
-          type="email"
-          autoComplete="email"
-          inputMode="email"
-          error={errors.email?.message}
-          {...register('email')}
-        />
-        <div className="grid gap-1">
+    <>
+      {DEMO_MODE && <DemoEntry />}
+      <AuthCard
+        title="Entrar"
+        description="Acesse suas finanças."
+        footer={
+          <p>
+            Ainda não tem conta?{' '}
+            <Link
+              to="/cadastro"
+              className="font-medium text-foreground underline underline-offset-4"
+            >
+              Criar conta
+            </Link>
+          </p>
+        }
+      >
+        <form onSubmit={onSubmit} noValidate className="grid gap-4">
+          {serverError && <FormAlert>{serverError}</FormAlert>}
           <TextField
-            id="password"
-            label="Senha"
-            type="password"
-            autoComplete="current-password"
-            error={errors.password?.message}
-            {...register('password')}
+            id="email"
+            label="E-mail"
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            error={errors.email?.message}
+            {...register('email')}
           />
-          <Link
-            to="/recuperar-senha"
-            className="justify-self-end text-sm text-muted-foreground underline-offset-4 hover:underline"
-          >
-            Esqueci a senha
-          </Link>
-        </div>
-        <Button type="submit" size="lg" className="h-10" disabled={isSubmitting}>
-          {isSubmitting ? 'Entrando…' : 'Entrar'}
-        </Button>
-      </form>
-    </AuthCard>
+          <div className="grid gap-1">
+            <TextField
+              id="password"
+              label="Senha"
+              type="password"
+              autoComplete="current-password"
+              error={errors.password?.message}
+              {...register('password')}
+            />
+            <Link
+              to="/recuperar-senha"
+              className="justify-self-end text-sm text-muted-foreground underline-offset-4 hover:underline"
+            >
+              Esqueci a senha
+            </Link>
+          </div>
+          <Button type="submit" size="lg" className="h-10" disabled={isSubmitting}>
+            {isSubmitting ? 'Entrando…' : 'Entrar'}
+          </Button>
+        </form>
+      </AuthCard>
+    </>
   )
 }

@@ -1,6 +1,7 @@
 import { Suspense, useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
+import { DemoSetup } from '@/features/demo/DemoSetup'
 import { QuickEntryProvider } from '@/features/quick-entry/QuickEntryProvider'
 import { cn } from '@/lib/utils'
 import { RecurringGenerator } from '@/features/recurring/RecurringGenerator'
@@ -32,6 +33,8 @@ export function AppShell() {
         <Sidebar />
 
         <div className="flex min-w-0 flex-1 flex-col">
+          {/* Demo pública: prepara os dados do visitante e mostra a faixa "demonstração" */}
+          <DemoSetup />
           <header
             className={cn(
               'sticky top-0 z-30 flex h-14 items-center justify-between px-4 md:hidden',

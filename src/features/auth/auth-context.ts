@@ -16,6 +16,8 @@ export type AuthContextValue = {
     email: string,
     password: string,
   ) => Promise<AuthResult & { needsConfirmation: boolean }>
+  /** Demo pública: entra com uma conta anónima nova, só deste visitante (sem e-mail nem senha). */
+  signInDemo: () => Promise<AuthResult>
   signOut: () => Promise<AuthResult>
   requestPasswordReset: (email: string) => Promise<AuthResult>
   updatePassword: (password: string) => Promise<AuthResult>

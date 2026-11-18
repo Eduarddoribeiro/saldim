@@ -39,6 +39,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: authErrorMessage(error), needsConfirmation: !error && !data.session }
       },
 
+      async signInDemo() {
+        const { error } = await supabase.auth.signInAnonymously({
+          options: { data: { nome: 'Marina' } },
+        })
+        return { error: authErrorMessage(error) }
+      },
+
       async signOut() {
         const { error } = await supabase.auth.signOut()
         return { error: authErrorMessage(error) }
