@@ -205,6 +205,34 @@ describe('página de faturas', () => {
     expect(partes).toEqual(['SeuR$ 200,00', 'MãeR$ 79,15'])
   })
 
+  it('próximas faturas: todos os cartões juntos, quanto é meu e de cada pessoa, por mês', async () => {
+    store.invoices.push(fatura('dez', '2026-12', '2026-11-25', '2026-12-05'))
+    store.items.push(parcela('dez', 3, 20000), {
+      ...parcela('dez', 1, 7000),
+      id: 'mae-1',
+      compra_id: 'bolsa',
+      descricao: 'Bolsa',
+      pessoa_id: 'mae',
+    })
+    renderApp('/faturas')
+    const proximas = await screen.findByRole('region', { name: 'Próximas faturas' })
+    // Nov.: 20000 − 5000 já pagos (abate a minha parte); dez.: 20000 meus + 7000 da mãe
+    const linhas = within(proximas)
+      .getAllByRole('group')
+      .map((row) => plain(row.querySelector('summary')?.textContent))
+    expect(linhas).toEqual([
+      'novembro · vence até 05/11Seu R$ 150,00R$ 150,00',
+      'dezembro · vence até 05/12Seu R$ 200,00 · Mãe R$ 70,00R$ 270,00',
+    ])
+    // A fatura vencida de setembro não entra
+    expect(plain(proximas.textContent)).not.toContain('setembro')
+    await userEvent.click(within(proximas).getByText('dezembro'))
+    const visa = within(proximas).getAllByRole('list', { name: 'Compras no Visa' })[1]
+    expect(plain(visa.textContent)).toBe(
+      'Televisãoparcela 3/3R$ 200,00Bolsaà vista · para MãeR$ 70,00',
+    )
+  })
+
   it('sem compras de outras pessoas, o detalhe não mostra a divisão', async () => {
     renderApp('/faturas')
     await userEvent.click(await screen.findByRole('button', { name: /^Fatura de novembro/ }))

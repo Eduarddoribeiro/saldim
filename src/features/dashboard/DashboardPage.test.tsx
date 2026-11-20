@@ -397,6 +397,48 @@ describe('início (dashboard)', () => {
     )
   })
 
+  it('próximas faturas: o próximo mês com a parte minha e da mãe, e leva a Cartões', async () => {
+    store.accounts.push(visa())
+    store.people = [
+      {
+        id: 'mae',
+        user_id: 'u',
+        nome: 'Mãe',
+        arquivada: false,
+        divida_anterior_centavos: 0,
+        viewer_id: null,
+        created_at: '',
+      },
+    ]
+    const invoice = (id: string, vencimento: string): Invoice => ({
+      id,
+      account_id: 'visa',
+      mes_referencia: `${vencimento.slice(0, 7)}-01`,
+      data_fechamento: addDays(vencimento, -10),
+      data_vencimento: vencimento,
+    })
+    store.invoices = [invoice('f2', '2026-11-10'), invoice('f3', '2026-12-10')]
+    const parcela = { account_id: 'visa', compra_id: 'c', parcela_numero: 2 }
+    store.transactions.push(
+      tx({ ...parcela, data: '2026-10-20', fatura_id: 'f2', valor_centavos: 30000 }),
+      tx({
+        ...parcela,
+        data: '2026-10-21',
+        fatura_id: 'f2',
+        valor_centavos: 10000,
+        pessoa_id: 'mae',
+      }),
+      tx({ ...parcela, data: '2026-11-21', fatura_id: 'f3', valor_centavos: 5000 }),
+    )
+    renderApp('/')
+    const link = await screen.findByRole('link', { name: /^Próximas faturas:/ })
+    expect(plain(link.getAttribute('aria-label'))).toBe(
+      'Próximas faturas: Novembro R$ 400,00, Seu R$ 300,00 · Mãe R$ 100,00. Ver os meses',
+    )
+    expect(plain(link.textContent)).toContain('Dezembro: R$ 50,00')
+    expect(link).toHaveAttribute('href', '/faturas')
+  })
+
   it('pagar a mais dá crédito nos cartões, que soma ao limite disponível', async () => {
     store.accounts.push({ ...visa(), limite_centavos: 20000 })
     store.transactions.push(

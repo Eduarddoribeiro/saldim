@@ -25,6 +25,8 @@ import {
   invoiceTitle,
 } from './invoice-options'
 import { isToPay, summarizeInvoices, totalsByPerson } from './invoice-summary'
+import { UpcomingCardInvoices } from './UpcomingCardInvoices'
+import { upcomingCardMonths } from './upcoming-months'
 
 type Filter = 'por_pagar' | 'pagas' | 'todas'
 const FILTERS: { value: Filter; label: string }[] = [
@@ -104,6 +106,12 @@ export function InvoicesPage() {
     .filter(isToPay)
     .reduce((total, invoice) => total + invoice.emAbertoCentavos, 0)
   const opened = summaries.find((invoice) => invoice.id === openedId) ?? null
+  // Todos os cartões juntos: quanto sai em cada mês que vem, e de quem é
+  const upcoming = upcomingCardMonths(
+    summarizeInvoices(invoices.data ?? [], items.data ?? [], payments.data ?? [], todayIso()),
+    todayIso(),
+  )
+  const purchasesById = new Map((purchases.data ?? []).map((purchase) => [purchase.id, purchase]))
 
   const header = (
     <PageHeader
@@ -163,6 +171,17 @@ export function InvoicesPage() {
   return (
     <>
       {header}
+
+      <UpcomingCardInvoices
+        months={upcoming}
+        cardName={(id) => allAccounts.find((account) => account.id === id)?.nome ?? 'Cartão'}
+        personName={personName}
+        categoryName={(id) =>
+          categories.data?.find((category) => category.id === id)?.nome ?? 'Compra no cartão'
+        }
+        totalParcelas={(id) => purchasesById.get(id)?.parcelas}
+        currency={currency}
+      />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-[minmax(0,22rem)_1fr] sm:items-end">
         {/* O cartão desenhado como cartão: nome, quanto falta pagar e os dias de fecho/vencimento */}

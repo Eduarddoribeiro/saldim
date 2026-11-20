@@ -9,6 +9,7 @@ import { useAccounts } from '@/features/accounts/hooks'
 import { usePurchases } from '@/features/card-purchases/hooks'
 import { useCategories } from '@/features/categories/hooks'
 import { DueInvoices } from '@/features/invoices/DueInvoices'
+import { NextInvoicesSummary } from '@/features/invoices/NextInvoicesSummary'
 import { SharedDebtBanner } from '@/features/sharing/SharedDebtBanner'
 import { usePeople } from '@/features/people/hooks'
 import { useReceivables } from '@/features/people/use-receivables'
@@ -227,6 +228,8 @@ export function DashboardPage() {
           purchases={purchases.data ?? []}
         />
       )}
+
+      {hasCards && <NextInvoicesSummary />}
 
       {receivables.data.length > 0 && (
         // A receber (T1) numa linha, como um cartão de banco: quem deve, quanto e um toque para ver
