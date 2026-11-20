@@ -147,6 +147,7 @@ beforeEach(() => {
       valor_total_centavos: 10000,
       parcelas: 3,
       parcela_inicial: 1,
+      centavos_na_primeira: true,
       pessoa_id: null,
       created_at: '',
     },
@@ -262,15 +263,15 @@ describe('compras no cartão', () => {
 
     // Compra no dia do fechamento (25) → fatura seguinte (vence a 5 de dezembro)
     expect(plain(within(dialog).getByRole('status').textContent)).toBe(
-      '3× R$ 33,33 (a última R$ 33,34)',
+      '3× R$ 33,33 (a primeira R$ 33,34)',
     )
     const parcelas = within(within(dialog).getByRole('list', { name: 'Parcelas' })).getAllByRole(
       'listitem',
     )
     expect(parcelas.map((li) => plain(li.textContent))).toEqual([
-      '1/3 fatura de dez 2026 · vence 05/12/2026R$ 33,33',
+      '1/3 fatura de dez 2026 · vence 05/12/2026R$ 33,34',
       '2/3 fatura de jan 2027 · vence 05/01/2027R$ 33,33',
-      '3/3 fatura de fev 2027 · vence 05/02/2027R$ 33,34',
+      '3/3 fatura de fev 2027 · vence 05/02/2027R$ 33,33',
     ])
 
     await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar compra' }))
@@ -297,7 +298,7 @@ describe('compras no cartão', () => {
     await userEvent.selectOptions(within(dialog).getByLabelText('Primeira parcela a pagar'), '4')
 
     expect(plain(within(dialog).getByRole('status').textContent)).toBe(
-      '6× R$ 100,00 (a última R$ 100,01) · da 4.ª à 6.ª: R$ 300,01',
+      '6× R$ 100,00 (a primeira R$ 100,01) · da 4.ª à 6.ª: R$ 300,00',
     )
     expect(
       within(within(dialog).getByRole('list', { name: 'Parcelas' })).getAllByRole('listitem'),

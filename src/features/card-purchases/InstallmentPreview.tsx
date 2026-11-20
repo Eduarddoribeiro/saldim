@@ -18,6 +18,8 @@ export type PreviewInput = {
   totalCentavos: number
   numeroParcelas: number
   parcelaInicial: number
+  /** Regra dos centavos de uma compra já registada; omitido = a atual (na primeira) */
+  centavosNaPrimeira?: boolean
 }
 
 /** '05/12/2026' */
@@ -39,6 +41,7 @@ function previewSchedule(input: PreviewInput, history: CardDaysChange[]) {
       parcelaInicial: input.parcelaInicial,
       config: input.config,
       history,
+      centavosNaPrimeira: input.centavosNaPrimeira,
     })
     return {
       restanteCentavos,
@@ -88,15 +91,17 @@ export function InstallmentPreview({
   const { parcelas, restanteCentavos } = schedule
   const n = input.numeroParcelas
   // Valores da compra completa (numa compra em curso, as primeiras parcelas não aparecem na lista)
-  const valores = splitInstallments(input.totalCentavos, n)
-  const [base, ultima] = [valores[0], valores[n - 1]]
+  const naPrimeira = input.centavosNaPrimeira ?? true
+  const valores = splitInstallments(input.totalCentavos, n, naPrimeira)
+  // As outras parcelas valem `base`; uma (a primeira ou a última) leva os centavos que sobram
+  const [base, diferente] = naPrimeira ? [valores[n - 1], valores[0]] : [valores[0], valores[n - 1]]
   const money = (cents: number) => formatMoney(cents, currency)
   const resumo =
     n === 1
       ? `À vista: ${money(base)}`
-      : base === ultima
+      : base === diferente
         ? `${n}× ${money(base)}`
-        : `${n}× ${money(base)} (a última ${money(ultima)})`
+        : `${n}× ${money(base)} (a ${naPrimeira ? 'primeira' : 'última'} ${money(diferente)})`
 
   return (
     <section aria-labelledby="previsao-titulo" className="grid gap-2 rounded-lg border p-3">

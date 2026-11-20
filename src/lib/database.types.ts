@@ -167,6 +167,7 @@ export type Database = {
         Row: {
           account_id: string
           category_id: string
+          centavos_na_primeira: boolean
           created_at: string
           data_compra: string
           descricao: string
@@ -181,6 +182,7 @@ export type Database = {
         Insert: {
           account_id: string
           category_id: string
+          centavos_na_primeira?: boolean
           created_at?: string
           data_compra: string
           descricao?: string
@@ -194,6 +196,7 @@ export type Database = {
         Update: {
           account_id?: string
           category_id?: string
+          centavos_na_primeira?: boolean
           created_at?: string
           data_compra?: string
           descricao?: string

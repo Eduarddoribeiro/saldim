@@ -144,6 +144,7 @@ beforeEach(() => {
       valor_total_centavos: 30000,
       parcelas: 2,
       parcela_inicial: 1,
+      centavos_na_primeira: true,
       pessoa_id: 'mae',
       created_at: '',
     },

@@ -290,35 +290,41 @@ describe('invoiceForPurchase', () => {
 })
 
 describe('splitInstallments', () => {
-  it('a diferença do arredondamento fica na última parcela', () => {
-    expect(splitInstallments(10000, 3)).toEqual([3333, 3333, 3334])
-    expect(splitInstallments(1000, 3)).toEqual([333, 333, 334])
+  it('a diferença do arredondamento fica na primeira parcela (como os bancos)', () => {
+    expect(splitInstallments(10000, 3)).toEqual([3334, 3333, 3333])
+    expect(splitInstallments(5900, 3)).toEqual([1968, 1966, 1966])
+    expect(splitInstallments(1000, 3)).toEqual([334, 333, 333])
     expect(splitInstallments(10000, 4)).toEqual([2500, 2500, 2500, 2500])
     expect(splitInstallments(1, 1)).toEqual([1])
     expect(splitInstallments(3, 3)).toEqual([1, 1, 1])
   })
 
+  it('compras antigas (antes de 2026-11-20): a diferença fica na última parcela', () => {
+    expect(splitInstallments(10000, 3, false)).toEqual([3333, 3333, 3334])
+    expect(splitInstallments(10000, 4, false)).toEqual([2500, 2500, 2500, 2500])
+  })
+
   it('MAX_CENTS em 48 parcelas: soma exata, sem perder centavos', () => {
     const parcelas = splitInstallments(MAX_CENTS, MAX_PARCELAS)
     expect(sum(parcelas)).toBe(MAX_CENTS)
-    expect(parcelas.at(-1)! - parcelas[0]).toBe(15)
+    expect(parcelas[0] - parcelas.at(-1)!).toBe(15)
   })
 
-  it('EXAUSTIVO: n de 1 a 48 × vários totais: soma exata, só a última difere, diferença < n', () => {
+  it('EXAUSTIVO: n de 1 a 48 × vários totais: soma exata, só a primeira difere, diferença < n', () => {
     const totais = [48, 97, 100, 101, 997, 1000, 9999, 123457, 1000003, MAX_CENTS - 1, MAX_CENTS]
     const falhas: string[] = []
     for (let n = 1; n <= MAX_PARCELAS; n++) {
       for (const total of totais) {
         if (total < n) continue
         const parcelas = splitInstallments(total, n)
-        const ultima = parcelas.at(-1)!
+        const primeira = parcelas[0]
         const ok =
           parcelas.length === n &&
           sum(parcelas) === total &&
           parcelas.every((p) => Number.isSafeInteger(p) && p >= 1) &&
-          new Set(parcelas.slice(0, -1)).size <= 1 &&
-          ultima >= parcelas[0] &&
-          ultima - parcelas[0] < n
+          new Set(parcelas.slice(1)).size <= 1 &&
+          primeira >= parcelas.at(-1)! &&
+          primeira - parcelas.at(-1)! < n
         if (!ok) falhas.push(`${total}/${n}`)
       }
     }
@@ -407,9 +413,20 @@ describe('installmentSchedule', () => {
     ])
   })
 
-  it('soma exata do valor original, com a diferença na última parcela', () => {
-    const { parcelas, restanteCentavos } = schedule('2026-10-14', 3, 10000)
+  it('uma compra antiga (centavosNaPrimeira: false) mostra-se como foi registada', () => {
+    const { parcelas } = installmentSchedule({
+      dataCompra: '2026-10-14',
+      totalCentavos: 10000,
+      numeroParcelas: 3,
+      config: { diaFechamento: 25, diaVencimento: 5 },
+      centavosNaPrimeira: false,
+    })
     expect(parcelas.map((p) => p.valorCentavos)).toEqual([3333, 3333, 3334])
+  })
+
+  it('soma exata do valor original, com a diferença na primeira parcela', () => {
+    const { parcelas, restanteCentavos } = schedule('2026-10-14', 3, 10000)
+    expect(parcelas.map((p) => p.valorCentavos)).toEqual([3334, 3333, 3333])
     expect(restanteCentavos).toBe(10000)
   })
 
@@ -449,12 +466,12 @@ describe('installmentSchedule', () => {
       expect(emCurso.restanteCentavos).toBe(60000)
     })
 
-    it('o arredondamento é o da compra completa: a última parcela leva o resto', () => {
+    it('o arredondamento é o da compra completa: a primeira (já paga) leva o resto', () => {
       const emCurso = schedule('2026-03-10', 3, 10000, 2)
-      expect(emCurso.parcelas.map((p) => p.valorCentavos)).toEqual([3333, 3334])
-      expect(emCurso.restanteCentavos).toBe(6667)
+      expect(emCurso.parcelas.map((p) => p.valorCentavos)).toEqual([3333, 3333])
+      expect(emCurso.restanteCentavos).toBe(6666)
       expect(schedule('2026-03-10', 3, 10000, 3).parcelas).toEqual([
-        { numero: 3, valorCentavos: 3334, data: '2026-05-10', mesFatura: '2026-06' },
+        { numero: 3, valorCentavos: 3333, data: '2026-05-10', mesFatura: '2026-06' },
       ])
     })
 

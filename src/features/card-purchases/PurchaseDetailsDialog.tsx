@@ -163,6 +163,7 @@ function Summary({
             totalCentavos: purchase.valor_total_centavos,
             numeroParcelas: purchase.parcelas,
             parcelaInicial: purchase.parcela_inicial,
+            centavosNaPrimeira: purchase.centavos_na_primeira,
           }}
         />
       )}

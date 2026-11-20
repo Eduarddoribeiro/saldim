@@ -311,7 +311,12 @@ export function previewDaysChange(
  * floor(total / n) e a ÚLTIMA leva também o resto (menos de n centavos). A soma é exatamente o total.
  * Ex.: 100,00 em 3 → 33,33 + 33,33 + 33,34.
  */
-export function splitInstallments(totalCentavos: number, numeroParcelas: number): number[] {
+export function splitInstallments(
+  totalCentavos: number,
+  numeroParcelas: number,
+  /** Onde fica o resto: na 1.ª parcela (como os bancos; compras desde 2026-11-20) ou na última */
+  centavosNaPrimeira = true,
+): number[] {
   assertCents(totalCentavos)
   if (totalCentavos < 1 || totalCentavos > MAX_CENTS) {
     throw new RangeError(`Valor total inválido: ${totalCentavos} (de 1 a ${MAX_CENTS} centavos)`)
@@ -326,8 +331,9 @@ export function splitInstallments(totalCentavos: number, numeroParcelas: number)
   }
   const base = Math.floor(totalCentavos / numeroParcelas)
   const resto = totalCentavos - base * numeroParcelas
+  const comResto = centavosNaPrimeira ? 0 : numeroParcelas - 1
   return Array.from({ length: numeroParcelas }, (_, index) =>
-    index === numeroParcelas - 1 ? base + resto : base,
+    index === comResto ? base + resto : base,
   )
 }
 
@@ -353,6 +359,8 @@ export type InstallmentScheduleInput = {
   config: CardConfig
   /** Dias antigos do cartão (C8); sem histórico, só os dias atuais */
   history?: readonly CardDaysChange[]
+  /** Regra dos centavos da compra (compras_cartao.centavos_na_primeira); por omissão, a atual */
+  centavosNaPrimeira?: boolean
 }
 
 /**
@@ -367,11 +375,12 @@ export function installmentSchedule({
   parcelaInicial = 1,
   config,
   history = [],
+  centavosNaPrimeira = true,
 }: InstallmentScheduleInput): { parcelas: Installment[]; restanteCentavos: number } {
   if (!isIsoDate(dataCompra) || dataCompra < MIN_DATE || dataCompra > MAX_DATE) {
     throw new RangeError(`Data da compra inválida: ${dataCompra}`)
   }
-  const valores = splitInstallments(totalCentavos, numeroParcelas)
+  const valores = splitInstallments(totalCentavos, numeroParcelas, centavosNaPrimeira)
   if (!Number.isInteger(parcelaInicial) || parcelaInicial < 1 || parcelaInicial > numeroParcelas) {
     throw new RangeError(`Parcela inicial inválida: ${parcelaInicial} (de 1 a ${numeroParcelas})`)
   }

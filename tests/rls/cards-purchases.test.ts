@@ -167,12 +167,15 @@ describe('registar_compra_cartao — parcelas e faturas', () => {
 
     const parcelas = await parcelasGravadas(b.client, id!)
     expect(parcelas).toEqual(esperado(FECHA_25_VENCE_5, compra))
-    expect(parcelas.map((p) => p.valorCentavos)).toEqual([3333, 3333, 3334])
+    // Os centavos que sobram vão na primeira parcela, como nos bancos (migration centavos_primeira_parcela)
+    expect(parcelas.map((p) => p.valorCentavos)).toEqual([3334, 3333, 3333])
     expect(parcelas.map((p) => p.mesFatura)).toEqual(['2026-11', '2026-12', '2027-01'])
 
     const { data: gravada } = await b.client
       .from('compras_cartao')
-      .select('valor_total_centavos, parcelas, parcela_inicial, data_compra, descricao')
+      .select(
+        'valor_total_centavos, parcelas, parcela_inicial, data_compra, descricao, centavos_na_primeira',
+      )
       .eq('id', id!)
       .single()
     expect(gravada).toEqual({
@@ -181,6 +184,7 @@ describe('registar_compra_cartao — parcelas e faturas', () => {
       parcela_inicial: 1,
       data_compra: '2026-10-10',
       descricao: 'Mercado',
+      centavos_na_primeira: true,
     })
     // Cada parcela é uma despesa normal (conta para gastos e orçamentos) com a descrição e a categoria da compra
     const { data: linhas } = await b.client
@@ -258,7 +262,7 @@ describe('registar_compra_cartao — parcelas e faturas', () => {
     expect(parcelas.map((p) => [p.numero, p.valorCentavos, p.data])).toEqual([
       [4, 10000, '2026-09-15'],
       [5, 10000, '2026-10-15'],
-      [6, 10001, '2026-11-15'],
+      [6, 10000, '2026-11-15'],
     ])
     const { data: gravada } = await b.client
       .from('compras_cartao')
@@ -586,7 +590,7 @@ describe('integridade: escritas diretas não contornam as regras', () => {
     })
     const casos: [string, Record<string, unknown>, string][] = [
       ['parcela 4 de 3', linha(4), 'transactions_parcela_check'],
-      ['valor errado', linha(1, { valor_centavos: 3334 }), 'transactions_parcela_check'],
+      ['valor errado', linha(1, { valor_centavos: 3333 }), 'transactions_parcela_check'],
       ['data errada', linha(1, { data: '2026-10-11' }), 'transactions_parcela_check'],
       ['fatura errada', linha(1, { fatura_id: faturas![1].id }), 'transactions_parcela_check'],
       ['categoria errada', linha(1, { category_id: refsB.receita }), 'transactions_parcela_check'],

@@ -21,6 +21,7 @@ const purchase = (overrides: Partial<CardPurchase>): CardPurchase => ({
   valor_total_centavos: 10000,
   parcelas: 1,
   parcela_inicial: 1,
+  centavos_na_primeira: true,
   pessoa_id: 'mae',
   created_at: '',
   ...overrides,

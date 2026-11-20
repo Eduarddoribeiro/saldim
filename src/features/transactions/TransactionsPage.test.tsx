@@ -364,6 +364,7 @@ describe('página de transações', () => {
         valor_total_centavos: 5000,
         parcelas: 1,
         parcela_inicial: 1,
+        centavos_na_primeira: true,
         pessoa_id: null,
         created_at: '',
       },

@@ -234,6 +234,8 @@ Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etap
 
 - [x] **Próximas faturas de todos os cartões** (pedido de 2026-11-20): `upcomingCardMonths` (`features/invoices/upcoming-months.ts`) junta as faturas por vencer pelo mês do vencimento, com a parte de quem usa a app e de cada pessoa (um pagamento adiantado abate a parte própria); quadro "Próximas faturas" no topo de Cartões (`UpcomingCardInvoices`, 3 meses + "depois", cada mês abre com as compras por cartão) e resumo no Início (`NextInvoicesSummary`, liga a Cartões); sem mudanças na base de dados
 
+- [x] **Centavos na primeira parcela** (migration `centavos_primeira_parcela`; D3c em `docs/plano.md`): como os bancos, o resto da divisão vai na 1.ª parcela; `compras_cartao.centavos_na_primeira` (false nas compras antigas, que ficam como foram registadas) e `splitInstallments`/`installmentSchedule` com a mesma opção
+
 - [ ] **Partilhar a dívida** (`docs/features/mae-ve-o-que-deve.md`; migration `partilhar_divida`): a pessoa de A receber recebe um link, cria conta e vê só o que deve ("O que eu devo"); fases 1–3 feitas e testadas localmente (RLS a três utilizadores, e2e com dois browsers); falta aplicar a migration em produção.
 
 - [ ] **Demo pública** (`docs/features/demo-publica.md`): instalação à parte com `VITE_DEMO=true` e projeto Supabase próprio; "Explorar a demonstração" cria uma conta anónima por visitante e preenche-a com os dados de `demo-seed.ts`; login anónimo ligado no `config.toml` local. Código e testes feitos; falta criar os projetos Supabase e Vercel da demo.
