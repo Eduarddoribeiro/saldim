@@ -19,8 +19,10 @@ const DEVICES = {
 }
 
 mkdirSync(OUT, { recursive: true })
-// Edge do sistema, como nos testes E2E (sem descarregar browsers)
-const browser = await chromium.launch({ channel: 'msedge' })
+// Edge do sistema, como nos testes E2E (sem descarregar browsers); PW_EXECUTABLE usa outro Chromium
+const browser = await chromium.launch(
+  process.env.PW_EXECUTABLE ? { executablePath: process.env.PW_EXECUTABLE } : { channel: 'msedge' },
+)
 for (const [device, { options, pages }] of Object.entries(DEVICES)) {
   for (const theme of ['claro', 'escuro']) {
     const context = await browser.newContext(options)
