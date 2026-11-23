@@ -18,7 +18,15 @@ import { createTransaction } from '@/features/transactions/transactions-api'
 import { errorMessage } from '@/lib/db-errors'
 import { formatMoney } from '@/lib/money'
 import { cn } from '@/lib/utils'
-import { actionFor, buildReviewRows, type Owner, type ReviewRow } from './import-plan'
+import { saveAliases } from './aliases-api'
+import { useImportAliases } from './hooks'
+import {
+  actionFor,
+  aliasesToSave,
+  buildReviewRows,
+  type Owner,
+  type ReviewRow,
+} from './import-plan'
 import { ImportError, parseImportFile, type ImportFormat, type ImportLine } from './parse'
 
 const FORMAT_LABELS: Record<ImportFormat, string> = {
@@ -27,7 +35,7 @@ const FORMAT_LABELS: Record<ImportFormat, string> = {
   ofx: 'Ficheiro OFX do banco',
 }
 
-type Override = Partial<Pick<ReviewRow, 'selecionada' | 'categoryId' | 'dono'>>
+type Override = Partial<Pick<ReviewRow, 'selecionada' | 'categoryId' | 'dono' | 'descricao'>>
 
 /**
  * Importar (docs/features/importar.md): escolhe-se a conta ou o cartão e o ficheiro do banco; a lista
@@ -40,6 +48,7 @@ export function ImportPage() {
   const purchases = usePurchases()
   const people = usePeople()
   const history = useImportHistory()
+  const aliases = useImportAliases()
   const currency = useCurrency()
   const queryClient = useQueryClient()
 
@@ -59,7 +68,9 @@ export function ImportPage() {
   const target = active.find((account) => account.id === targetId)
   const isCard = target ? isCreditCard(target) : false
   const activePeople = (people.data ?? []).filter((person) => !person.arquivada)
-  const loading = [accounts, categories, purchases, people, history].some((q) => q.isPending)
+  const loading = [accounts, categories, purchases, people, history, aliases].some(
+    (q) => q.isPending,
+  )
 
   const baseRows =
     file && target && !loading
@@ -70,6 +81,7 @@ export function ImportPage() {
           purchases: purchases.data ?? [],
           history: history.data ?? [],
           categories: categories.data ?? [],
+          aliases: aliases.data ?? [],
         })
       : []
   const rows = baseRows.map((row) => ({ ...row, ...overrides[row.id] }))
@@ -115,6 +127,12 @@ export function ImportPage() {
         errors.push([row.descricao, errorMessage(cause)])
       }
       setProgress({ done: index + 1, total: toImport.length })
+    }
+    // Os nomes mudados ficam lembrados para a próxima importação (uma falha aqui não desfaz nada)
+    try {
+      await saveAliases(aliasesToSave(toImport))
+    } catch {
+      // sem nomes lembrados: na próxima vez vem o nome do banco
     }
     await queryClient.invalidateQueries()
     setOverrides({})
@@ -305,7 +323,9 @@ function ReviewItem({
           onChange={(event) => onChange({ selecionada: event.target.checked })}
         />
         <span className="min-w-0 flex-1">
-          <span className="block truncate font-medium">{row.descricao || 'Sem descrição'}</span>
+          <span className="block truncate font-medium">
+            {row.descricaoBanco || 'Sem descrição'}
+          </span>
           <span className="block truncate text-xs text-muted-foreground">{detail}</span>
         </span>
         <span
@@ -319,8 +339,16 @@ function ReviewItem({
       </label>
       {importable && row.selecionada && (
         <div className={cn('grid gap-2 pl-8', isCard && 'sm:grid-cols-2')}>
+          <input
+            aria-label={`Nome no Saldim de ${row.descricaoBanco}`}
+            value={row.descricao}
+            maxLength={120}
+            placeholder={row.descricaoBanco}
+            onChange={(event) => onChange({ descricao: event.target.value })}
+            className="h-10 min-w-0 rounded-lg border bg-background px-3 text-sm sm:col-span-2"
+          />
           <select
-            aria-label={`Categoria de ${row.descricao}`}
+            aria-label={`Categoria de ${row.descricaoBanco}`}
             value={row.categoryId}
             onChange={(event) => onChange({ categoryId: event.target.value })}
             className="h-10 min-w-0 rounded-lg border bg-background px-2 text-sm"
@@ -333,7 +361,7 @@ function ReviewItem({
           </select>
           {isCard && (
             <select
-              aria-label={`De quem é ${row.descricao}`}
+              aria-label={`De quem é ${row.descricaoBanco}`}
               value={row.dono}
               onChange={(event) => onChange({ dono: event.target.value as Owner })}
               className="h-10 min-w-0 rounded-lg border bg-background px-2 text-sm"

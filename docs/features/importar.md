@@ -23,7 +23,8 @@ Registar de uma vez o que veio do banco, em vez de lançamento a lançamento: es
 3. **Duplicados (conta):** mesma conta, mesmo tipo, mesmo valor e data a ±1 dia. Cada lançamento do Saldim só "apaga" uma linha.
 4. **Pagamentos e créditos no cartão** aparecem, mas não se importam (o pagamento regista-se em Cartões → Pagar).
 5. **Categoria sugerida:** a de um lançamento antigo com a mesma descrição (aprende com o uso); senão, por palavras (mercado/açougue/ifood → Alimentação; uber/posto → Transporte; farmácia → Saúde…); senão "Outras despesas"/"Outras receitas". A pessoa (Minha / Mãe / Dividida) também vem do histórico.
-6. Cada linha regista-se pelas funções de sempre (`registar_compra_cartao`, `registar_compra_dividida`, inserção de transação), com as mesmas regras da base de dados; uma linha que falhe mostra o erro e não trava as outras.
+6. **Nomes:** cada linha mostra o nome do banco e um campo "Nome no Saldim" (por omissão, o do banco). Um nome mudado fica guardado em `nomes_importacao` (chave = descrição do banco normalizada, `aliasKey`) e é sugerido na próxima importação, com a categoria e a pessoa usadas da última vez com esse nome. Os duplicados não dependem do nome (valor e data).
+7. Cada linha regista-se pelas funções de sempre (`registar_compra_cartao`, `registar_compra_dividida`, inserção de transação), com as mesmas regras da base de dados; uma linha que falhe mostra o erro e não trava as outras.
 
 ## Fases
 

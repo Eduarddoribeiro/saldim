@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { actionFor, buildReviewRows } from './import-plan'
+import { actionFor, aliasesToSave, buildReviewRows } from './import-plan'
 import { parseImportFile } from './parse'
 
 const categories = [
@@ -126,5 +126,58 @@ describe('buildReviewRows (conta)', () => {
         descricao: 'Pix recebido',
       },
     })
+  })
+})
+
+describe('nomes lembrados', () => {
+  const lines = parseImportFile(
+    'date,title,amount\n2026-12-03,Mercadolivre - Parcela 1/3,25.00',
+  ).lines
+
+  it('o nome escolhido da última vez vem no lugar do do banco, com a categoria desse nome', () => {
+    const [row] = buildReviewRows({
+      lines,
+      isCard: true,
+      accountId: 'picpay',
+      purchases: [],
+      history: [
+        {
+          account_id: 'picpay',
+          descricao: 'Café',
+          category_id: 'alim',
+          pessoa_id: 'mae',
+          tipo: 'despesa',
+          valor_centavos: 3332,
+          data: '2026-11-17',
+        },
+      ],
+      categories,
+      aliases: [{ chave: 'mercadolivre', descricao: 'Café' }],
+    })
+    expect([row.descricao, row.descricaoBanco, row.categoryId, row.dono]).toEqual([
+      'Café',
+      'Mercadolivre',
+      'alim',
+      'p:mae',
+    ])
+    expect(actionFor(row, 'picpay', true).values.descricao).toBe('Café')
+  })
+
+  it('só se guardam os nomes mudados (um por descrição do banco)', () => {
+    const [row] = buildReviewRows({
+      lines,
+      isCard: true,
+      accountId: 'picpay',
+      purchases: [],
+      history: [],
+      categories,
+    })
+    expect(aliasesToSave([row])).toEqual([])
+    expect(
+      aliasesToSave([
+        { ...row, descricao: ' Café ' },
+        { ...row, descricao: 'Moedor' },
+      ]),
+    ).toEqual([{ chave: 'mercadolivre', descricao: 'Moedor' }])
   })
 })

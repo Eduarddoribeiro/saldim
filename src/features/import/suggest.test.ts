@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { descriptionKey, suggestFor } from './suggest'
+import { aliasKey, descriptionKey, suggestFor } from './suggest'
 
 const categories = [
   { id: 'alim', nome: 'Alimentação', tipo: 'despesa', arquivada: false },
@@ -45,5 +45,12 @@ describe('suggestFor', () => {
   it('chave da descrição: sem números nem prefixos de maquininha', () => {
     expect(descriptionKey('Pg *ola Doutor')).toBe('ola doutor')
     expect(descriptionKey('Jim.com* 46005')).toBe('jim com')
+  })
+})
+
+describe('aliasKey', () => {
+  it('a descrição do banco sem acentos, números nem pontuação', () => {
+    expect(aliasKey('Merc Açougue Autodromo *123')).toBe('merc acougue autodromo')
+    expect(aliasKey('MERCADOLIVRE')).toBe('mercadolivre')
   })
 })

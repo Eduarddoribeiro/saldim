@@ -2,7 +2,7 @@ import { halfSplit } from '@/lib/credit-card'
 import type { IsoDate } from '@/lib/dates'
 import { matchAccountLines, matchCardLines, type ExistingPurchase } from './match'
 import type { ImportLine } from './parse'
-import { suggestFor, type HistoryItem } from './suggest'
+import { aliasKey, suggestFor, type HistoryItem } from './suggest'
 
 // Da lista de linhas do ficheiro à lista de revisão (docs/features/importar.md): o estado de cada
 // linha e o que se regista. Função pura: a página só mostra e chama a API.
@@ -14,6 +14,8 @@ export type Owner = '' | `p:${string}` | `d:${string}`
 
 export type ReviewRow = ImportLine & {
   status: RowStatus
+  /** A descrição como veio do banco (a `descricao` é o nome que fica no Saldim) */
+  descricaoBanco: string
   /** Escolhas da revisão (começam com as sugestões) */
   selecionada: boolean
   categoryId: string
@@ -27,7 +29,10 @@ export function buildReviewRows({
   purchases,
   history,
   categories,
+  aliases = [],
 }: {
+  /** Nomes escolhidos em importações anteriores (chave = aliasKey da descrição do banco) */
+  aliases?: readonly { chave: string; descricao: string }[]
   lines: readonly ImportLine[]
   isCard: boolean
   accountId: string
@@ -44,6 +49,7 @@ export function buildReviewRows({
         lines,
         history.filter((item) => item.account_id === accountId),
       )
+  const names = new Map(aliases.map((alias) => [alias.chave, alias.descricao]))
   return lines.map((line) => {
     // No cartão, o que "entra" é pagamento ou crédito: regista-se em Cartões → Pagar
     const status: RowStatus =
@@ -53,9 +59,13 @@ export function buildReviewRows({
           ? 'ja-registada'
           : 'nova'
     const tipo = line.sentido === 'saida' ? 'despesa' : 'receita'
-    const suggestion = suggestFor(line.descricao, tipo, history, categories)
+    // O nome escolhido da última vez; a categoria e a pessoa vêm do histórico desse nome
+    const nome = names.get(aliasKey(line.descricao)) ?? line.descricao
+    const suggestion = suggestFor(nome, tipo, history, categories)
     return {
       ...line,
+      descricao: nome,
+      descricaoBanco: line.descricao,
       status,
       selecionada: status === 'nova',
       categoryId: suggestion.categoryId,
@@ -127,4 +137,15 @@ export function actionFor(row: ReviewRow, accountId: string, isCard: boolean): I
     }
   }
   return { kind: 'purchase', values }
+}
+
+/** Nomes a lembrar depois de importar: as linhas cujo nome foi mudado em relação ao do banco. */
+export function aliasesToSave(rows: readonly ReviewRow[]): { chave: string; descricao: string }[] {
+  const byKey = new Map<string, string>()
+  for (const row of rows) {
+    const nome = row.descricao.trim().slice(0, 120)
+    const chave = aliasKey(row.descricaoBanco)
+    if (chave && nome && nome !== row.descricaoBanco) byKey.set(chave, nome)
+  }
+  return [...byKey].map(([chave, descricao]) => ({ chave, descricao }))
 }

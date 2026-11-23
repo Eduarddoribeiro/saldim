@@ -48,6 +48,8 @@ test('importa a fatura do cartão sem duplicar', async ({ page }) => {
   await expect(
     page.getByLabel('Categoria de Merc Acougue Autodromo').locator('option:checked'),
   ).toHaveText('Alimentação')
+  // O nome do banco pode mudar-se antes de importar
+  await page.getByLabel('Nome no Saldim de Mercadolivre').fill('Café')
   await page.getByRole('button', { name: 'Importar 2 lançamentos' }).click()
   await expect(page.getByRole('status')).toContainText('2 lançamentos importados.')
 
@@ -56,7 +58,15 @@ test('importa a fatura do cartão sem duplicar', async ({ page }) => {
   await expect(page.getByText('Tudo o que está neste ficheiro já está no Saldim.')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Importar 0 lançamentos' })).toBeDisabled()
 
-  // A parcela virou a compra de 2× (a 2.ª fica para a fatura seguinte)
+  // Uma compra nova com o mesmo nome do banco já vem com o nome escolhido da última vez
+  await page.locator('#importar-ficheiro').setInputFiles({
+    name: 'fatura-2.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('date,title,amount\n2026-12-03,Mercadolivre,25.00'),
+  })
+  await expect(page.getByLabel('Nome no Saldim de Mercadolivre')).toHaveValue('Café')
+
+  // A parcela virou a compra de 2× com o nome escolhido (a 2.ª fica para a fatura seguinte)
   await goToSection(page, 'Cartões')
-  await expect(page.getByRole('region', { name: 'Próximas faturas' })).toContainText('Mercadolivre')
+  await expect(page.getByRole('region', { name: 'Próximas faturas' })).toContainText('Café')
 })

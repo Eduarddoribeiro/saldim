@@ -306,6 +306,31 @@ export type Database = {
           },
         ]
       }
+      nomes_importacao: {
+        Row: {
+          chave: string
+          descricao: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          chave: string
+          descricao: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          chave?: string
+          descricao?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pessoas: {
         Row: {
           arquivada: boolean

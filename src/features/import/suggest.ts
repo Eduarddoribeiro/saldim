@@ -19,6 +19,18 @@ export function descriptionKey(description: string): string {
     .join(' ')
 }
 
+/**
+ * Chave de uma descrição do banco para lembrar o nome escolhido: minúsculas, sem acentos, números nem
+ * pontuação ("Merc Acougue Autodromo *123" → "merc acougue autodromo").
+ */
+export function aliasKey(description: string): string {
+  return normalize(description)
+    .replace(/[^a-z\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 120)
+}
+
 /** Palavra-chave → nome da categoria inicial (só se o utilizador ainda tiver essa categoria). */
 const KEYWORDS: [RegExp, string][] = [
   [
