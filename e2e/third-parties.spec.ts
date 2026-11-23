@@ -37,7 +37,8 @@ test('compra da mãe: fora dos gastos, a receber no Início, pagamento recebido'
   await pick(compra, 'Visa')
   await compra.getByLabel('Valor total').fill('300')
   await setParcelas(compra, 3)
-  await compra.getByLabel('De quem é a compra?').selectOption({ label: 'Outra pessoa…' })
+  await pick(compra, 'De outra pessoa')
+  await compra.getByLabel('De quem?').selectOption({ label: 'Outra pessoa…' })
   await compra.getByLabel('Nome da pessoa').fill('Mãe')
   await compra.getByLabel('Descrição (opcional)').fill('Sofá')
   await pick(compra, 'Moradia')
@@ -91,4 +92,43 @@ test('compra da mãe: fora dos gastos, a receber no Início, pagamento recebido'
   await expect(tile('A receber')).toContainText(money('Mãe: R$ 200,00'))
   // 100,00 − 100,00 + (100,00 − 100,00 devolvidos)
   await expect(tile('Saldo líquido')).toContainText(money('R$ 0,00'))
+})
+
+test('compra dividida com a mãe: metade em A receber, as parcelas somam as do banco', async ({
+  page,
+}) => {
+  await signUp(page, uniqueEmail('dividida'))
+  await page.goto('/configuracoes/contas')
+  await page.getByRole('button', { name: 'Nova conta' }).click()
+  const conta = page.getByRole('dialog', { name: 'Nova conta' })
+  await conta.getByLabel('Nome').fill('Cartão Itaú')
+  await conta.getByLabel('Tipo').selectOption('cartao_credito')
+  await conta.getByLabel('Dia de fechamento').selectOption('25')
+  await conta.getByLabel('Dia de vencimento').selectOption('5')
+  await conta.getByLabel('Limite de crédito').fill('5.000')
+  await conta.getByLabel('Conta de pagamento').selectOption({ label: 'Conta principal' })
+  await conta.getByRole('button', { name: 'Criar conta' }).click()
+  await expect(conta).toBeHidden()
+
+  const compra = await openNewEntry(page)
+  await pick(compra, 'Cartão Itaú')
+  await compra.getByLabel('Valor total').fill('66,66')
+  await setParcelas(compra, 2)
+  await pick(compra, 'Dividida')
+  await compra.getByLabel('Dividida com').selectOption({ label: 'Outra pessoa…' })
+  await compra.getByLabel('Nome da pessoa').fill('Mãe')
+  await expect(compra.getByLabel('Parte de Mãe')).toHaveValue('33,34')
+  await compra.getByLabel('Descrição (opcional)').fill('Café')
+  await pick(compra, 'Alimentação')
+  await compra.getByRole('button', { name: 'Registrar compra' }).click()
+  await expect(compra).toBeHidden()
+
+  // Duas compras "Café": a minha e a da Mãe
+  await page.goto('/transacoes')
+  await expect(page.getByRole('button', { name: /^Café: despesa/ })).toHaveCount(2)
+  await page.goto('/a-receber')
+  await expect(page.getByRole('region', { name: 'Mãe' })).toContainText(money('Deve R$ 33,34'))
+  // O cartão desenhado fica com a cor do banco
+  await page.goto('/faturas')
+  await expect(page.getByText('Próximas faturas', { exact: true })).toBeVisible()
 })

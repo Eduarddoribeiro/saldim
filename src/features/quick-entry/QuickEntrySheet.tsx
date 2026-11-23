@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Link } from 'react-router'
 import { FormAlert } from '@/components/form/FormAlert'
@@ -13,7 +13,7 @@ import { Dialog, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { isCreditCard, TIPO_CONTA_OPTIONS } from '@/features/accounts/account-options'
 import type { Account } from '@/features/accounts/accounts-api'
 import { useAccounts } from '@/features/accounts/hooks'
-import { useRegisterPurchase } from '@/features/card-purchases/hooks'
+import { useRegisterPurchase, useRegisterSplitPurchase } from '@/features/card-purchases/hooks'
 import { InstallmentPreview, type PreviewInput } from '@/features/card-purchases/InstallmentPreview'
 import { NEW_PERSON } from '@/features/card-purchases/schemas'
 import type { Category } from '@/features/categories/categories-api'
@@ -23,7 +23,8 @@ import { useCreatePerson, usePeople } from '@/features/people/hooks'
 import { useCurrency } from '@/features/profile/hooks'
 import { useBalanceMovements, useCreateTransaction } from '@/features/transactions/hooks'
 import { todayIso } from '@/lib/dates'
-import { parseMoney } from '@/lib/money'
+import { halfSplit } from '@/lib/credit-card'
+import { centsToInput, formatMoney, parseMoney } from '@/lib/money'
 import { CategoryPicker } from './CategoryPicker'
 import { ChoiceChips } from './ChoiceChips'
 import { DateChips } from './DateChips'
@@ -106,8 +107,13 @@ function LoadedForm({
 }) {
   const currency = useCurrency()
   const people = usePeople()
+  const activePeople = useMemo(
+    () => (people.data ?? []).filter((person) => !person.arquivada),
+    [people.data],
+  )
   const createTransaction = useCreateTransaction()
   const registerPurchase = useRegisterPurchase()
+  const registerSplit = useRegisterSplitPurchase()
   const createPerson = useCreatePerson()
   const { serverError, run } = useServerAction(() => onOpenChange(false))
 
@@ -154,6 +160,8 @@ function LoadedForm({
       parcelaInicial: '2',
       pessoaId: '',
       novaPessoa: '',
+      divisao: 'minha',
+      partePessoa: '',
     },
   })
 
@@ -171,7 +179,10 @@ function LoadedForm({
         'parcelaInicial',
       ],
     })
-  const pessoaId = useWatch({ control, name: 'pessoaId' })
+  const [pessoaId, divisao, partePessoa, novaPessoa] = useWatch({
+    control,
+    name: ['pessoaId', 'divisao', 'partePessoa', 'novaPessoa'],
+  })
   const card = cards.find((account) => account.id === accountId)
   const parcelas = Number(parcelasText)
 
@@ -201,6 +212,25 @@ function LoadedForm({
   )
 
   const total = parseMoney(valor)
+  // Compra dividida: a parte da pessoa vem com a metade certa (halfSplit) até ser mudada à mão
+  const [shareEdited, setShareEdited] = useState(false)
+  const halfForPerson =
+    total !== null && Number.isInteger(parcelas) && total >= 2 * parcelas
+      ? halfSplit(total, parcelas).pessoa
+      : null
+  useEffect(() => {
+    if (divisao === 'dividida' && !shareEdited) {
+      setValue('partePessoa', halfForPerson !== null ? centsToInput(halfForPerson) : '')
+    }
+  }, [divisao, shareEdited, halfForPerson, setValue])
+  // Ao passar para "De outra pessoa" ou "Dividida", já escolhe a primeira pessoa (normalmente a única)
+  useEffect(() => {
+    if (divisao !== 'minha' && !getValues('pessoaId') && activePeople[0]) {
+      setValue('pessoaId', activePeople[0].id)
+    }
+  }, [divisao, activePeople, getValues, setValue])
+  const parteCents = parseMoney(partePessoa)
+  const myShare = total !== null && parteCents !== null ? total - parteCents : null
   const previewInput: PreviewInput | null =
     card?.dia_fechamento && card.dia_vencimento && total !== null && total > 0
       ? {
@@ -214,12 +244,13 @@ function LoadedForm({
       : null
 
   const personOptions = [
-    { value: '', label: 'Minha' },
-    ...(people.data ?? [])
-      .filter((person) => !person.arquivada)
-      .map((person) => ({ value: person.id, label: person.nome })),
+    ...activePeople.map((person) => ({ value: person.id, label: person.nome })),
     { value: NEW_PERSON, label: 'Outra pessoa…' },
   ]
+  const personLabel =
+    (activePeople.find((person) => person.id === pessoaId)?.nome ??
+      (pessoaId === NEW_PERSON && novaPessoa.trim())) ||
+    'outra pessoa'
 
   const onSubmit = handleSubmit((result) =>
     run(async () => {
@@ -232,6 +263,14 @@ function LoadedForm({
         values.pessoaId === NEW_PERSON
           ? (await createPerson.mutateAsync(values.novaPessoa)).id
           : values.pessoaId
+      if (result.kind === 'split') {
+        await registerSplit.mutateAsync({
+          ...values,
+          pessoaId: pessoa,
+          valorPessoa: result.valorPessoa,
+        })
+        return
+      }
       await registerPurchase.mutateAsync({ ...values, pessoaId: pessoa })
     }),
   )
@@ -240,6 +279,7 @@ function LoadedForm({
     isSubmitting ||
     createTransaction.isPending ||
     registerPurchase.isPending ||
+    registerSplit.isPending ||
     createPerson.isPending
   const valorField = register('valor')
   const missingAccount = accountOptions.length === 0
@@ -328,18 +368,31 @@ function LoadedForm({
               }
             }}
           />
-          <SelectField
-            id="lancamento-pessoa"
-            label="De quem é a compra?"
-            options={personOptions}
-            hint={
-              pessoaId
-                ? 'Conta na fatura e no limite, mas não nos seus gastos: vai para A receber.'
-                : undefined
-            }
-            {...register('pessoaId')}
+          <ChoiceChips
+            legend="De quem é a compra?"
+            options={[
+              { value: 'minha', label: 'Minha' },
+              { value: 'pessoa', label: 'De outra pessoa' },
+              { value: 'dividida', label: 'Dividida' },
+            ]}
+            {...register('divisao')}
           />
-          {pessoaId === NEW_PERSON && (
+          {divisao !== 'minha' && (
+            <SelectField
+              id="lancamento-pessoa"
+              label={divisao === 'dividida' ? 'Dividida com' : 'De quem?'}
+              placeholder="Escolha…"
+              options={personOptions}
+              error={errors.pessoaId?.message}
+              hint={
+                divisao === 'pessoa'
+                  ? 'Conta na fatura e no limite, mas não nos seus gastos: vai para A receber.'
+                  : undefined
+              }
+              {...register('pessoaId')}
+            />
+          )}
+          {divisao !== 'minha' && pessoaId === NEW_PERSON && (
             <TextField
               id="lancamento-nova-pessoa"
               label="Nome da pessoa"
@@ -348,6 +401,22 @@ function LoadedForm({
               placeholder="Ex.: Mãe"
               error={errors.novaPessoa?.message}
               {...register('novaPessoa')}
+            />
+          )}
+          {divisao === 'dividida' && (
+            <TextField
+              id="lancamento-parte-pessoa"
+              label={`Parte de ${personLabel}`}
+              inputMode="decimal"
+              autoComplete="off"
+              className="tabular-nums"
+              hint={
+                myShare !== null
+                  ? `Sua parte: ${formatMoney(myShare, currency)}. Já vem a metade certa para cada parcela bater com o banco.`
+                  : 'Já vem a metade certa para cada parcela bater com o banco.'
+              }
+              error={errors.partePessoa?.message}
+              {...register('partePessoa', { onChange: () => setShareEdited(true) })}
             />
           )}
           {parcelas >= 2 && (

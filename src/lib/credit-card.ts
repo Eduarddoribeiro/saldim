@@ -459,3 +459,19 @@ export function invoiceStatus(
               : 'vencida'
   return { estado, emAbertoCentavos }
 }
+
+/**
+ * Compra dividida ao meio com outra pessoa (pedido de 2026-11-23): as duas partes que fazem com que,
+ * em CADA mês, a parcela minha + a da pessoa = a parcela que o banco cobra. A minha parte é múltipla
+ * do número de parcelas (divide-se sem resto) e a da pessoa fica com o resto, que vai na 1.ª parcela
+ * como no total. Ex.: R$ 66,66 em 2× → minha 33,32 (16,66 + 16,66), Mãe 33,34 (16,67 + 16,67) =
+ * 33,33 + 33,33. As partes podem diferir uns centavos (menos que 2 × parcelas).
+ */
+export function halfSplit(
+  totalCentavos: number,
+  numeroParcelas: number,
+): { minha: number; pessoa: number } {
+  splitInstallments(totalCentavos, numeroParcelas) // valida o total e as parcelas
+  const minha = numeroParcelas * Math.floor(totalCentavos / (2 * numeroParcelas))
+  return { minha, pessoa: totalCentavos - minha }
+}

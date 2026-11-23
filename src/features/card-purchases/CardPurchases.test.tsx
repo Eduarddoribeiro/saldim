@@ -60,6 +60,7 @@ vi.mock('./purchases-api', () => ({
     if (store.registerError) throw store.registerError
     return 'nova'
   }),
+  registerSplitPurchase: vi.fn(async () => ['minha', 'dela']),
   deletePurchase: vi.fn(async (id: string) => {
     store.purchases = store.purchases.filter((p) => p.id !== id)
     store.transactions = store.transactions.filter((t) => t.compra_id !== id)
@@ -83,7 +84,7 @@ vi.mock('./purchases-api', () => ({
   }),
 }))
 
-const { registerPurchase, deletePurchase, registerRefund, deleteRefund } =
+const { registerPurchase, registerSplitPurchase, deletePurchase, registerRefund, deleteRefund } =
   await import('./purchases-api')
 
 function category(id: string, nome: string, tipo: Category['tipo']): Category {
@@ -171,6 +172,7 @@ beforeEach(() => {
     },
   ]
   vi.mocked(registerPurchase).mockClear()
+  vi.mocked(registerSplitPurchase).mockClear()
   vi.mocked(deletePurchase).mockClear()
   vi.mocked(registerRefund).mockClear()
   vi.mocked(deleteRefund).mockClear()
@@ -205,9 +207,11 @@ async function purchaseDate(dialog: HTMLElement) {
 describe('compras no cartão', () => {
   it('T1: compra de outra pessoa — escolha uma existente ou cria uma nova ao registrar', async () => {
     const dialog = await openPurchaseForm()
-    const pessoa = within(dialog).getByLabelText('De quem é a compra?')
-    expect(pessoa).toHaveValue('')
-    await within(dialog).findByRole('option', { name: 'Mãe' })
+    // Por omissão a compra é minha; "De outra pessoa" já escolhe a primeira pessoa
+    expect(within(dialog).getByRole('radio', { name: 'Minha' })).toBeChecked()
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'De outra pessoa' }))
+    const pessoa = within(dialog).getByLabelText('De quem?')
+    await waitFor(() => expect(pessoa).toHaveValue('mae'))
     await userEvent.selectOptions(pessoa, 'Outra pessoa…')
     expect(within(dialog).getByText(/não nos seus gastos/)).toBeInTheDocument()
     await userEvent.type(within(dialog).getByLabelText('Valor total'), '50')
@@ -223,6 +227,26 @@ describe('compras no cartão', () => {
         expect.objectContaining({ valor: 5000, pessoaId: 'nova-pessoa' }),
       ),
     )
+  })
+
+  it('compra dividida: a parte da pessoa vem com a metade certa e regista as duas de uma vez', async () => {
+    const dialog = await openPurchaseForm()
+    await userEvent.type(within(dialog).getByLabelText('Valor total'), '66,66')
+    await setParcelas(dialog, 2)
+    await chooseCategory(dialog)
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Dividida' }))
+    await waitFor(() => expect(within(dialog).getByLabelText('Dividida com')).toHaveValue('mae'))
+    const parte = within(dialog).getByLabelText('Parte de Mãe')
+    // 16,66 + 16,66 (minha) e 16,67 + 16,67 (Mãe) = 33,33 + 33,33, as parcelas do banco
+    expect(parte).toHaveValue('33,34')
+    expect(plain(within(dialog).getByText(/^Sua parte:/).textContent)).toContain('R$ 33,32')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar compra' }))
+    await waitFor(() =>
+      expect(registerSplitPurchase).toHaveBeenCalledWith(
+        expect.objectContaining({ valor: 6666, parcelas: 2, pessoaId: 'mae', valorPessoa: 3334 }),
+      ),
+    )
+    expect(registerPurchase).not.toHaveBeenCalled()
   })
 
   it('cartões arquivados não aparecem em "Pagar com"', async () => {

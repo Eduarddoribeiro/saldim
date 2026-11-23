@@ -2,6 +2,8 @@ import { ChevronRight } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { formatMonth, todayIso, type IsoDate, type MonthKey } from '@/lib/dates'
 import { formatMoney, type Currency } from '@/lib/money'
+import { cn } from '@/lib/utils'
+import { dotClasses } from './bank-colors'
 import { dayMonth } from './invoice-options'
 import type { UpcomingCardMonth } from './upcoming-months'
 
@@ -91,8 +93,17 @@ export function UpcomingCardInvoices({
             >
               {month.cartoes.map((card) => (
                 <div key={card.cardId} className="grid gap-1 *:min-w-0">
-                  <p className="flex justify-between gap-3 text-xs font-medium text-muted-foreground">
-                    <span className="min-w-0 truncate">{cardName(card.cardId)}</span>
+                  <p className="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground">
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span
+                        aria-hidden
+                        className={cn(
+                          'size-2 shrink-0 rounded-full',
+                          dotClasses(cardName(card.cardId)),
+                        )}
+                      />
+                      <span className="truncate">{cardName(card.cardId)}</span>
+                    </span>
                     <span className="shrink-0 tabular-nums">{money(card.total)}</span>
                   </p>
                   <ul aria-label={`Compras no ${cardName(card.cardId)}`} className="grid gap-1">

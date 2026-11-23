@@ -36,7 +36,8 @@ test('a mãe vê na conta dela o que deve, e só isso', async ({ page, browser }
     await compra.getByLabel('Valor total').fill(valor)
     await setParcelas(compra, 3)
     if (mae) {
-      const pessoa = compra.getByLabel('De quem é a compra?')
+      await pick(compra, 'De outra pessoa')
+      const pessoa = compra.getByLabel('De quem?')
       if ((await pessoa.locator('option', { hasText: 'Mãe' }).count()) > 0) {
         await pessoa.selectOption({ label: 'Mãe' })
       } else {

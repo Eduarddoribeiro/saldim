@@ -10,6 +10,7 @@ import {
   invoiceStatus,
   MAX_PARCELAS,
   paymentWindowDays,
+  halfSplit,
   splitInstallments,
   validateCardConfig,
   type CardConfig,
@@ -679,5 +680,33 @@ describe('mudança de dias (C8, D14): histórico de dias', () => {
       mesReferencia: '2026-11',
       fechamento: '2026-10-15',
     })
+  })
+})
+
+describe('halfSplit', () => {
+  it('as duas metades dão, em cada mês, exatamente a parcela do banco', () => {
+    expect(halfSplit(6666, 2)).toEqual({ minha: 3332, pessoa: 3334 })
+    expect(halfSplit(10000, 1)).toEqual({ minha: 5000, pessoa: 5000 })
+    expect(halfSplit(5900, 3)).toEqual({ minha: 2949, pessoa: 2951 })
+  })
+
+  it('EXAUSTIVO: n de 1 a 48 × vários totais: parcela minha + da pessoa = parcela do total', () => {
+    const totais = [96, 97, 100, 101, 997, 5900, 6666, 9999, 123457, 1000003, MAX_CENTS]
+    const falhas: string[] = []
+    for (let n = 1; n <= MAX_PARCELAS; n++) {
+      for (const total of totais) {
+        if (total < 2 * n) continue
+        const { minha, pessoa } = halfSplit(total, n)
+        const banco = splitInstallments(total, n)
+        const a = splitInstallments(minha, n)
+        const b = splitInstallments(pessoa, n)
+        const ok =
+          minha + pessoa === total &&
+          Math.abs(pessoa - minha) < 2 * n &&
+          banco.every((valor, k) => a[k] + b[k] === valor)
+        if (!ok) falhas.push(`${total}/${n}`)
+      }
+    }
+    expect(falhas).toEqual([])
   })
 })

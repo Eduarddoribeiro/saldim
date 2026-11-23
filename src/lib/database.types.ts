@@ -710,6 +710,20 @@ export type Database = {
         }
         Returns: string
       }
+      registar_compra_dividida: {
+        Args: {
+          p_account_id: string
+          p_category_id: string
+          p_data_compra: string
+          p_descricao?: string
+          p_parcela_inicial?: number
+          p_parcelas: number
+          p_pessoa_id: string
+          p_valor_meu_centavos: number
+          p_valor_pessoa_centavos: number
+        }
+        Returns: string[]
+      }
       registar_estorno_cartao: {
         Args: {
           p_compra_id: string

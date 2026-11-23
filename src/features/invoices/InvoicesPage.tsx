@@ -25,6 +25,7 @@ import {
   invoiceTitle,
 } from './invoice-options'
 import { isToPay, summarizeInvoices, totalsByPerson } from './invoice-summary'
+import { cardClasses } from './bank-colors'
 import { UpcomingCardInvoices } from './UpcomingCardInvoices'
 import { upcomingCardMonths } from './upcoming-months'
 
@@ -185,24 +186,29 @@ export function InvoicesPage() {
 
       <div className="mb-6 grid gap-4 sm:grid-cols-[minmax(0,22rem)_1fr] sm:items-end">
         {/* O cartão desenhado como cartão: nome, quanto falta pagar e os dias de fecho/vencimento */}
-        <div className="relative isolate grid aspect-[1.7] max-w-full content-between overflow-hidden rounded-2xl bg-linear-to-br from-hero to-hero-2 p-5 text-hero-foreground shadow-md">
+        <div
+          className={cn(
+            'relative isolate grid aspect-[1.7] max-w-full content-between overflow-hidden rounded-2xl bg-linear-to-br p-5 shadow-md',
+            cardClasses(card.nome),
+          )}
+        >
           <span
             aria-hidden
-            className="absolute -top-16 -right-14 -z-10 size-48 rounded-full bg-hero-accent/20"
+            className="absolute -top-16 -right-14 -z-10 size-48 rounded-full bg-current opacity-10"
           />
           <div className="flex items-start justify-between gap-3">
-            <span aria-hidden className="h-6 w-9 rounded-md bg-hero-accent/70" />
+            <span aria-hidden className="h-6 w-9 rounded-md bg-current opacity-40" />
             <p className="min-w-0 truncate text-right font-semibold">{card.nome}</p>
           </div>
           <div className="min-w-0">
-            <p className="text-sm text-hero-foreground/80">
+            <p className="text-sm opacity-85">
               A pagar:{' '}
-              <span className="block truncate text-3xl font-bold tracking-tight text-hero-foreground tabular-nums">
+              <span className="block truncate text-3xl font-bold tracking-tight tabular-nums">
                 {formatMoney(totalPorPagar, currency)}
               </span>
             </p>
             {card.dia_fechamento && card.dia_vencimento && (
-              <p className="mt-2 text-xs text-hero-foreground/80">
+              <p className="mt-2 text-xs opacity-85">
                 Fecha dia {card.dia_fechamento} · vence dia {card.dia_vencimento}
               </p>
             )}

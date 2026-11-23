@@ -5,6 +5,33 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Cores dos bancos no cartão desenhado (Cartões): iguais nos dois temas, escurecidas onde a cor da
+   marca não dava contraste para o texto branco. Ver src/features/invoices/bank-colors.ts */
+@theme {
+  --color-bank-on-dark: #ffffff;
+  --color-bank-on-light: #10233f;
+  --color-bank-nubank: #820ad1;
+  --color-bank-nubank-2: #4f0680;
+  --color-bank-itau: #d35f00;
+  --color-bank-itau-2: #8f3c00;
+  --color-bank-picpay: #0f9f58;
+  --color-bank-picpay-2: #076b3a;
+  --color-bank-inter: #db6200;
+  --color-bank-inter-2: #964000;
+  --color-bank-c6: #2b2b2b;
+  --color-bank-c6-2: #0d0d0d;
+  --color-bank-santander: #d40000;
+  --color-bank-santander-2: #8c0000;
+  --color-bank-bradesco: #cc092f;
+  --color-bank-bradesco-2: #85061e;
+  --color-bank-caixa: #005ca9;
+  --color-bank-caixa-2: #003866;
+  --color-bank-bb: #fcd900;
+  --color-bank-bb-2: #e0b800;
+  --color-bank-mercadopago: #0089c0;
+  --color-bank-mercadopago-2: #00577a;
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: 'Geist Variable', sans-serif;

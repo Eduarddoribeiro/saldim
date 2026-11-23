@@ -44,6 +44,7 @@ const RULE_MESSAGES: Record<string, string> = {
     'Esta compra já não existe. Atualize a página e tente de novo.',
   faturas_mes_check: 'As parcelas passariam do ano 2999. Confira a data da compra.',
   faturas_datas_check: 'As parcelas passariam do ano 2999. Confira a data da compra.',
+  compra_dividida_pessoa_check: 'Escolha com quem a compra é dividida.',
 }
 
 type DbError = { code?: string; message?: string; details?: string; hint?: string }
@@ -80,6 +81,28 @@ export async function registerPurchase(values: PurchaseFormValues): Promise<stri
     p_descricao: values.descricao,
     // T1: compra de outra pessoa ('' = minha). NEW_PERSON já foi trocado pelo id no formulário.
     ...(values.pessoaId ? { p_pessoa_id: values.pessoaId } : {}),
+  })
+  if (error) fail(error)
+  return data
+}
+
+/**
+ * Compra dividida com outra pessoa: duas compras (a minha e a dela) na mesma transação, pela função
+ * registar_compra_dividida. `valorPessoa` é a parte dela; a minha é o resto do total.
+ */
+export async function registerSplitPurchase(
+  values: PurchaseFormValues & { valorPessoa: number },
+): Promise<string[]> {
+  const { data, error } = await supabase.rpc('registar_compra_dividida', {
+    p_account_id: values.cardId,
+    p_category_id: values.categoryId,
+    p_data_compra: values.data,
+    p_valor_meu_centavos: values.valor - values.valorPessoa,
+    p_valor_pessoa_centavos: values.valorPessoa,
+    p_parcelas: values.parcelas,
+    p_parcela_inicial: values.parcelaInicial,
+    p_descricao: values.descricao,
+    p_pessoa_id: values.pessoaId,
   })
   if (error) fail(error)
   return data

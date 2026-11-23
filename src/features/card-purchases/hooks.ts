@@ -8,6 +8,7 @@ import {
   listPurchases,
   listRefunds,
   registerPurchase,
+  registerSplitPurchase,
   registerRefund,
   type RefundValues,
 } from './purchases-api'
@@ -55,6 +56,15 @@ export function useRegisterPurchase() {
   const invalidate = useInvalidatePurchases()
   return useMutation({
     mutationFn: (values: PurchaseFormValues) => registerPurchase(values),
+    onSuccess: invalidate,
+  })
+}
+
+export function useRegisterSplitPurchase() {
+  const invalidate = useInvalidatePurchases()
+  return useMutation({
+    mutationFn: (values: PurchaseFormValues & { valorPessoa: number }) =>
+      registerSplitPurchase(values),
     onSuccess: invalidate,
   })
 }
