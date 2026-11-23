@@ -79,10 +79,21 @@ export async function listBalanceMovements(): Promise<LedgerMovement[]> {
   return data
 }
 
-/** O que a importação precisa de cada lançamento: evitar duplicados e aprender as categorias. */
+/**
+ * Lançamentos com a descrição: a importação (duplicados, aprender categorias) e os gastos que se
+ * repetem (detetar o que volta todos os meses).
+ */
 export type HistoryMovement = Pick<
   Transaction,
-  'account_id' | 'category_id' | 'tipo' | 'valor_centavos' | 'data' | 'descricao' | 'pessoa_id'
+  | 'account_id'
+  | 'category_id'
+  | 'tipo'
+  | 'valor_centavos'
+  | 'data'
+  | 'descricao'
+  | 'pessoa_id'
+  | 'compra_id'
+  | 'recorrencia_id'
 >
 
 /** TODOS os lançamentos, só com as colunas da importação (docs/features/importar.md). Paginado. */
@@ -90,7 +101,9 @@ export async function listImportHistory(): Promise<HistoryMovement[]> {
   const { data, error } = await fetchAllPages((start, end) =>
     supabase
       .from('transactions')
-      .select('account_id, category_id, tipo, valor_centavos, data, descricao, pessoa_id')
+      .select(
+        'account_id, category_id, tipo, valor_centavos, data, descricao, pessoa_id, compra_id, recorrencia_id',
+      )
       .order('data')
       .order('id')
       .range(start, end),

@@ -37,6 +37,8 @@ vi.mock('@/features/transactions/transactions-api', () => ({
       .sort((a, b) => b.data.localeCompare(a.data)),
   ),
   listBalanceMovements: vi.fn(async () => store.transactions),
+  // Gastos que se repetem (resumo no Início)
+  listImportHistory: vi.fn(async () => store.transactions),
   listInvoiceItems: vi.fn(async () => store.transactions.filter((t) => t.fatura_id)),
 }))
 vi.mock('@/features/card-purchases/purchases-api', () => ({

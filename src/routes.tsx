@@ -30,6 +30,7 @@ const CategoriesPage = page(() => import('@/features/categories/CategoriesPage')
 const AccountsPage = page(() => import('@/features/accounts/AccountsPage'), 'AccountsPage')
 const RecurringPage = page(() => import('@/features/recurring/RecurringPage'), 'RecurringPage')
 const ReceivablesPage = page(() => import('@/features/people/ReceivablesPage'), 'ReceivablesPage')
+const RepeatingPage = page(() => import('@/features/repeating/RepeatingPage'), 'RepeatingPage')
 const ImportPage = page(() => import('@/features/import/ImportPage'), 'ImportPage')
 const InvitePage = page(() => import('@/features/sharing/InvitePage'), 'InvitePage')
 const SharedDebtPage = page(() => import('@/features/sharing/SharedDebtPage'), 'SharedDebtPage')
@@ -79,6 +80,7 @@ export const routes: RouteObject[] = [
           { path: 'a-receber', element: <ReceivablesPage /> },
           { path: 'o-que-devo', element: <SharedDebtPage /> },
           { path: 'importar', element: <ImportPage /> },
+          { path: 'gastos-fixos', element: <RepeatingPage /> },
           { path: '*', element: <NotFoundPage /> },
         ],
       },

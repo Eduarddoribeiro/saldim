@@ -76,6 +76,7 @@ financas/                     # raiz do repositório Git
       sharing/                # partilhar a dívida (docs/features/mae-ve-o-que-deve.md): sharing-api (RPCs criar_convite_pessoa, aceitar_convite, deixar_de_compartilhar, divida_partilhada), hooks, shared-debt (mesmas contas de A receber), pending-invite, ShareDebtDialog (em A receber), InvitePage (/convite/:token), SharedDebtPage (/o-que-devo), SharedDebtBanner (Início), PendingInviteRedirect (AppShell)
       demo/                   # demo pública (docs/features/demo-publica.md): demo-seed (dados inventados, também usado por scripts/seed-demo.mjs; escreve em várias tabelas, exceção à regra do <área>-api), demo-api, DemoEntry (botão no login), DemoSetup (prepara a conta anónima + faixa, no AppShell)
       import/                 # importar do banco (docs/features/importar.md): parse (CSV Nubank cartão/conta, OFX, parcelas), match (duplicados: cartão inclui compra dividida; conta ±1 dia), suggest (categoria/pessoa pelo histórico ou palavras), import-plan (linhas de revisão → ações; nomes a lembrar), aliases-api + hooks (tabela `nomes_importacao`: o nome escolhido para cada descrição do banco), ImportPage (/importar; atalhos no Extrato e nas Configurações)
+      repeating/              # gastos que se repetem (pedido de 2026-11-23): repeating (deteta o que volta em ≥3 dos últimos 6 meses e ≥2 dos 3 últimos, pela descrição; junta as recorrências de despesa ativas; ignora parcelas e compras de outras pessoas; mediana por mês, fixo/varia, parte das receitas), by-area (por categoria), AreaBreakdown, hooks, RepeatingPage (/gastos-fixos; cadastrados × descobertos, "Por área"), RepeatingSummary (Início)
       recurring/              # recurring-api, generate-api (RPC gerar_recorrencias; simulado em src/test/setup.ts), hooks, schemas, recurring-options (textos), RecurringPage, RecurringFormDialog, RecurringGenerator (no AppShell)
     lib/
       supabase.ts             # cliente único (createClient<Database>)
@@ -116,6 +117,7 @@ financas/                     # raiz do repositório Git
 | `/a-receber`                 | `ReceivablesPage`    | `RequireAuth`                            | feito (T1; ligações no Início e nas Configurações)         |
 | `/o-que-devo`                | `SharedDebtPage`     | `RequireAuth`                            | feito (quem foi convidado vê o que deve)                   |
 | `/importar`                  | `ImportPage`         | `RequireAuth`                            | feito (CSV do Nubank e OFX; ver docs/features/importar.md) |
+| `/gastos-fixos`              | `RepeatingPage`      | `RequireAuth`                            | feito (gastos que se repetem; resumo no Início)            |
 | `/convite/:token`            | `InvitePage`         | com ou sem sessão                        | feito (sem sessão: explica e manda criar conta)            |
 | `*`                          | `NotFoundPage`       | `RequireAuth`                            | —                                                          |
 
@@ -241,6 +243,8 @@ Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etap
 - [x] **Cor do banco e compra dividida** (pedido de 2026-11-23): o cartão desenhado em Cartões fica com a cor do banco, reconhecido pelo nome (`features/invoices/bank-colors.ts`, tokens `--color-bank-*` em `index.css`; sem banco conhecido, a cor da app); no `+`, "De quem é a compra?" com Minha · De outra pessoa · Dividida — dividida grava duas compras (a minha e a da pessoa) na mesma transação pela RPC `registar_compra_dividida` (migration `compra_dividida`), com a parte da pessoa sugerida por `halfSplit` (`credit-card.ts`) para as parcelas das duas somarem as do banco
 
 - [x] **Importar do banco** (`docs/features/importar.md`, fases 1–2): `/importar` lê o CSV do Nubank (fatura e extrato) e OFX (Itaú, Caixa), mostra só o que ainda não está no Saldim (duplicados por valor e data, incluindo compras divididas), sugere categoria e pessoa pelo histórico, deixa mudar o nome (lembrado na tabela `nomes_importacao`, migration `nomes_importacao`) e regista tudo pelas funções de sempre; parcelas viram a compra parcelada a partir dessa parcela; o Picpay chega pelo conector do Claude, em CSV no formato do Nubank (fase 3)
+
+- [x] **Gastos que se repetem** (pedido de 2026-11-23): página `/gastos-fixos` com o total por mês e por ano e a parte do que entra, separados em valor fixo e valor que varia; resumo no Início e ligação em Mais; deteção pura em `features/repeating/repeating.ts`; sem mudanças na base de dados
 
 - [ ] **Partilhar a dívida** (`docs/features/mae-ve-o-que-deve.md`; migration `partilhar_divida`): a pessoa de A receber recebe um link, cria conta e vê só o que deve ("O que eu devo"); fases 1–3 feitas e testadas localmente (RLS a três utilizadores, e2e com dois browsers); falta aplicar a migration em produção.
 

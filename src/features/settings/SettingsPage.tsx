@@ -65,6 +65,7 @@ export function SettingsPage() {
           <ul className="-mx-1 divide-y">
             <SettingsLink to="/orcamentos" icon={Target} label="Orçamentos" />
             <SettingsLink to="/a-receber" icon={HandCoins} label="Pessoas e a receber" />
+            <SettingsLink to="/gastos-fixos" icon={Repeat} label="Gastos que se repetem" />
             {(sharedDebts.data?.length ?? 0) > 0 && (
               <SettingsLink to="/o-que-devo" icon={HandCoins} label="O que eu devo" />
             )}
