@@ -1,4 +1,5 @@
 import {
+  FileUp,
   ChevronRight,
   HandCoins,
   Landmark,
@@ -87,6 +88,7 @@ export function SettingsPage() {
             <SettingsLink to="/configuracoes/contas" icon={Landmark} label="Contas" />
             <SettingsLink to="/configuracoes/categorias" icon={Tags} label="Categorias" />
             <SettingsLink to="/configuracoes/recorrentes" icon={Repeat} label="Recorrentes" />
+            <SettingsLink to="/importar" icon={FileUp} label="Importar do banco" />
           </ul>
         </SettingsSection>
 

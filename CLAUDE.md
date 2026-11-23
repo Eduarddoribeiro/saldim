@@ -75,6 +75,7 @@ financas/                     # raiz do repositório Git
       people/                 # people-api (pessoas, reembolsos), hooks, use-receivables (a receber, D22), receivable-details (por compra e por cartão, filtros, próximas faturas por mês), UpcomingInvoices, schemas, ReceivablesPage (/a-receber), PersonDebtDetails, PersonFormDialog, ReimbursementFormDialog
       sharing/                # partilhar a dívida (docs/features/mae-ve-o-que-deve.md): sharing-api (RPCs criar_convite_pessoa, aceitar_convite, deixar_de_compartilhar, divida_partilhada), hooks, shared-debt (mesmas contas de A receber), pending-invite, ShareDebtDialog (em A receber), InvitePage (/convite/:token), SharedDebtPage (/o-que-devo), SharedDebtBanner (Início), PendingInviteRedirect (AppShell)
       demo/                   # demo pública (docs/features/demo-publica.md): demo-seed (dados inventados, também usado por scripts/seed-demo.mjs; escreve em várias tabelas, exceção à regra do <área>-api), demo-api, DemoEntry (botão no login), DemoSetup (prepara a conta anónima + faixa, no AppShell)
+      import/                 # importar do banco (docs/features/importar.md): parse (CSV Nubank cartão/conta, OFX, parcelas), match (duplicados: cartão inclui compra dividida; conta ±1 dia), suggest (categoria/pessoa pelo histórico ou palavras), import-plan (linhas de revisão → ações), ImportPage (/importar; atalhos no Extrato e nas Configurações)
       recurring/              # recurring-api, generate-api (RPC gerar_recorrencias; simulado em src/test/setup.ts), hooks, schemas, recurring-options (textos), RecurringPage, RecurringFormDialog, RecurringGenerator (no AppShell)
     lib/
       supabase.ts             # cliente único (createClient<Database>)
@@ -98,24 +99,25 @@ financas/                     # raiz do repositório Git
 
 **Rotas** (`src/routes.tsx`):
 
-| Caminho                      | Página               | Acesso                                   | Estado                                                   |
-| ---------------------------- | -------------------- | ---------------------------------------- | -------------------------------------------------------- |
-| `/entrar`                    | `LoginPage`          | `PublicOnly` (com sessão → app)          | feito                                                    |
-| `/cadastro`                  | `SignUpPage`         | `PublicOnly`                             | feito (`/registar` redireciona para cá)                  |
-| `/recuperar-senha`           | `ForgotPasswordPage` | `PublicOnly`                             | feito                                                    |
-| `/nova-senha`                | `ResetPasswordPage`  | sessão temporária do link de recuperação | feito                                                    |
-| `/`                          | `DashboardPage`      | `RequireAuth` (sem sessão → `/entrar`)   | feito (`?mes=YYYY-MM`)                                   |
-| `/transacoes`                | `TransactionsPage`   | `RequireAuth`                            | feito (`?mes=YYYY-MM`); na interface chama-se "Extrato"  |
-| `/faturas`                   | `InvoicesPage`       | `RequireAuth`                            | feito (por cartão); na interface chama-se "Cartões"      |
-| `/orcamentos`                | `BudgetsPage`        | `RequireAuth`                            | feito (`?mes=YYYY-MM`)                                   |
-| `/configuracoes`             | `SettingsPage`       | `RequireAuth`                            | Aparência, Organização, Conta                            |
-| `/configuracoes/categorias`  | `CategoriesPage`     | `RequireAuth`                            | feito                                                    |
-| `/configuracoes/contas`      | `AccountsPage`       | `RequireAuth`                            | feito (mostra saldo inicial; saldo atual na Etapa 10/11) |
-| `/configuracoes/recorrentes` | `RecurringPage`      | `RequireAuth`                            | feito (R1)                                               |
-| `/a-receber`                 | `ReceivablesPage`    | `RequireAuth`                            | feito (T1; ligações no Início e nas Configurações)       |
-| `/o-que-devo`                | `SharedDebtPage`     | `RequireAuth`                            | feito (quem foi convidado vê o que deve)                 |
-| `/convite/:token`            | `InvitePage`         | com ou sem sessão                        | feito (sem sessão: explica e manda criar conta)          |
-| `*`                          | `NotFoundPage`       | `RequireAuth`                            | —                                                        |
+| Caminho                      | Página               | Acesso                                   | Estado                                                     |
+| ---------------------------- | -------------------- | ---------------------------------------- | ---------------------------------------------------------- |
+| `/entrar`                    | `LoginPage`          | `PublicOnly` (com sessão → app)          | feito                                                      |
+| `/cadastro`                  | `SignUpPage`         | `PublicOnly`                             | feito (`/registar` redireciona para cá)                    |
+| `/recuperar-senha`           | `ForgotPasswordPage` | `PublicOnly`                             | feito                                                      |
+| `/nova-senha`                | `ResetPasswordPage`  | sessão temporária do link de recuperação | feito                                                      |
+| `/`                          | `DashboardPage`      | `RequireAuth` (sem sessão → `/entrar`)   | feito (`?mes=YYYY-MM`)                                     |
+| `/transacoes`                | `TransactionsPage`   | `RequireAuth`                            | feito (`?mes=YYYY-MM`); na interface chama-se "Extrato"    |
+| `/faturas`                   | `InvoicesPage`       | `RequireAuth`                            | feito (por cartão); na interface chama-se "Cartões"        |
+| `/orcamentos`                | `BudgetsPage`        | `RequireAuth`                            | feito (`?mes=YYYY-MM`)                                     |
+| `/configuracoes`             | `SettingsPage`       | `RequireAuth`                            | Aparência, Organização, Conta                              |
+| `/configuracoes/categorias`  | `CategoriesPage`     | `RequireAuth`                            | feito                                                      |
+| `/configuracoes/contas`      | `AccountsPage`       | `RequireAuth`                            | feito (mostra saldo inicial; saldo atual na Etapa 10/11)   |
+| `/configuracoes/recorrentes` | `RecurringPage`      | `RequireAuth`                            | feito (R1)                                                 |
+| `/a-receber`                 | `ReceivablesPage`    | `RequireAuth`                            | feito (T1; ligações no Início e nas Configurações)         |
+| `/o-que-devo`                | `SharedDebtPage`     | `RequireAuth`                            | feito (quem foi convidado vê o que deve)                   |
+| `/importar`                  | `ImportPage`         | `RequireAuth`                            | feito (CSV do Nubank e OFX; ver docs/features/importar.md) |
+| `/convite/:token`            | `InvitePage`         | com ou sem sessão                        | feito (sem sessão: explica e manda criar conta)            |
+| `*`                          | `NotFoundPage`       | `RequireAuth`                            | —                                                          |
 
 **Autenticação:** só o `AuthProvider` chama `supabase.auth`; páginas e componentes usam `useAuth()` (ações devolvem `{ error }` já traduzido por `auth-errors.ts`, pelo `code` do erro). `RequireAuth` guarda a página pedida em `location.state.from` e o login volta lá — exceto quando a sessão termina dentro da app (botão Sair), para o próximo login começar no Início. Recuperação de senha: e-mail com link → `/nova-senha` (o supabase-js lê o token do URL). Nos testes de componentes usa-se `renderApp(path, fakeAuth({...}))`, sem rede.
 
@@ -237,6 +239,8 @@ Regras financeiras, modelo de dados, RLS e critérios de conclusão de cada etap
 - [x] **Centavos na primeira parcela** (migration `centavos_primeira_parcela`; D3c em `docs/plano.md`): como os bancos, o resto da divisão vai na 1.ª parcela; `compras_cartao.centavos_na_primeira` (false nas compras antigas, que ficam como foram registadas) e `splitInstallments`/`installmentSchedule` com a mesma opção
 
 - [x] **Cor do banco e compra dividida** (pedido de 2026-11-23): o cartão desenhado em Cartões fica com a cor do banco, reconhecido pelo nome (`features/invoices/bank-colors.ts`, tokens `--color-bank-*` em `index.css`; sem banco conhecido, a cor da app); no `+`, "De quem é a compra?" com Minha · De outra pessoa · Dividida — dividida grava duas compras (a minha e a da pessoa) na mesma transação pela RPC `registar_compra_dividida` (migration `compra_dividida`), com a parte da pessoa sugerida por `halfSplit` (`credit-card.ts`) para as parcelas das duas somarem as do banco
+
+- [x] **Importar do banco** (`docs/features/importar.md`, fases 1–2): `/importar` lê o CSV do Nubank (fatura e extrato) e OFX (Itaú, Caixa), mostra só o que ainda não está no Saldim (duplicados por valor e data, incluindo compras divididas), sugere categoria e pessoa pelo histórico, e regista tudo pelas funções de sempre; parcelas viram a compra parcelada a partir dessa parcela; o Picpay chega pelo conector do Claude, em CSV no formato do Nubank (fase 3)
 
 - [ ] **Partilhar a dívida** (`docs/features/mae-ve-o-que-deve.md`; migration `partilhar_divida`): a pessoa de A receber recebe um link, cria conta e vê só o que deve ("O que eu devo"); fases 1–3 feitas e testadas localmente (RLS a três utilizadores, e2e com dois browsers); falta aplicar a migration em produção.
 

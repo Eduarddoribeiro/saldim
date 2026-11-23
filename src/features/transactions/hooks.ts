@@ -6,6 +6,7 @@ import {
   createTransaction,
   deleteTransaction,
   listBalanceMovements,
+  listImportHistory,
   listTransactions,
   updateTransaction,
 } from './transactions-api'
@@ -31,6 +32,16 @@ export function useBalanceMovements() {
   return useQuery({
     queryKey: [...transactionsKey(user?.id), 'saldos'] as const,
     queryFn: listBalanceMovements,
+    enabled: Boolean(user),
+  })
+}
+
+/** Histórico com descrições (importação). Mesmo prefixo de cache: as mutações invalidam-no. */
+export function useImportHistory() {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: [...transactionsKey(user?.id), 'historico'] as const,
+    queryFn: listImportHistory,
     enabled: Boolean(user),
   })
 }

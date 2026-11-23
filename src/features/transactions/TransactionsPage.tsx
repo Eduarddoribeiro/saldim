@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Repeat } from 'lucide-react'
+import { ArrowLeftRight, FileUp, Repeat } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { FormAlert } from '@/components/form/FormAlert'
@@ -88,17 +88,25 @@ export function TransactionsPage() {
     <>
       <div className="flex items-start justify-between gap-3">
         <PageHeader title="Extrato" description="Tudo o que entrou e saiu em cada mês." />
-        {/* Atalho para os lançamentos recorrentes (a página vive nas Configurações). Lançar é no `+` */}
-        <Link
-          to="/configuracoes/recorrentes"
-          className={cn(
-            buttonVariants({ variant: 'outline', size: 'lg' }),
-            'shrink-0 rounded-full',
-          )}
-        >
-          <Repeat aria-hidden />
-          Recorrentes
-        </Link>
+        {/* Atalhos: importar do banco e os lançamentos recorrentes (vivem noutras páginas) */}
+        <div className="flex shrink-0 gap-2">
+          <Link
+            to="/importar"
+            aria-label="Importar do banco"
+            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-full')}
+          >
+            <FileUp aria-hidden />
+            <span className="max-sm:sr-only">Importar</span>
+          </Link>
+          <Link
+            to="/configuracoes/recorrentes"
+            aria-label="Recorrentes"
+            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-full')}
+          >
+            <Repeat aria-hidden />
+            <span className="max-sm:sr-only">Recorrentes</span>
+          </Link>
+        </div>
       </div>
 
       {/* Resumo do mês, como no topo de um extrato de banco: o mês e quanto entrou e saiu */}
