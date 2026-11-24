@@ -7,6 +7,7 @@ import { formatMoney } from '@/lib/money'
 import { useInvoiceData } from './hooks'
 import { summarizeInvoices } from './invoice-summary'
 import { upcomingCardMonths } from './upcoming-months'
+import { useProjectedCardCharges } from '@/features/recurring/use-projection'
 
 /**
  * No Início: a próxima fatura (todos os cartões juntos) com a parte sua e de cada pessoa, e o mês
@@ -16,12 +17,14 @@ export function NextInvoicesSummary() {
   const currency = useCurrency()
   const people = usePeople()
   const { invoices, items, payments } = useInvoiceData()
+  const projected = useProjectedCardCharges()
   if (!invoices.data || !items.data || !payments.data) return null
 
   const today = todayIso()
   const months = upcomingCardMonths(
     summarizeInvoices(invoices.data, items.data, payments.data, today),
     today,
+    projected,
   )
   if (months.length === 0) return null
   const [next, after] = months
@@ -36,6 +39,7 @@ export function NextInvoicesSummary() {
   const split = [
     next.meu !== 0 ? `Seu ${money(next.meu)}` : null,
     ...next.pessoas.map((person) => `${name(person.pessoaId)} ${money(person.centavos)}`),
+    next.previsto > 0 ? `inclui ${money(next.previsto)} previstos` : null,
   ]
     .filter(Boolean)
     .join(' · ')

@@ -28,6 +28,8 @@ vi.mock('@/features/accounts/accounts-api', () => ({
   listAccounts: vi.fn(async () => store.accounts),
 }))
 vi.mock('@/features/transactions/transactions-api', () => ({
+  // Histórico (recorrentes \"só lembrar\": já foi pago este mês?)
+  listImportHistory: vi.fn(async () => []),
   listBalanceMovements: vi.fn(async () => store.movements),
 }))
 vi.mock('@/features/card-purchases/purchases-api', () => ({

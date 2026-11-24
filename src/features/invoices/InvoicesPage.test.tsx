@@ -60,6 +60,8 @@ vi.mock('@/features/people/people-api', () => ({
   ]),
 }))
 vi.mock('@/features/transactions/transactions-api', () => ({
+  // Histórico (recorrentes \"só lembrar\": já foi pago este mês?)
+  listImportHistory: vi.fn(async () => []),
   listInvoiceItems: vi.fn(async () => store.items),
 }))
 vi.mock('@/features/transfers/transfers-api', () => ({

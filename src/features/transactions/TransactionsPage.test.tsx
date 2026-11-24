@@ -12,6 +12,7 @@ const store = vi.hoisted(() => ({
   categories: [] as Category[],
   accounts: [] as Account[],
   months: [] as string[],
+  recurring: [] as unknown[],
 }))
 
 vi.mock('@/features/profile/profile-api', () => ({
@@ -27,7 +28,13 @@ vi.mock('@/features/accounts/accounts-api', () => ({
 vi.mock('@/features/card-purchases/purchases-api', () => ({
   listPurchases: vi.fn(async () => []),
 }))
+// Recorrentes previstos no bloco "Previsto"
+vi.mock('@/features/recurring/recurring-api', () => ({
+  listRecurring: vi.fn(async () => store.recurring),
+}))
 vi.mock('./transactions-api', () => ({
+  // Histórico (recorrentes \"só lembrar\": já foi pago este mês?)
+  listImportHistory: vi.fn(async () => []),
   // Movimentos de todas as datas: o lançamento rápido ordena categorias e contas pelo uso
   listBalanceMovements: vi.fn(async () => store.transactions),
   listTransactions: vi.fn(async (month: string) => {
@@ -123,6 +130,7 @@ beforeEach(() => {
       conta_pagamento_id: null,
     },
   ]
+  store.recurring = []
   store.transactions = [
     transaction({ id: 't1', descricao: 'Supermercado', valor_centavos: 12345, data: '2026-10-14' }),
     transaction({
@@ -397,6 +405,35 @@ describe('página de transações', () => {
     const resumo = screen.getByRole('region', { name: 'Resumo do mês' })
     expect(plain(resumo.textContent)).toContain('SaiuR$ 123,45')
     expect(plain(resumo.textContent)).toContain('Previsto até o fim do mês: -R$ 99,90')
+  })
+
+  it('um recorrente que ainda não chegou aparece em "Previsto" e conta no previsto do mês', async () => {
+    store.recurring = [
+      {
+        id: 'aluguel',
+        user_id: 'u',
+        account_id: store.accounts[0].id,
+        category_id: store.categories[0].id,
+        tipo: 'despesa',
+        valor_centavos: 180000,
+        descricao: 'Aluguel',
+        frequencia: 'mensal',
+        dia: 30,
+        proxima_data: '2026-10-30',
+        ativa: true,
+        ultimo_erro: null,
+        created_at: '',
+      },
+    ]
+    renderApp('/transacoes')
+    const previsto = await screen.findByRole('region', { name: 'Previsto' })
+    await waitFor(() => expect(plain(previsto.textContent)).toContain('Aluguel'))
+    expect(plain(previsto.textContent)).toContain('Cai em 30/10 · Recorrente · previsto')
+    const resumo = screen.getByRole('region', { name: 'Resumo do mês' })
+    expect(plain(resumo.textContent)).toContain('Previsto até o fim do mês: -R$ 1.800,00')
+    // Só uma previsão: não abre nada e não conta no que já saiu
+    expect(within(previsto).queryByRole('button', { name: /^Aluguel/ })).not.toBeInTheDocument()
+    expect(plain(resumo.textContent)).toContain('SaiuR$ 123,45')
   })
 
   it('sem nada previsto, não há bloco "Previsto"', async () => {

@@ -14,12 +14,14 @@ import { useCategories } from '@/features/categories/hooks'
 import { usePeople } from '@/features/people/hooks'
 import { useCurrency } from '@/features/profile/hooks'
 import { useQuickEntry } from '@/features/quick-entry/quick-entry-context'
-import { formatMonth, todayIso } from '@/lib/dates'
+import { useRecurringProjection } from '@/features/recurring/use-projection'
+import { formatMonth, lastDayOfMonth, todayIso } from '@/lib/dates'
 import { errorMessage } from '@/lib/db-errors'
 import { formatMoney, type Currency } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import { useTransactions } from './hooks'
 import { groupByDay } from './group-by-day'
+import { ProjectedRow } from './ProjectedRow'
 import { splitByToday, statementDayLabel, statementTotals } from './statement'
 import { TransactionFormDialog } from './TransactionFormDialog'
 import { TransactionRow } from './TransactionRow'
@@ -56,8 +58,23 @@ export function TransactionsPage() {
   // O que ainda não aconteceu (parcelas por cair, agendados) fica à parte, no topo; "Entrou" e "Saiu"
   // contam só o que já aconteceu, como num extrato de banco
   const { previsto, realizado } = splitByToday(list, today)
+  // Recorrentes que ainda não foram lançados este mês (só previsão; no dia entra o real)
+  const projected = useRecurringProjection(lastDayOfMonth(month)).filter((occurrence) =>
+    occurrence.data.startsWith(month),
+  )
   const totals = statementTotals(realizado)
-  const plannedTotal = statementTotals(previsto).saldo
+  const plannedTotal = statementTotals([
+    ...previsto,
+    ...projected.map((occurrence) => ({
+      tipo: occurrence.tipo,
+      valor_centavos: occurrence.valor_centavos,
+    })),
+  ]).saldo
+  // O bloco Previsto mistura os lançamentos futuros e os recorrentes previstos, por data
+  const planned = [
+    ...previsto.map((transaction) => ({ data: transaction.data, transaction })),
+    ...projected.map((occurrence) => ({ data: occurrence.data, occurrence })),
+  ].sort((a, b) => a.data.localeCompare(b.data))
 
   const renderRow = (transaction: (typeof list)[number], when?: string) => (
     <li key={transaction.id}>
@@ -126,7 +143,7 @@ export function TransactionsPage() {
             </div>
           </dl>
         )}
-        {!isPending && !error && previsto.length > 0 && (
+        {!isPending && !error && planned.length > 0 && (
           <p className="mt-2 text-center text-xs text-muted-foreground">
             Até hoje. Previsto até o fim do mês:{' '}
             <span className="font-medium tabular-nums">
@@ -156,7 +173,7 @@ export function TransactionsPage() {
             Tentar de novo
           </Button>
         </div>
-      ) : list.length === 0 ? (
+      ) : list.length === 0 && projected.length === 0 ? (
         <EmptyState
           icon={ArrowLeftRight}
           title={`Nenhuma transação em ${formatMonth(month)}`}
@@ -170,7 +187,7 @@ export function TransactionsPage() {
       ) : (
         // Em cima o previsto (se houver); em baixo o que já aconteceu
         <div className="grid min-w-0 gap-4">
-          {previsto.length > 0 && (
+          {planned.length > 0 && (
             // Ainda não aconteceu: num bloco à parte, com quando cai e os valores apagados
             <section
               aria-labelledby="extrato-previsto"
@@ -186,10 +203,21 @@ export function TransactionsPage() {
                 <span className="text-xs text-muted-foreground">Ainda não aconteceu</span>
               </div>
               <ul className="divide-y">
-                {previsto.map((transaction) =>
-                  renderRow(
-                    transaction,
-                    `Cai em ${transaction.data.slice(8, 10)}/${transaction.data.slice(5, 7)}`,
+                {planned.map((item) =>
+                  'transaction' in item ? (
+                    renderRow(
+                      item.transaction,
+                      `Cai em ${item.data.slice(8, 10)}/${item.data.slice(5, 7)}`,
+                    )
+                  ) : (
+                    <li key={`previsto-${item.occurrence.recurrenceId}-${item.data}`}>
+                      <ProjectedRow
+                        occurrence={item.occurrence}
+                        category={categoriesById.get(item.occurrence.category_id)}
+                        account={accountsById.get(item.occurrence.account_id)}
+                        currency={currency}
+                      />
+                    </li>
                   ),
                 )}
               </ul>

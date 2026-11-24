@@ -17,6 +17,7 @@ export function recurringFormSchema(today: IsoDate) {
     accountId: z.string().min(1, { error: 'Escolha uma conta.' }),
     categoryId: z.string().min(1, { error: 'Escolha uma categoria.' }),
     frequencia: z.enum(['mensal', 'anual']),
+    modo: z.enum(['automatico', 'lembrar']),
     proximaData: z
       .string()
       .refine(isIsoDate, { error: 'Informe uma data válida.', abort: true })

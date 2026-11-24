@@ -396,6 +396,7 @@ export type Database = {
           falha_data: string | null
           frequencia: string
           id: string
+          modo: string
           proxima_data: string
           tipo: Database['public']['Enums']['tipo_movimento']
           user_id: string
@@ -413,6 +414,7 @@ export type Database = {
           falha_data?: string | null
           frequencia: string
           id?: string
+          modo?: string
           proxima_data: string
           tipo: Database['public']['Enums']['tipo_movimento']
           user_id?: string
@@ -429,6 +431,7 @@ export type Database = {
           falha_data?: string | null
           frequencia?: string
           id?: string
+          modo?: string
           proxima_data?: string
           tipo?: Database['public']['Enums']['tipo_movimento']
           user_id?: string

@@ -10,6 +10,7 @@ import { usePurchases } from '@/features/card-purchases/hooks'
 import { useCategories } from '@/features/categories/hooks'
 import { DueInvoices } from '@/features/invoices/DueInvoices'
 import { NextInvoicesSummary } from '@/features/invoices/NextInvoicesSummary'
+import { useRecurringProjection } from '@/features/recurring/use-projection'
 import { RepeatingSummary } from '@/features/repeating/RepeatingSummary'
 import { SharedDebtBanner } from '@/features/sharing/SharedDebtBanner'
 import { usePeople } from '@/features/people/hooks'
@@ -19,7 +20,14 @@ import { useQuickEntry } from '@/features/quick-entry/quick-entry-context'
 import { useBalanceMovements, useTransactions } from '@/features/transactions/hooks'
 import { useTransfers } from '@/features/transfers/hooks'
 import { TransactionRow } from '@/features/transactions/TransactionRow'
-import { addMonths, currentMonth, formatMonth, monthsEndingAt, todayIso } from '@/lib/dates'
+import {
+  addMonths,
+  currentMonth,
+  formatMonth,
+  lastDayOfMonth,
+  monthsEndingAt,
+  todayIso,
+} from '@/lib/dates'
 import { errorMessage } from '@/lib/db-errors'
 import {
   availableCredit,
@@ -54,6 +62,8 @@ export function DashboardPage() {
   const categories = useCategories()
   const monthTransactions = useTransactions(month)
   const movements = useBalanceMovements()
+  // Recorrentes que ainda faltam este mês: só entram no previsto (no dia, a app lança o real)
+  const projected = useRecurringProjection(lastDayOfMonth(todayIso().slice(0, 7)))
   const transfers = useTransfers()
   const purchases = usePurchases()
   const people = usePeople()
@@ -117,6 +127,13 @@ export function DashboardPage() {
     ...allMovements,
     ...transferMovements(transfers.data ?? []),
     ...reimbursementMovements(receivables.reimbursements.data ?? []),
+    ...projected.map((occurrence) => ({
+      account_id: occurrence.account_id,
+      category_id: occurrence.category_id,
+      tipo: occurrence.tipo,
+      valor_centavos: occurrence.valor_centavos,
+      data: occurrence.data,
+    })),
   ]
   const saldoAtual = totalBalance(allAccounts, balanceMovements, { today })
   const saldoPrevisto = totalBalance(allAccounts, balanceMovements, { today, includeFuture: true })
@@ -211,7 +228,7 @@ export function DashboardPage() {
             value={formatMoney(saldoAtual, currency)}
             hint={
               saldoPrevisto !== saldoAtual
-                ? `Com os lançamentos futuros: ${formatMoney(saldoPrevisto, currency)}`
+                ? `Com os lançamentos futuros e os recorrentes do mês: ${formatMoney(saldoPrevisto, currency)}`
                 : 'Soma de todas as contas, até hoje.'
             }
           />

@@ -201,7 +201,9 @@ describe('início (dashboard)', () => {
     await screen.findByText('Saldo atual')
     // 1000,00 + 50,00 (arquivada) + 5000 − 1500 − 500 − 999 (setembro) = 3051,00 ; futura −200 → 2851,00
     expect(tile(/^Saldo atual$/)).toContain('R$ 3.051,00')
-    expect(tile(/^Saldo atual$/)).toContain('Com os lançamentos futuros: R$ 2.851,00')
+    expect(tile(/^Saldo atual$/)).toContain(
+      'Com os lançamentos futuros e os recorrentes do mês: R$ 2.851,00',
+    )
   })
 
   it('pagamento de fatura: o banco desce, o cartão sobe, o saldo líquido e as despesas não mudam', async () => {

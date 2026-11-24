@@ -20,6 +20,8 @@ vi.mock('@/features/categories/categories-api', () => ({
   listCategories: vi.fn(async () => store.categories),
 }))
 vi.mock('@/features/transactions/transactions-api', () => ({
+  // Histórico (recorrentes \"só lembrar\": já foi pago este mês?)
+  listImportHistory: vi.fn(async () => []),
   listTransactions: vi.fn(async (month: string) =>
     store.transactions.filter((t) => t.data.startsWith(month)),
   ),

@@ -78,6 +78,7 @@ const recurring = (overrides: Partial<Recurring>): Recurring => ({
   ativa: true,
   falha: null,
   falha_data: null,
+  modo: 'automatico',
   created_at: '',
   ...overrides,
 })
@@ -202,6 +203,7 @@ describe('RecurringPage', () => {
         frequencia: 'mensal',
         proximaData: '2026-10-31',
         dia: 31,
+        modo: 'automatico',
       }),
     )
     // Depois de criar, o lançamento de hoje pode já ser devido

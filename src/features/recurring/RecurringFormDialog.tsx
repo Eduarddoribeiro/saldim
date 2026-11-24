@@ -94,6 +94,7 @@ function RecurringForm({ onOpenChange, recurring, categories, accounts }: Props)
           categoryId: recurring.category_id,
           frequencia: recurring.frequencia,
           proximaData: initialDate,
+          modo: recurring.modo,
         }
       : {
           tipo: 'despesa',
@@ -103,13 +104,15 @@ function RecurringForm({ onOpenChange, recurring, categories, accounts }: Props)
           categoryId: '',
           frequencia: 'mensal',
           proximaData: today,
+          modo: 'automatico',
         },
   })
 
-  const [tipo, accountId, frequencia, proximaData] = useWatch({
+  const [tipo, accountId, frequencia, proximaData, modo] = useWatch({
     control,
-    name: ['tipo', 'accountId', 'frequencia', 'proximaData'],
+    name: ['tipo', 'accountId', 'frequencia', 'proximaData', 'modo'],
   })
+  const lembrar = modo === 'lembrar'
   const categoryOptions = selectable(
     categories.filter((category) => category.tipo === tipo),
     recurring?.category_id,
@@ -142,6 +145,7 @@ function RecurringForm({ onOpenChange, recurring, categories, accounts }: Props)
       frequencia: values.frequencia,
       proximaData: values.proximaData,
       dia: dayFor(values.proximaData),
+      modo: values.modo,
     }
     return run(() =>
       recurring
@@ -156,6 +160,7 @@ function RecurringForm({ onOpenChange, recurring, categories, accounts }: Props)
               frequencia: row.frequencia,
               dia: row.dia,
               proxima_data: row.proximaData,
+              modo: row.modo,
             },
           })
         : create.mutateAsync(row),
@@ -183,7 +188,7 @@ function RecurringForm({ onOpenChange, recurring, categories, accounts }: Props)
       <DialogHeader>
         <DialogTitle>{recurring ? 'Editar recorrente' : 'Novo recorrente'}</DialogTitle>
         <DialogDescription>
-          Um lançamento que se repete. É criado sozinho quando chega o dia.
+          Um gasto ou uma receita que se repete todo mês ou todo ano.
         </DialogDescription>
       </DialogHeader>
 
@@ -210,14 +215,32 @@ function RecurringForm({ onOpenChange, recurring, categories, accounts }: Props)
         {...register('descricao')}
       />
 
+      <SegmentedControl
+        legend="Como funciona"
+        options={[
+          { value: 'automatico', label: 'Lançar sozinho' },
+          { value: 'lembrar', label: 'Só lembrar' },
+        ]}
+        {...register('modo')}
+      />
+      <p className="-mt-2 text-xs text-muted-foreground">
+        {lembrar
+          ? 'Para quando o dia ou o valor variam (ex.: corte de cabelo, assinatura em dólar). Aparece como previsto até você registrar um lançamento com este nome no mês; nada é lançado sozinho.'
+          : 'É criado sozinho quando chega o dia, sempre com este valor.'}
+      </p>
+
       <TextField
         id="recorrente-valor"
-        label="Valor"
+        label={lembrar ? 'Valor aproximado' : 'Valor'}
         inputMode="decimal"
         autoComplete="off"
         placeholder="0,00"
         className="text-lg font-medium tabular-nums"
-        hint={MONEY_EXAMPLE}
+        hint={
+          lembrar
+            ? 'Se já houver um pagamento com este nome, o previsto usa o último valor pago.'
+            : MONEY_EXAMPLE
+        }
         error={errors.valor?.message}
         {...register('valor')}
       />
@@ -264,7 +287,7 @@ function RecurringForm({ onOpenChange, recurring, categories, accounts }: Props)
 
       <TextField
         id="recorrente-data"
-        label="Próxima data"
+        label={lembrar ? 'Dia provável' : 'Próxima data'}
         type="date"
         min={today}
         hint={

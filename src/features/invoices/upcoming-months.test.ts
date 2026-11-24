@@ -79,4 +79,32 @@ describe('upcomingCardMonths', () => {
     )
     expect([month.total, month.meu]).toEqual([7000, 7000])
   })
+
+  it('recorrentes previstos entram no mês da fatura onde caem, como parte minha', () => {
+    const [dez] = upcomingCardMonths(
+      [invoice('n-dez', 'nubank', '2026-12-10', [item(20000), item(5000, 'mae')])],
+      '2026-11-20',
+      [
+        {
+          account_id: 'nubank',
+          vencimento: '2026-12-10',
+          valor_centavos: 4490,
+          descricao: 'Netflix',
+          category_id: 'lazer',
+          data: '2026-11-25',
+        },
+        // Vencimento já passado: não entra
+        {
+          account_id: 'nubank',
+          vencimento: '2026-11-10',
+          valor_centavos: 999,
+          descricao: 'X',
+          category_id: 'x',
+          data: '2026-10-25',
+        },
+      ],
+    )
+    expect([dez.total, dez.meu, dez.previsto]).toEqual([29490, 24490, 4490])
+    expect(dez.cartoes[0].items.filter((i) => 'previsto' in i)).toHaveLength(1)
+  })
 })

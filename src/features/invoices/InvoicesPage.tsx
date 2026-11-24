@@ -28,6 +28,7 @@ import { isToPay, summarizeInvoices, totalsByPerson } from './invoice-summary'
 import { cardClasses } from './bank-colors'
 import { UpcomingCardInvoices } from './UpcomingCardInvoices'
 import { upcomingCardMonths } from './upcoming-months'
+import { useProjectedCardCharges } from '@/features/recurring/use-projection'
 
 type Filter = 'por_pagar' | 'pagas' | 'todas'
 const FILTERS: { value: Filter; label: string }[] = [
@@ -56,6 +57,7 @@ export function InvoicesPage() {
   const categories = useCategories()
   const purchases = usePurchases()
   const { invoices, items, payments } = useInvoiceData()
+  const projected = useProjectedCardCharges()
   const currency = useCurrency()
   const people = usePeople()
   const personName = (id: string) =>
@@ -111,6 +113,7 @@ export function InvoicesPage() {
   const upcoming = upcomingCardMonths(
     summarizeInvoices(invoices.data ?? [], items.data ?? [], payments.data ?? [], todayIso()),
     todayIso(),
+    projected,
   )
   const purchasesById = new Map((purchases.data ?? []).map((purchase) => [purchase.id, purchase]))
 

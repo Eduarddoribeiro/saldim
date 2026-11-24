@@ -48,10 +48,15 @@ export function UpcomingCardInvoices({
   if (months.length === 0) return null
   const today = todayIso()
   const money = (cents: number) => formatMoney(cents, currency)
-  const split = (month: { meu: number; pessoas: { pessoaId: string; centavos: number }[] }) =>
+  const split = (month: {
+    meu: number
+    pessoas: { pessoaId: string; centavos: number }[]
+    previsto: number
+  }) =>
     [
       month.meu !== 0 ? `Seu ${money(month.meu)}` : null,
       ...month.pessoas.map((person) => `${personName(person.pessoaId)} ${money(person.centavos)}`),
+      month.previsto > 0 ? `inclui ${money(month.previsto)} previstos` : null,
     ]
       .filter(Boolean)
       .join(' · ')
@@ -60,6 +65,7 @@ export function UpcomingCardInvoices({
   const restTotals = {
     total: rest.reduce((sum, month) => sum + month.total, 0),
     meu: rest.reduce((sum, month) => sum + month.meu, 0),
+    previsto: rest.reduce((sum, month) => sum + month.previsto, 0),
     pessoas: [...new Set(rest.flatMap((month) => month.pessoas.map((p) => p.pessoaId)))].map(
       (pessoaId) => ({
         pessoaId,
@@ -72,7 +78,7 @@ export function UpcomingCardInvoices({
   }
 
   return (
-    <section aria-labelledby="proximas-faturas" className="mb-6 grid gap-2">
+    <section aria-labelledby="proximas-faturas" className="mb-6 grid min-w-0 gap-2 *:min-w-0">
       <div className="flex items-baseline justify-between gap-3">
         <h2
           id="proximas-faturas"
@@ -108,6 +114,30 @@ export function UpcomingCardInvoices({
                   </p>
                   <ul aria-label={`Compras no ${cardName(card.cardId)}`} className="grid gap-1">
                     {card.items.map((item, index) => {
+                      if ('previsto' in item) {
+                        return (
+                          <li
+                            key={`previsto-${item.data}-${index}`}
+                            className="flex items-baseline justify-between gap-3"
+                          >
+                            <span className="min-w-0">
+                              <span className="block truncate">
+                                {item.descricao || categoryName(item.category_id)}
+                              </span>
+                              <span className="block text-xs text-muted-foreground">
+                                {item.atrasado
+                                  ? 'Só lembrar · ainda não pago este mês'
+                                  : item.lembrar
+                                    ? `Só lembrar · por volta de ${dayMonth(item.data)}`
+                                    : `Recorrente · previsto para ${dayMonth(item.data)}`}
+                              </span>
+                            </span>
+                            <span className="shrink-0 text-muted-foreground tabular-nums">
+                              {money(item.valor_centavos)}
+                            </span>
+                          </li>
+                        )
+                      }
                       const estorno = item.tipo === 'estorno'
                       const n = item.compra_id ? totalParcelas(item.compra_id) : undefined
                       const detail = [
@@ -193,9 +223,7 @@ function MonthRow({
             {hint && <span className="font-normal text-muted-foreground"> · {hint}</span>}
           </span>
           {split && (
-            <span className="block truncate text-xs text-muted-foreground tabular-nums">
-              {split}
-            </span>
+            <span className="line-clamp-2 text-xs text-muted-foreground tabular-nums">{split}</span>
           )}
         </span>
         <span className="shrink-0 font-semibold tabular-nums">{total}</span>

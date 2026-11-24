@@ -10,9 +10,13 @@ import { supabase } from '@/lib/supabase'
 // não passada) estão na base de dados. Os lançamentos são criados por gerar_recorrencias (generate-api).
 
 /** O CHECK recorrencias_tipo_check só aceita receita e despesa; o de frequência, mensal e anual. */
-export type Recurring = Omit<Tables<'recorrencias'>, 'tipo' | 'frequencia'> & {
+/** automatico: lançado sozinho no dia; lembrar: só previsto até ser registado (dia ou valor variam) */
+export type RecurringMode = 'automatico' | 'lembrar'
+
+export type Recurring = Omit<Tables<'recorrencias'>, 'tipo' | 'frequencia' | 'modo'> & {
   tipo: TipoCategoria
   frequencia: Frequency
+  modo: RecurringMode
 }
 
 export type RecurringValues = {
@@ -25,6 +29,7 @@ export type RecurringValues = {
   proximaData: IsoDate
   /** Dia pedido (1–31); normalmente o dia da próxima data */
   dia: number
+  modo: RecurringMode
 }
 
 export type RecurringPatch = Partial<
@@ -41,6 +46,7 @@ export type RecurringPatch = Partial<
     | 'ativa'
     | 'falha'
     | 'falha_data'
+    | 'modo'
   >
 >
 
@@ -78,6 +84,7 @@ export function recurringRow(values: RecurringValues) {
     frequencia: values.frequencia,
     dia: values.dia,
     proxima_data: values.proximaData,
+    modo: values.modo,
   } satisfies RecurringPatch
 }
 

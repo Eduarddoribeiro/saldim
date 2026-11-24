@@ -109,9 +109,11 @@ export function RecurringPage() {
             )
             const schedule = describeSchedule(item.frequencia, item.dia, item.proxima_data)
             const next = item.ativa ? `Próximo: ${formatShortDate(item.proxima_data)}` : 'Pausado'
-            const detailParts = [schedule, accountName(item.account_id)].filter(
-              (part): part is string => Boolean(part),
-            )
+            const detailParts = [
+              item.modo === 'lembrar' ? 'Só lembrar' : null,
+              schedule,
+              accountName(item.account_id),
+            ].filter((part): part is string => Boolean(part))
             const details = detailParts.join(' · ')
             return (
               <li key={item.id}>
