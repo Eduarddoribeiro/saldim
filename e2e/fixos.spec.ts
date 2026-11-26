@@ -35,6 +35,13 @@ test('fixos: do + ao Início, à página Fixos e a Guardar dinheiro', async ({ p
   await expect(mes).toContainText(money('R$ 1.800,00'))
   await expect(mes.getByRole('list', { name: 'De onde vem' })).toContainText('Salário')
   await expect(mes.getByRole('list', { name: 'Onde vai' })).toContainText('Moradia')
+  // Fim do mês que vem: hoje 1.800 (3.000 − 1.200) + o salário − o aluguel do mês que vem = 3.600
+  const fim = page.getByRole('region', { name: /^Como você fica no fim de / })
+  await expect(fim).toContainText(money('R$ 3.600,00'))
+  await fim.getByText(/^Ver dia a dia/).click()
+  await expect(fim.getByRole('list', { name: 'Dia a dia até o fim do mês' })).toContainText(
+    'Aluguel',
+  )
   await expectNoHorizontalScroll(page)
 
   // Fixos: os dois cadastrados, cada um no seu lado

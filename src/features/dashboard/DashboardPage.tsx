@@ -11,6 +11,7 @@ import { useCategories } from '@/features/categories/hooks'
 import { DueInvoices } from '@/features/invoices/DueInvoices'
 import { NextInvoicesSummary } from '@/features/invoices/NextInvoicesSummary'
 import { useRecurringProjection } from '@/features/recurring/use-projection'
+import { ForecastCard } from '@/features/forecast/ForecastCard'
 import { FixedMonthCard } from '@/features/repeating/FixedMonthCard'
 import { SharedDebtBanner } from '@/features/sharing/SharedDebtBanner'
 import { usePeople } from '@/features/people/hooks'
@@ -246,6 +247,8 @@ export function DashboardPage() {
           purchases={purchases.data ?? []}
         />
       )}
+
+      <ForecastCard />
 
       <FixedMonthCard />
 
