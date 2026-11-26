@@ -139,7 +139,8 @@ export function repeatingExpenses({
     items.push({
       key,
       nome: g.last?.descricao || g.recurrence?.descricao || key,
-      categoryId: topCategory ?? g.recurrence?.category_id ?? '',
+      // A categoria do recorrente cadastrado manda: é a escolha mais recente de quem usa a app
+      categoryId: g.recurrence?.category_id ?? topCategory ?? '',
       mensal,
       vezesPorMes: months.length
         ? Math.round((months.reduce((sum, [, row]) => sum + row.count, 0) / months.length) * 10) /

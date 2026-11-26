@@ -105,4 +105,24 @@ describe('repeatingExpenses', () => {
     ])
     expect(result.percentual).toBeCloseTo(0.3167, 3)
   })
+
+  it('usa a categoria do recorrente cadastrado, mesmo que os lançamentos antigos tenham outra', () => {
+    const { items } = repeatingExpenses({
+      movements: months.map((m) => mov('Spotify', `${m}-22`, 3190, { category_id: 'lazer' })),
+      purchases: [],
+      recurrences: [
+        {
+          id: 'r1',
+          descricao: 'Spotify',
+          category_id: 'assinaturas',
+          tipo: 'despesa',
+          valor_centavos: 3190,
+          frequencia: 'mensal',
+          ativa: true,
+        },
+      ],
+      today,
+    })
+    expect(items.map((i) => [i.nome, i.categoryId])).toEqual([['Spotify', 'assinaturas']])
+  })
 })
