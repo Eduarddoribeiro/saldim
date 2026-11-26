@@ -28,9 +28,9 @@ const BudgetsPage = page(() => import('@/features/budgets/BudgetsPage'), 'Budget
 const SettingsPage = page(() => import('@/features/settings/SettingsPage'), 'SettingsPage')
 const CategoriesPage = page(() => import('@/features/categories/CategoriesPage'), 'CategoriesPage')
 const AccountsPage = page(() => import('@/features/accounts/AccountsPage'), 'AccountsPage')
-const RecurringPage = page(() => import('@/features/recurring/RecurringPage'), 'RecurringPage')
 const ReceivablesPage = page(() => import('@/features/people/ReceivablesPage'), 'ReceivablesPage')
-const RepeatingPage = page(() => import('@/features/repeating/RepeatingPage'), 'RepeatingPage')
+const FixedPage = page(() => import('@/features/repeating/FixedPage'), 'FixedPage')
+const SavingsPage = page(() => import('@/features/savings/SavingsPage'), 'SavingsPage')
 const ImportPage = page(() => import('@/features/import/ImportPage'), 'ImportPage')
 const InvitePage = page(() => import('@/features/sharing/InvitePage'), 'InvitePage')
 const SharedDebtPage = page(() => import('@/features/sharing/SharedDebtPage'), 'SharedDebtPage')
@@ -76,11 +76,14 @@ export const routes: RouteObject[] = [
           { path: 'configuracoes', element: <SettingsPage /> },
           { path: 'configuracoes/categorias', element: <CategoriesPage /> },
           { path: 'configuracoes/contas', element: <AccountsPage /> },
-          { path: 'configuracoes/recorrentes', element: <RecurringPage /> },
+          { path: 'fixos', element: <FixedPage /> },
+          { path: 'guardar', element: <SavingsPage /> },
+          // Endereços antigos: Recorrentes e Gastos que se repetem viraram a página Fixos
+          { path: 'configuracoes/recorrentes', element: <Navigate to="/fixos" replace /> },
           { path: 'a-receber', element: <ReceivablesPage /> },
           { path: 'o-que-devo', element: <SharedDebtPage /> },
           { path: 'importar', element: <ImportPage /> },
-          { path: 'gastos-fixos', element: <RepeatingPage /> },
+          { path: 'gastos-fixos', element: <Navigate to="/fixos" replace /> },
           { path: '*', element: <NotFoundPage /> },
         ],
       },

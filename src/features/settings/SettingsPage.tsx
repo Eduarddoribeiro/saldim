@@ -3,6 +3,7 @@ import {
   ChevronRight,
   HandCoins,
   Landmark,
+  PiggyBank,
   Repeat,
   Tags,
   Target,
@@ -61,11 +62,15 @@ export function SettingsPage() {
       />
       <div className="grid gap-4">
         {/* No telemóvel esta página é o "Mais" da barra inferior: Orçamentos e A receber vêm primeiro */}
-        <SettingsSection title="Planejamento" description="Limites de gastos e quem te deve.">
+        <SettingsSection
+          title="Planejamento"
+          description="O que entra e sai todo mês, quanto guardar e quem te deve."
+        >
           <ul className="-mx-1 divide-y">
+            <SettingsLink to="/fixos" icon={Repeat} label="Fixos" />
+            <SettingsLink to="/guardar" icon={PiggyBank} label="Guardar dinheiro" />
             <SettingsLink to="/orcamentos" icon={Target} label="Orçamentos" />
             <SettingsLink to="/a-receber" icon={HandCoins} label="Pessoas e a receber" />
-            <SettingsLink to="/gastos-fixos" icon={Repeat} label="Gastos que se repetem" />
             {(sharedDebts.data?.length ?? 0) > 0 && (
               <SettingsLink to="/o-que-devo" icon={HandCoins} label="O que eu devo" />
             )}
@@ -88,7 +93,6 @@ export function SettingsPage() {
           <ul className="-mx-1 divide-y">
             <SettingsLink to="/configuracoes/contas" icon={Landmark} label="Contas" />
             <SettingsLink to="/configuracoes/categorias" icon={Tags} label="Categorias" />
-            <SettingsLink to="/configuracoes/recorrentes" icon={Repeat} label="Recorrentes" />
             <SettingsLink to="/importar" icon={FileUp} label="Importar do banco" />
           </ul>
         </SettingsSection>

@@ -27,12 +27,13 @@ export function useTransactions(month: MonthKey) {
 }
 
 /** Movimentos de todas as datas, para saldos. Partilha o prefixo de cache: invalida-se com as mutações. */
-export function useBalanceMovements() {
+export function useBalanceMovements({ enabled = true }: { enabled?: boolean } = {}) {
   const { user } = useAuth()
   return useQuery({
     queryKey: [...transactionsKey(user?.id), 'saldos'] as const,
-    queryFn: listBalanceMovements,
-    enabled: Boolean(user),
+    // Função à volta: só lê o export quando a consulta corre (testes que simulam a API sem ele)
+    queryFn: () => listBalanceMovements(),
+    enabled: Boolean(user) && enabled,
   })
 }
 

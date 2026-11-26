@@ -1,11 +1,12 @@
 import { Suspense, useEffect } from 'react'
-import { Outlet, useLocation } from 'react-router'
+import { Navigate, Outlet, useLocation } from 'react-router'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import { DemoSetup } from '@/features/demo/DemoSetup'
 import { QuickEntryProvider } from '@/features/quick-entry/QuickEntryProvider'
 import { cn } from '@/lib/utils'
 import { RecurringGenerator } from '@/features/recurring/RecurringGenerator'
 import { PendingInviteRedirect } from '@/features/sharing/PendingInviteRedirect'
+import { useViewerOnly } from '@/features/sharing/use-viewer-only'
 import { applyHiddenValues, readHiddenValues } from '@/lib/privacy'
 import { AppLogo } from './AppLogo'
 import { BottomNav } from './BottomNav'
@@ -21,7 +22,11 @@ export function AppShell() {
   // "Esconder valores" (o olho do Início) vale em todas as páginas, também ao abrir a app
   useEffect(() => applyHiddenValues(readHiddenValues()), [])
   // No Início, o cabeçalho do telemóvel continua a faixa do saldo (mesma cor, sem linha)
-  const onHero = useLocation().pathname === '/'
+  const { pathname } = useLocation()
+  const onHero = pathname === '/'
+  // Quem só vê o que deve: uma página só, sem navegação (features/sharing/use-viewer-only.ts)
+  const viewerOnly = useViewerOnly()
+  if (viewerOnly && pathname !== '/o-que-devo') return <Navigate to="/o-que-devo" replace />
 
   return (
     <QuickEntryProvider>
@@ -30,14 +35,15 @@ export function AppShell() {
         <RecurringGenerator />
         {/* Convite aberto antes de entrar: volta a ele (não mostra nada) */}
         <PendingInviteRedirect />
-        <Sidebar />
+        {!viewerOnly && <Sidebar />}
 
         <div className="flex min-w-0 flex-1 flex-col">
           {/* Demo pública: prepara os dados do visitante e mostra a faixa "demonstração" */}
           <DemoSetup />
           <header
             className={cn(
-              'sticky top-0 z-30 flex h-14 items-center justify-between px-4 md:hidden',
+              'sticky top-0 z-30 flex h-14 items-center justify-between px-4',
+              !viewerOnly && 'md:hidden',
               onHero ? 'bg-hero text-hero-foreground' : 'border-b bg-card/95 backdrop-blur',
             )}
           >
@@ -48,14 +54,19 @@ export function AppShell() {
           </header>
 
           {/* pb-24 no telemóvel para o conteúdo não ficar escondido atrás da barra inferior */}
-          <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-6 pb-24 md:px-8 md:pt-8 md:pb-8">
+          <main
+            className={cn(
+              'mx-auto w-full max-w-5xl flex-1 px-4 pt-6 md:px-8 md:pt-8 md:pb-8',
+              viewerOnly ? 'max-w-2xl pb-10' : 'pb-24',
+            )}
+          >
             <Suspense fallback={<PageLoader />}>
               <Outlet />
             </Suspense>
           </main>
         </div>
 
-        <BottomNav />
+        {!viewerOnly && <BottomNav />}
       </div>
     </QuickEntryProvider>
   )

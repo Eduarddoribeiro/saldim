@@ -364,6 +364,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          chave_pix: string | null
           created_at: string
           id: string
           moeda: string
@@ -371,12 +372,14 @@ export type Database = {
         }
         ComputedFields: never
         Insert: {
+          chave_pix?: string | null
           created_at?: string
           id: string
           moeda?: string
           nome?: string
         }
         Update: {
+          chave_pix?: string | null
           created_at?: string
           id?: string
           moeda?: string
@@ -712,6 +715,7 @@ export type Database = {
           categorias: Json
           compras: Json
           divida_anterior_centavos: number
+          dono_chave_pix: string
           dono_nome: string
           faturas: Json
           movimentos: Json

@@ -97,13 +97,22 @@ test('a mãe vê na conta dela o que deve, e só isso', async ({ page, browser }
   await expect(divida).toContainText(money('R$ 360,00'))
   await expect(divida).toContainText('Panela')
 
-  // Sem lançamentos próprios, abrir a app leva-a direto ao que deve (uma vez); no Início, o atalho
+  // Sem lançamentos próprios, o app dela é só esta página: sem barra de navegação nem +
   await mae.goto('/')
   await expect(mae).toHaveURL(/\/o-que-devo$/)
-  await mae.goto('/')
-  await expect(
-    mae.getByRole('link', { name: /^Você deve a Edu Teste: .*Ver o que eu devo$/ }),
-  ).toBeVisible()
+  await expect(mae.getByRole('button', { name: 'Novo lançamento' })).toHaveCount(0)
+  await expect(divida.getByRole('list', { name: 'Onde você gastou' })).toContainText('Moradia')
+
+  // A chave Pix do dono aparece para ela copiar
+  await page.goto('/a-receber')
+  await cartaoMae.getByRole('button', { name: 'Compartilhar com Mãe' }).click()
+  const compartilhado = page.getByRole('dialog', { name: 'Compartilhado com Mãe' })
+  await compartilhado.getByLabel('Sua chave Pix (opcional)').fill('edu@pix.com')
+  await compartilhado.getByRole('button', { name: 'Salvar chave Pix' }).click()
+  await expect(compartilhado.getByRole('button', { name: 'Salvar chave Pix' })).toBeHidden()
+  await page.keyboard.press('Escape')
+  await mae.reload()
+  await expect(divida.getByText('Chave: edu@pix.com')).toBeVisible()
 
   // Deixar de compartilhar corta o acesso
   await page.goto('/a-receber')

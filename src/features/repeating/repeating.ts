@@ -51,17 +51,45 @@ export type RepeatingExpense = {
   ultimaData: IsoDate | null
 }
 
-export function repeatingExpenses({
-  movements,
-  purchases,
-  recurrences,
-  today,
-}: {
+type Input = {
   movements: readonly Movement[]
   purchases: readonly { id: string; parcelas: number }[]
   recurrences: readonly Recurrence[]
   today: IsoDate
-}) {
+}
+
+export function repeatingExpenses(input: Input) {
+  const { movements, today } = input
+  const items = repeatingItems(input, 'despesa')
+  // O que entra todo mês, com as mesmas regras: receitas recorrentes cadastradas ou descobertas
+  const income = repeatingItems(input, 'receita')
+  const recent = new Set(Array.from({ length: 3 }, (_, i) => addMonths(today.slice(0, 7), i - 3)))
+
+  // O que entra por mês: média das receitas dos 3 últimos meses completos
+  const receitas = movements
+    .filter((m) => m.tipo === 'receita' && recent.has(m.data.slice(0, 7)))
+    .reduce((sum, m) => sum + m.valor_centavos, 0)
+  const receitaMensal = Math.round(receitas / 3)
+  const totalMensal = items.reduce((sum, item) => sum + item.mensal, 0)
+  const rendaFixa = income.reduce((sum, item) => sum + item.mensal, 0)
+  return {
+    items,
+    totalMensal,
+    totalAnual: totalMensal * 12,
+    receitaMensal,
+    /** Parte do que entra que vai para gastos que se repetem (null sem receitas) */
+    percentual: receitaMensal > 0 ? totalMensal / receitaMensal : null,
+    income,
+    /** O que entra fixo por mês (receitas que se repetem) */
+    rendaFixa,
+  }
+}
+
+/** O que se repete de um tipo (despesa ou receita): descoberto no histórico ou cadastrado. */
+function repeatingItems(
+  { movements, purchases, recurrences, today }: Input,
+  tipo: 'despesa' | 'receita',
+): RepeatingExpense[] {
   const current = today.slice(0, 7)
   const window = Array.from({ length: WINDOW_MONTHS }, (_, i) =>
     addMonths(current, i - WINDOW_MONTHS),
@@ -95,7 +123,7 @@ export function repeatingExpenses({
 
   for (const movement of movements) {
     // Só gastos meus; uma compra parcelada repete-se, mas não é um gasto recorrente
-    if (movement.tipo !== 'despesa' || movement.pessoa_id) continue
+    if (movement.tipo !== tipo || movement.pessoa_id) continue
     if (movement.compra_id && installments.has(movement.compra_id)) continue
     if (movement.data > today) continue
     const key =
@@ -117,7 +145,7 @@ export function repeatingExpenses({
   }
 
   for (const recurrence of recurrences) {
-    if (!recurrence.ativa || recurrence.tipo !== 'despesa') continue
+    if (!recurrence.ativa || recurrence.tipo !== tipo) continue
     group(descriptionKey(recurrence.descricao) || `r:${recurrence.id}`).recurrence = recurrence
   }
 
@@ -154,21 +182,7 @@ export function repeatingExpenses({
     })
   }
   items.sort((a, b) => b.mensal - a.mensal)
-
-  // O que entra por mês: média das receitas dos 3 últimos meses completos
-  const receitas = movements
-    .filter((m) => m.tipo === 'receita' && recent.has(m.data.slice(0, 7)))
-    .reduce((sum, m) => sum + m.valor_centavos, 0)
-  const receitaMensal = Math.round(receitas / 3)
-  const totalMensal = items.reduce((sum, item) => sum + item.mensal, 0)
-  return {
-    items,
-    totalMensal,
-    totalAnual: totalMensal * 12,
-    receitaMensal,
-    /** Parte do que entra que vai para gastos que se repetem (null sem receitas) */
-    percentual: receitaMensal > 0 ? totalMensal / receitaMensal : null,
-  }
+  return items
 }
 
 function median(values: number[]): number {

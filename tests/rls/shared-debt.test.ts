@@ -124,6 +124,44 @@ describe('convite e ligação', () => {
     expect((await intruso.client.rpc('divida_partilhada')).data).toEqual([])
   })
 
+  it('a chave Pix do dono (opcional) chega a quem está ligado, e só o dono a muda', async () => {
+    const pessoa = await novaPessoa('Dinda')
+    await comprar(pessoa.id, 'Remédio')
+    const token = await convidar(pessoa.id)
+    expect((await mae.client.rpc('aceitar_convite', { p_token: token })).error).toBeNull()
+    const pix = async () =>
+      ((await mae.client.rpc('divida_partilhada')).data ?? []).find(
+        (row) => row.pessoa_id === pessoa.id,
+      )?.dono_chave_pix
+
+    expect(await pix()).toBeNull()
+    const salvo = await dono.client
+      .from('profiles')
+      .update({ chave_pix: 'edu@pix.com' })
+      .eq('id', dono.id)
+    expect(salvo.error).toBeNull()
+    expect(await pix()).toBe('edu@pix.com')
+
+    // Vazia não vale (o app manda null para apagar); muito comprida também não
+    const vazia = await dono.client.from('profiles').update({ chave_pix: '' }).eq('id', dono.id)
+    expect(vazia.error?.code).toBe('23514')
+    const longa = await dono.client
+      .from('profiles')
+      .update({ chave_pix: 'x'.repeat(121) })
+      .eq('id', dono.id)
+    expect(longa.error?.code).toBe('23514')
+
+    // Outra pessoa não muda a chave do dono (a RLS só deixa mudar o próprio perfil)
+    const { data: mudadas } = await intruso.client
+      .from('profiles')
+      .update({ chave_pix: 'golpe@pix.com' })
+      .eq('id', dono.id)
+      .select('id')
+    expect(mudadas).toEqual([])
+    expect(await pix()).toBe('edu@pix.com')
+    await dono.client.from('profiles').update({ chave_pix: null }).eq('id', dono.id)
+  })
+
   it('o convite é de uso único, expira e não serve ao dono nem a uma segunda conta', async () => {
     const pessoa = await novaPessoa('Tia')
     const proprio = await convidar(pessoa.id)

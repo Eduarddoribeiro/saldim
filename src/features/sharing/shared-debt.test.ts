@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ownerLabel, summarizeSharedDebt } from './shared-debt'
+import { ownerLabel, sharedSpendingByCategory, summarizeSharedDebt } from './shared-debt'
 import type { SharedDebt } from './sharing-api'
 
 const parcela = (fatura: string, valor: number, data: string) => ({
@@ -26,6 +26,7 @@ const debt = (patch: Partial<SharedDebt> = {}): SharedDebt => ({
   cartoes: [],
   categorias: [],
   reembolsos: [],
+  donoChavePix: null,
   ...patch,
 })
 
@@ -62,5 +63,34 @@ describe('ownerLabel', () => {
   it('usa o nome de quem convidou, ou uma descrição', () => {
     expect(ownerLabel({ donoNome: 'Edu' })).toBe('Edu')
     expect(ownerLabel({ donoNome: ' ' })).toBe('quem te emprestou o cartão')
+  })
+})
+
+describe('sharedSpendingByCategory', () => {
+  it('soma as compras por categoria, da maior para a menor, com os nomes', () => {
+    const compra = (id: string, category_id: string, descricao: string, valor: number) => ({
+      id,
+      account_id: 'visa',
+      category_id,
+      descricao,
+      data_compra: '2026-10-01',
+      valor_total_centavos: valor,
+      parcelas: 1,
+      parcela_inicial: 1,
+      pessoa_id: 'mae',
+    })
+    const rows = sharedSpendingByCategory({
+      compras: [
+        compra('a', 'lazer', 'Show', 32000),
+        compra('b', 'compras', 'Celular', 179880),
+        compra('c', 'compras', 'Passagem', 18900),
+        compra('d', 'compras', 'Celular', 100),
+      ],
+    })
+    expect(rows.map((row) => [row.categoryId, row.total, row.nomes])).toEqual([
+      ['compras', 198880, ['Celular', 'Passagem']],
+      ['lazer', 32000, ['Show']],
+    ])
+    expect(rows[0].share + rows[1].share).toBeCloseTo(1)
   })
 })

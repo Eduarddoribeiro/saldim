@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/auth-context'
 import type { Currency } from '@/lib/money'
-import { getProfile, updateProfileName } from './profile-api'
+import { getProfile, updatePixKey, updateProfileName } from './profile-api'
 
 export const profileKey = (userId: string | undefined) => ['profile', userId] as const
 
@@ -21,6 +21,15 @@ export function useUpdateProfileName() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (nome: string) => updateProfileName(user?.id ?? '', nome),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: profileKey(user?.id) }),
+  })
+}
+
+export function useUpdatePixKey() {
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (chave: string | null) => updatePixKey(user?.id ?? '', chave),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: profileKey(user?.id) }),
   })
 }

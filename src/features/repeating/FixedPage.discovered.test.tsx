@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderApp } from '@/test/render-app'
 
@@ -37,6 +38,7 @@ vi.mock('@/features/transactions/transactions-api', () => ({
 }))
 vi.mock('@/features/card-purchases/purchases-api', () => ({ listPurchases: vi.fn(async () => []) }))
 vi.mock('@/features/recurring/recurring-api', () => ({ listRecurring: vi.fn(async () => []) }))
+vi.mock('@/features/accounts/accounts-api', () => ({ listAccounts: vi.fn(async () => []) }))
 
 const plain = (text: string | null | undefined) => (text ?? '').replace(/[\u00a0\u202f]/g, ' ')
 const mov = (descricao: string, data: string, valor: number, extra: object = {}) => ({
@@ -69,31 +71,47 @@ beforeEach(() => {
 })
 afterEach(() => vi.useRealTimers())
 
-describe('gastos que se repetem', () => {
-  it('total por mês e por ano, a parte do que entra e as listas de valor fixo e que varia', async () => {
-    renderApp('/gastos-fixos')
-    const total = await screen.findByRole('region', { name: 'Total dos gastos que se repetem' })
-    // Netflix 44,90 + Mercado (mediana de 350,00…400,00 = 375,00) = 419,90; 5000,00 de salário
-    expect(plain(total.textContent)).toContain('R$ 419,90')
-    expect(plain(total.textContent)).toContain('R$ 5.038,80')
-    expect(plain(total.textContent)).toContain('8%')
-    const fixo = screen.getByRole('region', { name: /^Valor fixo/ })
-    expect(plain(within(fixo).getByRole('listitem').textContent)).toBe(
-      'NetflixTodo mês · Lazer · Descoberto pela appR$ 44,90por mês',
-    )
-    const varia = screen.getByRole('region', { name: /^Valor que varia/ })
-    expect(plain(varia.textContent)).toContain('Mercado')
-    // Por área: Alimentação (375,00 = 89%) e Lazer (44,90 = 11%)
+describe('Fixos: descobertos pela app', () => {
+  it('mostra o que entra, o que sai e o que sobra, por área, e os descobertos para cadastrar', async () => {
+    renderApp('/fixos')
+    const resumo = await screen.findByRole('region', { name: 'Resumo dos fixos' })
+    // Entra: salário 5.000; sai: Netflix 44,90 + mercado (mediana 375,00) = 419,90
+    expect(plain(resumo.textContent)).toContain('R$ 4.580,10')
+    expect(plain(resumo.textContent)).toContain('R$ 5.000,00')
+    expect(plain(resumo.textContent)).toContain('R$ 419,90')
+
+    const saidas = within(screen.getByRole('list', { name: 'Saídas descobertas' }))
+    expect(saidas.getAllByRole('listitem').map((li) => plain(li.textContent))).toEqual([
+      'MercadoTodo mês · Alimentação · valor varia (média)R$ 375,00por mês',
+      'NetflixTodo mês · LazerR$ 44,90por mês',
+    ])
+    const entradas = within(screen.getByRole('list', { name: 'Entradas descobertas' }))
+    expect(plain(entradas.getByRole('listitem').textContent)).toContain('Salário')
+
     const areas = within(screen.getByRole('list', { name: 'Gastos por área' }))
-      .getAllByRole('listitem')
-      .map((li) => plain(li.textContent))
-    expect(areas).toEqual(['AlimentaçãoR$ 375,00 · 89%Mercado', 'LazerR$ 44,90 · 11%Netflix'])
-    expect(screen.getByText(/0 cadastrados em Recorrentes · 2 descobertos/)).toBeInTheDocument()
+    expect(areas.getAllByRole('listitem').map((li) => plain(li.textContent))).toEqual([
+      'AlimentaçãoR$ 375,00 · 89%Mercado',
+      'LazerR$ 44,90 · 11%Netflix',
+    ])
   })
 
-  it('sem nada que se repita, explica quando um gasto aparece', async () => {
+  it('"Cadastrar" abre o formulário já preenchido', async () => {
+    renderApp('/fixos')
+    await userEvent.click(await screen.findByRole('button', { name: /^Netflix: .*Cadastrar$/ }))
+    const dialog = await screen.findByRole('dialog', { name: 'Novo fixo' })
+    expect(within(dialog).getByLabelText('Nome')).toHaveValue('Netflix')
+    expect(within(dialog).getByLabelText('Valor')).toHaveValue('44,90')
+    expect(within(dialog).getByLabelText('Categoria')).toHaveValue('lazer')
+  })
+
+  it('sem nada cadastrado nem que se repita, explica', async () => {
     store.history = []
-    renderApp('/gastos-fixos')
-    expect(await screen.findByText('Ainda não há gastos que se repetem')).toBeInTheDocument()
+    renderApp('/fixos')
+    expect(await screen.findByText('Nenhum fixo ainda')).toBeInTheDocument()
+  })
+
+  it('os endereços antigos levam a Fixos', async () => {
+    const { router } = renderApp('/gastos-fixos')
+    expect(router.state.location.pathname).toBe('/fixos')
   })
 })

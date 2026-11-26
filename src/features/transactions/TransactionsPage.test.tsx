@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Account } from '@/features/accounts/accounts-api'
 import type { Category } from '@/features/categories/categories-api'
 import { renderApp } from '@/test/render-app'
+import { createRecurring } from '@/features/recurring/recurring-api'
 import type { Transaction } from './transactions-api'
 
 const store = vi.hoisted(() => ({
@@ -31,6 +32,7 @@ vi.mock('@/features/card-purchases/purchases-api', () => ({
 // Recorrentes previstos no bloco "Previsto"
 vi.mock('@/features/recurring/recurring-api', () => ({
   listRecurring: vi.fn(async () => store.recurring),
+  createRecurring: vi.fn(async () => ({})),
 }))
 vi.mock('./transactions-api', () => ({
   // Histórico (recorrentes \"só lembrar\": já foi pago este mês?)
@@ -230,6 +232,36 @@ describe('página de transações', () => {
       descricao: 'Renda',
     })
     expect(await screen.findByRole('button', { name: /Renda/ })).toBeInTheDocument()
+  })
+
+  it('"Repete todo mês" registra o lançamento e cadastra o fixo no mesmo dia do mês seguinte', async () => {
+    renderApp('/transacoes')
+    await screen.findByText('Supermercado')
+    const dialog = await openQuickEntry()
+    await userEvent.keyboard('31,90')
+    const categorias = within(dialog).getByRole('group', { name: 'Categoria' })
+    await userEvent.click(within(categorias).getByRole('radio', { name: 'Alimentação' }))
+    await userEvent.type(within(dialog).getByLabelText('Descrição (opcional)'), 'Spotify')
+    const repete = within(dialog).getByRole('switch', { name: /Repete todo mês/ })
+    await userEvent.click(repete)
+    expect(
+      within(dialog).getByText('Vira um fixo: todo dia 14, lançado sozinho.'),
+    ).toBeInTheDocument()
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Registrar despesa' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(store.transactions.at(-1)).toMatchObject({ descricao: 'Spotify', valor_centavos: 3190 })
+    expect(createRecurring).toHaveBeenCalledWith({
+      tipo: 'despesa',
+      valorCentavos: 3190,
+      descricao: 'Spotify',
+      accountId: 'conta',
+      categoryId: 'alim',
+      frequencia: 'mensal',
+      proximaData: '2026-11-14',
+      dia: 14,
+      modo: 'automatico',
+    })
   })
 
   it('as categorias mais usadas nos últimos 90 dias vêm primeiro', async () => {
@@ -493,10 +525,10 @@ describe('página de transações', () => {
     expect(store.transactions.map((t) => t.id)).not.toContain('t1')
   })
 
-  it('tem um atalho para os lançamentos recorrentes', async () => {
+  it('tem um atalho para os fixos (lançamentos recorrentes)', async () => {
     const { router } = renderApp('/transacoes')
-    await userEvent.click(screen.getByRole('link', { name: 'Recorrentes' }))
-    expect(router.state.location.pathname).toBe('/configuracoes/recorrentes')
+    await userEvent.click(screen.getByRole('link', { name: 'Fixos' }))
+    expect(router.state.location.pathname).toBe('/fixos')
   })
 
   it('um lançamento criado por uma recorrência mostra "Recorrente" e continua editável', async () => {

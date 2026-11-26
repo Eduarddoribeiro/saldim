@@ -22,8 +22,8 @@ async function novoRecorrente(
     categoria,
   }: { nome: string; valor: string; conta: string; categoria: string },
 ) {
-  await page.getByRole('button', { name: 'Novo recorrente' }).click()
-  const dialog = page.getByRole('dialog', { name: 'Novo recorrente' })
+  await page.getByRole('button', { name: 'Novo fixo' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Novo fixo' })
   await dialog.getByLabel('Nome').fill(nome)
   await dialog.getByLabel('Valor').fill(valor)
   await dialog.getByLabel('Conta ou cartão').selectOption({ label: conta })
@@ -51,8 +51,8 @@ test('recorrente na conta e no cartão: criado no dia, sem duplicar', async ({ p
   await expect(conta).toBeHidden()
 
   await page.goto('/configuracoes')
-  await page.getByRole('link', { name: 'Recorrentes' }).click()
-  await expect(page.getByText('Nenhum recorrente ainda')).toBeVisible()
+  await page.getByRole('link', { name: 'Fixos' }).click()
+  await expect(page.getByText('Nenhum fixo ainda')).toBeVisible()
 
   await novoRecorrente(page, {
     nome: 'Ginásio',
@@ -64,7 +64,7 @@ test('recorrente na conta e no cartão: criado no dia, sem duplicar', async ({ p
 
   // O de hoje já foi criado: a próxima data passou para o mês seguinte
   const proxima = nextOccurrence(today(), 'mensal', Number(today().slice(8, 10)))
-  const lista = page.getByRole('list', { name: 'Recorrentes' })
+  const lista = page.getByRole('list', { name: 'Sai todo mês' })
   await expect(lista.getByRole('listitem')).toHaveCount(2)
   for (const item of await lista.getByRole('listitem').all()) {
     await expect(item).toContainText(`Próximo: ${ddmmyyyy(proxima)}`)

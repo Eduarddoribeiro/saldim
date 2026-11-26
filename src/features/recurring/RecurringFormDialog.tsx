@@ -36,6 +36,8 @@ type Props = {
   onOpenChange: (open: boolean) => void
   /** Recorrência a editar; sem ela, o diálogo cria uma nova. */
   recurring?: Recurring | null
+  /** Valores sugeridos ao criar (ex.: um gasto descoberto nos lançamentos) */
+  preset?: Partial<Pick<RecurringFormInput, 'tipo' | 'valor' | 'descricao' | 'categoryId' | 'modo'>>
   categories: Category[]
   accounts: Account[]
 }
@@ -44,7 +46,12 @@ export function RecurringFormDialog(props: Props) {
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-md">
-        {props.open && <RecurringForm key={props.recurring?.id ?? 'nova'} {...props} />}
+        {props.open && (
+          <RecurringForm
+            key={props.recurring?.id ?? `nova-${props.preset?.descricao ?? ''}`}
+            {...props}
+          />
+        )}
       </DialogContent>
     </Dialog>
   )
@@ -63,7 +70,7 @@ function selectable<T extends { id: string; nome: string; arquivada: boolean }>(
     }))
 }
 
-function RecurringForm({ onOpenChange, recurring, categories, accounts }: Props) {
+function RecurringForm({ onOpenChange, recurring, preset, categories, accounts }: Props) {
   const { serverError, run } = useServerAction(() => onOpenChange(false))
   const create = useCreateRecurring()
   const update = useUpdateRecurring()
@@ -105,6 +112,7 @@ function RecurringForm({ onOpenChange, recurring, categories, accounts }: Props)
           frequencia: 'mensal',
           proximaData: today,
           modo: 'automatico',
+          ...preset,
         },
   })
 
@@ -186,7 +194,7 @@ function RecurringForm({ onOpenChange, recurring, categories, accounts }: Props)
   return (
     <form onSubmit={onSubmit} noValidate className="grid gap-4">
       <DialogHeader>
-        <DialogTitle>{recurring ? 'Editar recorrente' : 'Novo recorrente'}</DialogTitle>
+        <DialogTitle>{recurring ? 'Editar fixo' : 'Novo fixo'}</DialogTitle>
         <DialogDescription>
           Um gasto ou uma receita que se repete todo mês ou todo ano.
         </DialogDescription>
@@ -272,7 +280,7 @@ function RecurringForm({ onOpenChange, recurring, categories, accounts }: Props)
       {missingSetup && (
         <FormAlert>
           {accountOptions.length === 0
-            ? 'Para criar um recorrente, você precisa de uma conta ativa.'
+            ? 'Para criar um fixo, você precisa de uma conta ativa.'
             : `Nenhuma categoria de ${tipo} ativa.`}{' '}
           <Link
             to={accountOptions.length === 0 ? '/configuracoes/contas' : '/configuracoes/categorias'}

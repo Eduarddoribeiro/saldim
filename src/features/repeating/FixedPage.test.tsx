@@ -5,8 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Account } from '@/features/accounts/accounts-api'
 import type { Category } from '@/features/categories/categories-api'
 import { renderApp } from '@/test/render-app'
-import { generateRecurring } from './generate-api'
-import { createRecurring, updateRecurring, type Recurring } from './recurring-api'
+import { generateRecurring } from '@/features/recurring/generate-api'
+import {
+  createRecurring,
+  updateRecurring,
+  type Recurring,
+} from '@/features/recurring/recurring-api'
 
 // generate-api é simulado para todos os testes em src/test/setup.ts (devolve 0)
 
@@ -25,7 +29,7 @@ vi.mock('@/features/categories/categories-api', () => ({
 vi.mock('@/features/accounts/accounts-api', () => ({
   listAccounts: vi.fn(async () => store.accounts),
 }))
-vi.mock('./recurring-api', () => ({
+vi.mock('@/features/recurring/recurring-api', () => ({
   listRecurring: vi.fn(async () => store.recurring),
   createRecurring: vi.fn(async () => ({})),
   updateRecurring: vi.fn(async (id: string, patch: Partial<Recurring>) => {
@@ -119,15 +123,15 @@ describe('RecurringGenerator', () => {
   })
 })
 
-describe('RecurringPage', () => {
+describe('Fixos: cadastrados', () => {
   it('abre a partir das Configurações e mostra o estado vazio', async () => {
     renderApp('/configuracoes')
-    await userEvent.click(screen.getByRole('link', { name: 'Recorrentes' }))
-    expect(screen.getByRole('heading', { level: 1, name: 'Recorrentes' })).toBeInTheDocument()
-    expect(await screen.findByText('Nenhum recorrente ainda')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('link', { name: 'Fixos' }))
+    expect(screen.getByRole('heading', { level: 1, name: 'Fixos' })).toBeInTheDocument()
+    expect(await screen.findByText('Nenhum fixo ainda')).toBeInTheDocument()
   })
 
-  it('lista por próxima data, com a repetição, a conta e as pausadas no fim', async () => {
+  it('separa o que sai e o que entra, por próxima data, com as pausadas no fim', async () => {
     store.recurring = [
       recurring({ id: 'a', descricao: 'Netflix', proxima_data: '2026-10-20', dia: 20 }),
       recurring({
@@ -156,23 +160,26 @@ describe('RecurringPage', () => {
       }),
     ]
     store.recurring.sort((x, y) => x.proxima_data.localeCompare(y.proxima_data))
-    renderApp('/configuracoes/recorrentes')
-    const list = await screen.findByRole('list', { name: 'Recorrentes' })
-    const rows = within(list)
-      .getAllByRole('listitem')
-      .map((li) => plain(li.textContent))
-    expect(rows).toEqual([
+    renderApp('/fixos')
+    const rows = (name: string) =>
+      within(screen.getByRole('list', { name }))
+        .getAllByRole('listitem')
+        .map((li) => plain(li.textContent))
+    await screen.findByRole('list', { name: 'Sai todo mês' })
+    expect(rows('Sai todo mês')).toEqual([
       'NetflixTodo dia 20 · PicPayPróximo: 20/10/2026-R$ 55,90',
       'RendaTodo dia 31 (ou o último dia do mês) · PicPayPróximo: 31/10/2026-R$ 1.500,00',
-      'SalárioTodo dia 5 · PicPayPróximo: 05/11/2026+R$ 5.000,00',
       'GinásioTodo dia 1 · PicPayPausado-R$ 55,90',
+    ])
+    expect(rows('Entra todo mês')).toEqual([
+      'SalárioTodo dia 5 · PicPayPróximo: 05/11/2026+R$ 5.000,00',
     ])
   })
 
   it('cria um recorrente no cartão (só despesas) com o dia da data escolhida', async () => {
-    renderApp('/configuracoes/recorrentes')
-    await userEvent.click(await screen.findByRole('button', { name: 'Novo recorrente' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Novo recorrente' })
+    renderApp('/fixos')
+    await userEvent.click(await screen.findByRole('button', { name: 'Novo fixo' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Novo fixo' })
 
     // Numa receita, os cartões não aparecem
     await userEvent.click(within(dialog).getByRole('radio', { name: 'Receita' }))
@@ -211,9 +218,9 @@ describe('RecurringPage', () => {
   })
 
   it('anual: descreve o dia e o mês', async () => {
-    renderApp('/configuracoes/recorrentes')
-    await userEvent.click(await screen.findByRole('button', { name: 'Novo recorrente' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Novo recorrente' })
+    renderApp('/fixos')
+    await userEvent.click(await screen.findByRole('button', { name: 'Novo fixo' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Novo fixo' })
     await userEvent.click(within(dialog).getByRole('radio', { name: 'Anual' }))
     const data = within(dialog).getByLabelText('Próxima data')
     await userEvent.clear(data)
@@ -224,9 +231,9 @@ describe('RecurringPage', () => {
   })
 
   it('recusa uma próxima data no passado e um nome vazio', async () => {
-    renderApp('/configuracoes/recorrentes')
-    await userEvent.click(await screen.findByRole('button', { name: 'Novo recorrente' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Novo recorrente' })
+    renderApp('/fixos')
+    await userEvent.click(await screen.findByRole('button', { name: 'Novo fixo' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Novo fixo' })
     await userEvent.type(within(dialog).getByLabelText('Valor'), '10')
     const data = within(dialog).getByLabelText('Próxima data')
     await userEvent.clear(data)
@@ -243,9 +250,9 @@ describe('RecurringPage', () => {
     store.recurring = [
       recurring({ id: 'renda', descricao: 'Renda', proxima_data: '2026-11-30', dia: 31 }),
     ]
-    renderApp('/configuracoes/recorrentes')
+    renderApp('/fixos')
     await userEvent.click(await screen.findByRole('button', { name: /^Renda:/ }))
-    const dialog = await screen.findByRole('dialog', { name: 'Editar recorrente' })
+    const dialog = await screen.findByRole('dialog', { name: 'Editar fixo' })
     const valor = within(dialog).getByLabelText('Valor')
     await userEvent.clear(valor)
     await userEvent.type(valor, '1600')
@@ -268,9 +275,9 @@ describe('RecurringPage', () => {
         ativa: false,
       }),
     ]
-    renderApp('/configuracoes/recorrentes')
+    renderApp('/fixos')
     await userEvent.click(await screen.findByRole('button', { name: /^Ginásio:/ }))
-    const dialog = await screen.findByRole('dialog', { name: 'Editar recorrente' })
+    const dialog = await screen.findByRole('dialog', { name: 'Editar fixo' })
     expect(within(dialog).getByText(/Está pausado/)).toBeInTheDocument()
     await userEvent.click(within(dialog).getByRole('button', { name: 'Retomar' }))
     await waitFor(() =>
@@ -291,7 +298,7 @@ describe('RecurringPage', () => {
         falha_data: '2026-10-10',
       }),
     ]
-    renderApp('/configuracoes/recorrentes')
+    renderApp('/fixos')
     const alert = await screen.findByRole('alert')
     expect(plain(alert.textContent)).toContain(
       'Netflix: O lançamento de 10/10/2026 não foi criado: a conta ou a categoria está arquivada.',

@@ -16,3 +16,9 @@ export async function updateProfileName(userId: string, nome: string): Promise<v
   const { error } = await supabase.from('profiles').update({ nome }).eq('id', userId)
   if (error) throw new UserFacingError(dbErrorMessage(error))
 }
+
+/** Guarda (ou apaga, com null) a chave Pix que quem deve vê para pagar. */
+export async function updatePixKey(userId: string, chave: string | null): Promise<void> {
+  const { error } = await supabase.from('profiles').update({ chave_pix: chave }).eq('id', userId)
+  if (error) throw new UserFacingError(dbErrorMessage(error))
+}

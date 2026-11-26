@@ -24,7 +24,13 @@ export function useAcceptInvite() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (token: string) => acceptInvite(token),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: sharedDebtsKey(user?.id) }),
+    // O app pode ter pedido as dívidas antes de aceitar (o AppShell pede-as em todas as páginas): uma
+    // resposta antiga ainda a chegar não pode ficar no cache. Cancela-se e pede-se de novo já.
+    onSuccess: async () => {
+      const queryKey = sharedDebtsKey(user?.id)
+      await queryClient.cancelQueries({ queryKey })
+      await queryClient.invalidateQueries({ queryKey, refetchType: 'all' })
+    },
   })
 }
 

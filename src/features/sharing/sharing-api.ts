@@ -76,6 +76,8 @@ export type SharedDebt = {
   cartoes: { id: string; nome: string }[]
   categorias: { id: string; nome: string; cor: string; icone: string }[]
   reembolsos: { id: string; valor_centavos: number; data: IsoDate; descricao: string }[]
+  /** Chave Pix de quem convidou (opcional), para pagar */
+  donoChavePix: string | null
 }
 
 /** As dívidas partilhadas com a conta da sessão (uma por conta que a convidou). */
@@ -93,5 +95,6 @@ export async function listSharedDebts(): Promise<SharedDebt[]> {
     cartoes: row.cartoes as SharedDebt['cartoes'],
     categorias: row.categorias as SharedDebt['categorias'],
     reembolsos: row.reembolsos as SharedDebt['reembolsos'],
+    donoChavePix: row.dono_chave_pix ?? null,
   }))
 }

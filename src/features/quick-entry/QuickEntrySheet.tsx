@@ -28,6 +28,8 @@ import { centsToInput, formatMoney, parseMoney } from '@/lib/money'
 import { CategoryPicker } from './CategoryPicker'
 import { ChoiceChips } from './ChoiceChips'
 import { DateChips } from './DateChips'
+import { useCreateRecurring } from '@/features/recurring/hooks'
+import { dayOf, nextOccurrence, nextOnOrAfter } from '@/lib/recurrence'
 import { ParcelasStepper } from './ParcelasStepper'
 import type { QuickEntryOptions } from './quick-entry-context'
 import { quickEntrySchema, type QuickEntryInput, type QuickEntryValues } from './schema'
@@ -115,6 +117,9 @@ function LoadedForm({
   const registerPurchase = useRegisterPurchase()
   const registerSplit = useRegisterSplitPurchase()
   const createPerson = useCreatePerson()
+  const createRecurring = useCreateRecurring()
+  // "Repete todo mês": depois de registar, cadastra o fixo (sem ir a Fixos)
+  const [repeat, setRepeat] = useState(false)
   const { serverError, run } = useServerAction(() => onOpenChange(false))
 
   const now = today()
@@ -252,10 +257,39 @@ function LoadedForm({
       (pessoaId === NEW_PERSON && novaPessoa.trim())) ||
     'outra pessoa'
 
+  const canRepeat = !card || (parcelas === 1 && divisao === 'minha')
+
+  /** Cadastra o fixo a partir do lançamento: todo mês no mesmo dia, a partir do próximo. */
+  const saveRepeat = async (values: {
+    tipo: 'despesa' | 'receita'
+    valor: number
+    data: string
+    categoryId: string
+    accountId: string
+    descricao: string
+  }) => {
+    const dia = dayOf(values.data)
+    await createRecurring.mutateAsync({
+      tipo: values.tipo,
+      valorCentavos: values.valor,
+      descricao:
+        values.descricao.trim() ||
+        categories.find((category) => category.id === values.categoryId)?.nome ||
+        'Fixo',
+      accountId: values.accountId,
+      categoryId: values.categoryId,
+      frequencia: 'mensal',
+      proximaData: nextOnOrAfter(nextOccurrence(values.data, 'mensal', dia), 'mensal', dia, now),
+      dia,
+      modo: 'automatico',
+    })
+  }
+
   const onSubmit = handleSubmit((result) =>
     run(async () => {
       if (result.kind === 'transaction') {
         await createTransaction.mutateAsync(result.values)
+        if (repeat) await saveRepeat(result.values)
         return
       }
       const values = result.values
@@ -272,6 +306,9 @@ function LoadedForm({
         return
       }
       await registerPurchase.mutateAsync({ ...values, pessoaId: pessoa })
+      if (repeat && canRepeat) {
+        await saveRepeat({ ...values, tipo: 'despesa', accountId: values.cardId })
+      }
     }),
   )
 
@@ -280,7 +317,8 @@ function LoadedForm({
     createTransaction.isPending ||
     registerPurchase.isPending ||
     registerSplit.isPending ||
-    createPerson.isPending
+    createPerson.isPending ||
+    createRecurring.isPending
   const valorField = register('valor')
   const missingAccount = accountOptions.length === 0
   const missingCategory = categoryOptions.length === 0
@@ -471,6 +509,26 @@ function LoadedForm({
         error={errors.descricao?.message}
         {...register('descricao')}
       />
+
+      {canRepeat && (
+        <label className="flex min-h-11 items-center justify-between gap-3 rounded-xl border px-3 py-2 text-sm">
+          <span>
+            <span className="block font-medium">Repete todo mês</span>
+            <span className="block text-xs text-muted-foreground">
+              {repeat
+                ? `Vira um fixo: todo dia ${dayOf(data || now)}, lançado sozinho.`
+                : 'Para salário, aluguel, assinaturas…'}
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            role="switch"
+            checked={repeat}
+            onChange={(event) => setRepeat(event.target.checked)}
+            className="size-5 shrink-0 accent-primary"
+          />
+        </label>
+      )}
 
       <SheetFooter>
         <Button

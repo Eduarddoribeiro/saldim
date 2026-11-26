@@ -116,12 +116,12 @@ export function TransactionsPage() {
             <span className="max-sm:sr-only">Importar</span>
           </Link>
           <Link
-            to="/configuracoes/recorrentes"
-            aria-label="Recorrentes"
+            to="/fixos"
+            aria-label="Fixos"
             className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-full')}
           >
             <Repeat aria-hidden />
-            <span className="max-sm:sr-only">Recorrentes</span>
+            <span className="max-sm:sr-only">Fixos</span>
           </Link>
         </div>
       </div>

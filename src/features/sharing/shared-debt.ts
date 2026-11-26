@@ -28,3 +28,24 @@ export function summarizeSharedDebt(debt: SharedDebt, today: IsoDate) {
 export function ownerLabel(debt: Pick<SharedDebt, 'donoNome'>): string {
   return debt.donoNome.trim() || 'quem te emprestou o cartão'
 }
+
+/** Onde a pessoa gastou: o total das compras dela por categoria, da maior para a menor. */
+export function sharedSpendingByCategory(debt: Pick<SharedDebt, 'compras'>) {
+  const byCategory = new Map<string, { total: number; nomes: string[] }>()
+  for (const purchase of debt.compras) {
+    const row = byCategory.get(purchase.category_id) ?? { total: 0, nomes: [] }
+    row.total += purchase.valor_total_centavos
+    if (purchase.descricao && !row.nomes.includes(purchase.descricao))
+      row.nomes.push(purchase.descricao)
+    byCategory.set(purchase.category_id, row)
+  }
+  const total = [...byCategory.values()].reduce((sum, row) => sum + row.total, 0)
+  return [...byCategory]
+    .map(([categoryId, row]) => ({
+      categoryId,
+      total: row.total,
+      share: total > 0 ? row.total / total : 0,
+      nomes: row.nomes,
+    }))
+    .sort((a, b) => b.total - a.total)
+}
