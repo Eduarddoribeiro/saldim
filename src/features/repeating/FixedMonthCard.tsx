@@ -1,6 +1,7 @@
 import { ChevronRight, PiggyBank } from 'lucide-react'
 import { Link } from 'react-router'
 import { useCategories } from '@/features/categories/hooks'
+import { usePeople } from '@/features/people/hooks'
 import { colorOf } from '@/features/categories/category-options'
 import { useCurrency } from '@/features/profile/hooks'
 import { DEFAULT_SHARE, monthlyDeposit } from '@/features/savings/simulate'
@@ -23,6 +24,7 @@ const TOP = 4
 export function FixedMonthCard() {
   const fixed = useFixedMonth()
   const categories = useCategories()
+  const people = usePeople()
   const currency = useCurrency()
   if (!fixed.data) return null
   const { income, items, rendaFixa, totalMensal, sobra, proximoMes } = fixed.data
@@ -134,8 +136,20 @@ export function FixedMonthCard() {
           <span className="font-semibold tabular-nums">{money(proximoMes.total)}</span>
           <span className="text-xs text-muted-foreground tabular-nums">
             {' '}
-            · cartões {money(proximoMes.cartoes)} + conta {money(proximoMes.conta)}
+            · sua parte nos cartões {money(proximoMes.cartoes)} + conta {money(proximoMes.conta)}
           </span>
+          {proximoMes.pessoas.length > 0 && (
+            <span className="mt-1 block text-xs text-muted-foreground tabular-nums">
+              As faturas também têm{' '}
+              {proximoMes.pessoas
+                .map(
+                  (person) =>
+                    `${money(person.centavos)} de ${people.data?.find((row) => row.id === person.pessoaId)?.nome ?? 'outra pessoa'}`,
+                )
+                .join(' e ')}{' '}
+              (fora deste total).
+            </span>
+          )}
         </p>
       )}
 

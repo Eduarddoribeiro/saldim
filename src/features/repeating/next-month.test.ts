@@ -9,13 +9,13 @@ const mov = (account_id: string, data: string, valor_centavos: number, tipo = 'd
 })
 
 describe('nextMonthToPay', () => {
-  it('junta as faturas do mês e as despesas da conta (futuras e previstas)', () => {
+  it('junta a minha parte das faturas do mês e as despesas da conta (futuras e previstas)', () => {
     const result = nextMonthToPay({
       month: '2026-12',
       today: '2026-11-26',
       cardMonths: [
-        { month: '2026-12', total: 139418 },
-        { month: '2027-01', total: 50000 },
+        { month: '2026-12', meu: 90000, pessoas: [{ pessoaId: 'mae', centavos: 49418 }] },
+        { month: '2027-01', meu: 50000, pessoas: [] },
       ],
       movements: [
         mov('conta', '2026-12-05', 2000), // futura: conta
@@ -26,7 +26,14 @@ describe('nextMonthToPay', () => {
       projected: [mov('conta', '2026-12-12', 5500), mov('conta', '2027-01-12', 5500)],
       cardIds: new Set(['cartao']),
     })
-    expect(result).toEqual({ month: '2026-12', cartoes: 139418, conta: 7500, total: 146918 })
+    // Só a minha parte da fatura; a da mãe fica à parte
+    expect(result).toEqual({
+      month: '2026-12',
+      cartoes: 90000,
+      pessoas: [{ pessoaId: 'mae', centavos: 49418 }],
+      conta: 7500,
+      total: 97500,
+    })
   })
 
   it('sem faturas nem despesas no mês, tudo zero', () => {
