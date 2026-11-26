@@ -10,15 +10,16 @@ import {
   useRecurringProjection,
 } from '@/features/recurring/use-projection'
 import { useRepeatingExpenses } from '@/features/repeating/hooks'
-import { averageMonthlySpending } from '@/features/savings/reserve'
+import { descriptionKey } from '@/features/import/suggest'
+import { usePurchases } from '@/features/card-purchases/hooks'
 import { useBalanceMovements, useImportHistory } from '@/features/transactions/hooks'
 import { useTransfers } from '@/features/transfers/hooks'
 import { addMonths, lastDayOfMonth, todayIso } from '@/lib/dates'
 import { balancesByAccount, reimbursementMovements, transferMovements } from '@/lib/finance'
 import {
-  dailyVariableSpending,
   forecastUntil,
   receivableEvents,
+  recentVariableDaily,
   type ForecastEvent,
 } from './forecast'
 
@@ -36,6 +37,7 @@ export function useMonthEndForecast(includeReceber: boolean) {
   const receivables = useReceivables()
   const people = usePeople()
   const repeating = useRepeatingExpenses()
+  const purchases = usePurchases()
   const { invoices, items, payments } = useInvoiceData()
   const projected = useRecurringProjection(until)
   const projectedCards = useProjectedCardCharges()
@@ -49,6 +51,7 @@ export function useMonthEndForecast(includeReceber: boolean) {
     invoices.data &&
     items.data &&
     payments.data &&
+    purchases.data &&
     repeating.data
   if (!ready) return null
 
@@ -75,7 +78,10 @@ export function useMonthEndForecast(includeReceber: boolean) {
 
   const events: ForecastEvent[] = []
   // Contas: lançamentos com data futura e recorrentes previstos (o que é no cartão vai na fatura)
-  for (const movement of [...history.data!.filter((row) => row.data > today), ...projected]) {
+  // Uma entrada "só lembrar" cujo dia já passou não conta: pode já ter caído com outro nome, e o
+  // previsto não deve ficar mais otimista do que a realidade (uma saída atrasada conta, por segurança)
+  const pending = projected.filter((row) => !(row.atrasado && row.tipo === 'receita'))
+  for (const movement of [...history.data!.filter((row) => row.data > today), ...pending]) {
     if (cardIds.has(movement.account_id) || movement.data > until) continue
     if (movement.tipo !== 'receita' && movement.tipo !== 'despesa') continue
     const receita = movement.tipo === 'receita'
@@ -117,9 +123,14 @@ export function useMonthEndForecast(includeReceber: boolean) {
     }),
   )
 
-  const daily = dailyVariableSpending(
-    averageMonthlySpending(movements.data!, today),
-    repeating.data!.totalMensal,
-  )
+  const daily = recentVariableDaily({
+    history: history.data!,
+    installmentIds: new Set(
+      purchases.data!.filter((purchase) => purchase.parcelas > 1).map((purchase) => purchase.id),
+    ),
+    fixedKeys: new Set(repeating.data!.items.filter((item) => item.fixo).map((item) => item.key)),
+    today,
+    key: descriptionKey,
+  })
   return forecastUntil({ today, until, disponivel, events, dailySpending: daily, includeReceber })
 }

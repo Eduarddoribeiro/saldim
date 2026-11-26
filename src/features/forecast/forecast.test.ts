@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
-  dailyVariableSpending,
   forecastUntil,
   receivableEvents,
+  recentVariableDaily,
   type ForecastEvent,
 } from './forecast'
 
@@ -76,13 +76,6 @@ describe('forecastUntil', () => {
   })
 })
 
-describe('dailyVariableSpending', () => {
-  it('o que passa dos fixos, por dia; nunca negativo', () => {
-    expect(dailyVariableSpending(145000, 68207)).toBeCloseTo((145000 - 68207) / 30)
-    expect(dailyVariableSpending(50000, 68207)).toBe(0)
-  })
-})
-
 describe('receivableEvents', () => {
   const months = [
     {
@@ -122,5 +115,37 @@ describe('receivableEvents', () => {
       name,
     })
     expect(events.map((event) => event.valor)).toEqual([20000])
+  })
+})
+
+describe('recentVariableDaily', () => {
+  const row = (data: string, valor: number, descricao: string, extra = {}) => ({
+    tipo: 'despesa',
+    valor_centavos: valor,
+    data,
+    descricao,
+    pessoa_id: null,
+    compra_id: null,
+    recorrencia_id: null,
+    ...extra,
+  })
+  it('os gastos do dia a dia dos últimos 30 dias, sem fixos, parcelas nem compras de outras pessoas', () => {
+    const daily = recentVariableDaily({
+      history: [
+        row('2026-11-20', 30000, 'Mercado'),
+        row('2026-10-28', 15000, 'Lanche'), // há 29 dias: conta
+        row('2026-10-27', 99999, 'Antigo'), // há 30 dias: não conta
+        row('2026-11-10', 32457, 'Faculdade'), // fixo
+        row('2026-11-12', 3190, 'Spotify', { recorrencia_id: 'r' }), // recorrente
+        row('2026-11-05', 7500, 'Tênis', { compra_id: 'tenis' }), // parcela
+        row('2026-11-06', 5000, 'Farmácia', { pessoa_id: 'mae' }), // da mãe
+        row('2026-11-27', 8000, 'Futuro'), // depois de hoje
+      ],
+      installmentIds: new Set(['tenis']),
+      fixedKeys: new Set(['faculdade']),
+      today: '2026-11-26',
+      key: (descricao) => descricao.toLowerCase(),
+    })
+    expect(daily).toBe(45000 / 30)
   })
 })

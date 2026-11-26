@@ -93,11 +93,6 @@ export function forecastUntil({
   }
 }
 
-/** Gasto do dia a dia por dia: o gasto médio do mês menos os fixos, dividido por 30 (nunca negativo). */
-export function dailyVariableSpending(averageMonthly: number, fixedMonthly: number): number {
-  return Math.max(0, averageMonthly - fixedMonthly) / 30
-}
-
 /**
  * O que cada pessoa vai te pagar até `until`: o que já venceu (hoje) e a parte dela em cada fatura
  * que vence até lá (no vencimento). Nunca mais do que ela deve ao todo (um pagamento adiantado
@@ -150,4 +145,41 @@ export function receivableEvents({
     }
   }
   return events
+}
+
+/**
+ * Gasto do dia a dia por dia, pelos últimos 30 dias (funciona mesmo com pouco histórico): os seus
+ * gastos que não são fixos (nem recorrentes cadastrados, nem gastos de valor fixo que se repetem) e
+ * não são parcelas de compras parceladas, divididos por 30.
+ */
+export function recentVariableDaily({
+  history,
+  installmentIds,
+  fixedKeys,
+  today,
+  key,
+}: {
+  history: readonly {
+    tipo: string
+    valor_centavos: number
+    data: IsoDate
+    descricao: string
+    pessoa_id: string | null
+    compra_id: string | null
+    recorrencia_id: string | null
+  }[]
+  /** Compras com mais de uma parcela */
+  installmentIds: ReadonlySet<string>
+  /** Chaves (descriptionKey) dos gastos fixos */
+  fixedKeys: ReadonlySet<string>
+  today: IsoDate
+  key: (descricao: string) => string
+}): number {
+  const total = history
+    .filter((row) => row.data <= today && daysBetween(row.data, today) < 30)
+    .filter((row) => row.tipo === 'despesa' && !row.pessoa_id && !row.recorrencia_id)
+    .filter((row) => !(row.compra_id && installmentIds.has(row.compra_id)))
+    .filter((row) => !fixedKeys.has(key(row.descricao)))
+    .reduce((sum, row) => sum + row.valor_centavos, 0)
+  return total / 30
 }
