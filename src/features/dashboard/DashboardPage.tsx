@@ -12,6 +12,8 @@ import { DueInvoices } from '@/features/invoices/DueInvoices'
 import { NextInvoicesSummary } from '@/features/invoices/NextInvoicesSummary'
 import { useRecurringProjection } from '@/features/recurring/use-projection'
 import { ForecastCard } from '@/features/forecast/ForecastCard'
+import { JourneyChips } from '@/features/journey/JourneyChips'
+import { TodayCard } from '@/features/journey/TodayCard'
 import { FixedMonthCard } from '@/features/repeating/FixedMonthCard'
 import { SharedDebtBanner } from '@/features/sharing/SharedDebtBanner'
 import { usePeople } from '@/features/people/hooks'
@@ -188,6 +190,7 @@ export function DashboardPage() {
   return (
     <>
       <BalanceHero greeting={greeting}>
+        <JourneyChips />
         {hasCards ? (
           <>
             <HeroNumber
@@ -239,6 +242,8 @@ export function DashboardPage() {
       <QuickActions hasCards={hasCards} />
 
       <SharedDebtBanner />
+
+      <TodayCard />
 
       {hasCards && (
         <DueInvoices

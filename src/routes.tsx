@@ -31,6 +31,7 @@ const AccountsPage = page(() => import('@/features/accounts/AccountsPage'), 'Acc
 const ReceivablesPage = page(() => import('@/features/people/ReceivablesPage'), 'ReceivablesPage')
 const FixedPage = page(() => import('@/features/repeating/FixedPage'), 'FixedPage')
 const SavingsPage = page(() => import('@/features/savings/SavingsPage'), 'SavingsPage')
+const JourneyPage = page(() => import('@/features/journey/JourneyPage'), 'JourneyPage')
 const ImportPage = page(() => import('@/features/import/ImportPage'), 'ImportPage')
 const InvitePage = page(() => import('@/features/sharing/InvitePage'), 'InvitePage')
 const SharedDebtPage = page(() => import('@/features/sharing/SharedDebtPage'), 'SharedDebtPage')
@@ -78,6 +79,7 @@ export const routes: RouteObject[] = [
           { path: 'configuracoes/contas', element: <AccountsPage /> },
           { path: 'fixos', element: <FixedPage /> },
           { path: 'guardar', element: <SavingsPage /> },
+          { path: 'jornada', element: <JourneyPage /> },
           // Endereços antigos: Recorrentes e Gastos que se repetem viraram a página Fixos
           { path: 'configuracoes/recorrentes', element: <Navigate to="/fixos" replace /> },
           { path: 'a-receber', element: <ReceivablesPage /> },

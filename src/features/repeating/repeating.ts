@@ -11,6 +11,8 @@ export const WINDOW_MONTHS = 6
 export const MIN_MONTHS = 3
 /** E em quantos dos 3 últimos (para não contar o que já acabou) */
 export const MIN_RECENT = 2
+/** Lançamentos "Rendimento" (savings/AdjustYieldDialog) não contam como entrada fixa */
+const YIELD_KEY = 'rendimento'
 
 type Movement = {
   descricao: string
@@ -124,6 +126,8 @@ function repeatingItems(
   for (const movement of movements) {
     // Só gastos meus; uma compra parcelada repete-se, mas não é um gasto recorrente
     if (movement.tipo !== tipo || movement.pessoa_id) continue
+    // O rendimento da reserva (acerto com o banco) não é uma entrada fixa
+    if (tipo === 'receita' && descriptionKey(movement.descricao) === YIELD_KEY) continue
     if (movement.compra_id && installments.has(movement.compra_id)) continue
     if (movement.data > today) continue
     const key =

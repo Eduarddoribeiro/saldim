@@ -1,4 +1,4 @@
-import { PiggyBank, ShieldCheck } from 'lucide-react'
+import { PiggyBank } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { FormAlert } from '@/components/form/FormAlert'
@@ -14,14 +14,9 @@ import { balancesByAccount, transferMovements } from '@/lib/finance'
 import { formatMoney } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import { CDI, RATES_DATE, SELIC } from './rates'
-import { averageMonthlySpending, emergencyReserve } from './reserve'
-import {
-  DEFAULT_SHARE,
-  monthlyDeposit,
-  monthsToReach,
-  RESERVE_MONTHS,
-  savingsOptions,
-} from './simulate'
+import { ReserveCard } from './ReserveCard'
+import { averageMonthlySpending } from './reserve'
+import { DEFAULT_SHARE, monthlyDeposit, savingsOptions } from './simulate'
 
 const PERIODS = [
   { months: 12, label: '1 ano' },
@@ -90,27 +85,8 @@ export function SavingsPage() {
   const saved = allAccounts
     .filter((account) => SAVINGS_TYPES.has(account.tipo))
     .reduce((sum, account) => sum + (balances.get(account.id) ?? 0), 0)
-  const reserve = emergencyReserve(spending, saved)
-  const reserveMonths = monthsToReach(reserve.meta, saved, deposit)
   const options = savingsOptions(deposit, months)
   const put = deposit * months
-
-  if (rendaFixa === 0) {
-    return (
-      <>
-        {header}
-        <div className="grid gap-3 rounded-2xl border bg-card p-4 text-sm">
-          <p>
-            Para calcular quanto sobra, o app precisa saber o que entra todo mês (salário, mesada,
-            ajuda da família).
-          </p>
-          <Link to="/fixos" className="font-medium text-primary underline-offset-4 hover:underline">
-            Cadastrar uma entrada em Fixos
-          </Link>
-        </div>
-      </>
-    )
-  }
 
   return (
     <>
@@ -128,7 +104,20 @@ export function SavingsPage() {
               {Math.round(share * 100)}% da sobra
             </span>
           </div>
-          {sobra <= 0 ? (
+          {rendaFixa === 0 ? (
+            <div className="grid gap-2 text-sm">
+              <p>
+                Para calcular quanto sobra, o app precisa saber o que entra todo mês (salário,
+                mesada, ajuda da família).
+              </p>
+              <Link
+                to="/fixos"
+                className="font-medium text-primary underline-offset-4 hover:underline"
+              >
+                Cadastrar uma entrada em Fixos
+              </Link>
+            </div>
+          ) : sobra <= 0 ? (
             <FormAlert>
               Hoje os fixos ({money(totalMensal)}) usam tudo o que entra fixo ({money(rendaFixa)}).
               Antes de guardar, vale ver em Fixos o que dá para cortar.
@@ -160,57 +149,13 @@ export function SavingsPage() {
           )}
         </section>
 
-        <section aria-labelledby="reserva" className="grid gap-3 rounded-2xl border bg-card p-4">
-          <h2 id="reserva" className="flex items-center gap-2 font-semibold">
-            <ShieldCheck className="size-5 text-primary" aria-hidden />
-            Primeiro: reserva de emergência
-          </h2>
-          {spending === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Quando houver gastos lançados nos últimos meses, o app calcula a sua meta.
-            </p>
-          ) : (
-            <>
-              <p className="text-sm">
-                Você gasta uns <b className="tabular-nums">{money(spending)}</b> por mês (média dos
-                últimos meses). A reserva cobre {RESERVE_MONTHS} meses:{' '}
-                <b className="tabular-nums">{money(reserve.meta)}</b>.
-              </p>
-              <div
-                role="progressbar"
-                aria-label="Reserva de emergência"
-                aria-valuemin={0}
-                aria-valuemax={reserve.meta}
-                aria-valuenow={Math.min(saved, reserve.meta)}
-                aria-valuetext={`${money(saved)} de ${money(reserve.meta)}`}
-                className="h-2.5 overflow-hidden rounded-full bg-muted"
-              >
-                <div
-                  className="h-full rounded-full bg-positive"
-                  style={{ width: `${Math.min(100, (saved * 100) / reserve.meta)}%` }}
-                />
-              </div>
-              <p className="text-sm text-muted-foreground tabular-nums">
-                {reserve.falta === 0
-                  ? `Pronto: você já tem ${money(saved)} guardados. O que guardar agora pode ir para prazos maiores.`
-                  : [
-                      `Já tem ${money(saved)} · faltam ${money(reserve.falta)}.`,
-                      reserveMonths !== null && deposit > 0
-                        ? `Guardando ${money(deposit)} por mês, chega lá em uns ${reserveMonths} ${reserveMonths === 1 ? 'mês' : 'meses'}.`
-                        : null,
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Guarde num lugar que rende 100% do CDI e deixa sacar na hora: a caixinha ou cofrinho
-                do seu banco, ou o Tesouro Selic. Só tire de lá em emergência (saúde, algo quebrado,
-                uma renda que parou). O "já tem" é o saldo das suas contas do tipo Poupança e
-                Investimentos.
-              </p>
-            </>
-          )}
-        </section>
+        <ReserveCard
+          spending={spending}
+          saved={saved}
+          deposit={deposit}
+          accounts={allAccounts}
+          money={money}
+        />
 
         {deposit > 0 && (
           <section

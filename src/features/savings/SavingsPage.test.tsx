@@ -2,6 +2,7 @@
 import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createTransfer } from '@/features/transfers/transfers-api'
 import { renderApp } from '@/test/render-app'
 
 const store = vi.hoisted(() => ({ history: [] as unknown[], accounts: [] as unknown[] }))
@@ -18,7 +19,11 @@ vi.mock('@/features/recurring/recurring-api', () => ({ listRecurring: vi.fn(asyn
 vi.mock('@/features/accounts/accounts-api', () => ({
   listAccounts: vi.fn(async () => store.accounts),
 }))
-vi.mock('@/features/transfers/transfers-api', () => ({ listTransfers: vi.fn(async () => []) }))
+vi.mock('@/features/transfers/transfers-api', () => ({
+  listTransfers: vi.fn(async () => []),
+  listAccountTransfers: vi.fn(async () => []),
+  createTransfer: vi.fn(async () => {}),
+}))
 
 const plain = (text: string | null | undefined) => (text ?? '').replace(/[\u00a0\u202f]/g, ' ')
 const mov = (
@@ -77,9 +82,18 @@ describe('Guardar dinheiro', () => {
 
     // Gasto médio 1.450 (682,07 + 767,93) → reserva de 3 meses 4.350; já tem 1.000
     const reserva = screen.getByRole('region', { name: 'Primeiro: reserva de emergência' })
-    expect(plain(reserva.textContent)).toContain('R$ 1.450,00')
-    expect(plain(reserva.textContent)).toContain('R$ 4.350,00')
-    expect(plain(reserva.textContent)).toContain('Já tem R$ 1.000,00 · faltam R$ 3.350,00')
+    expect(plain(reserva.textContent)).toContain('Meta: R$ 4.350,00')
+    expect(plain(reserva.textContent)).toContain('Já temR$ 1.000,00')
+    expect(plain(reserva.textContent)).toContain('(R$ 1.450,00, a média dos últimos meses)')
+    expect(plain(reserva.textContent)).toContain('chega lá em uns 11 meses')
+    // Marcos: R$ 100 e R$ 500 feitos
+    const marcos = within(screen.getByRole('list', { name: 'Marcos da reserva' }))
+    expect(marcos.getAllByRole('listitem').map((li) => plain(li.textContent))).toEqual([
+      'R$ 100,00 · Primeiro passofeito · +5',
+      'R$ 500,00 · Segura um imprevisto pequenofeito · +5',
+      'R$ 1.450,00 · 1 mês de gastos+10',
+      'R$ 4.350,00 · Reserva completa+30',
+    ])
     expect(screen.getByRole('progressbar', { name: 'Reserva de emergência' })).toHaveAttribute(
       'aria-valuenow',
       '100000',
@@ -102,5 +116,35 @@ describe('Guardar dinheiro', () => {
     expect(plain(screen.getByRole('region', { name: 'Quanto guardar' }).textContent)).toContain(
       'GuardarR$ 463,97',
     )
+  })
+})
+
+describe('Guardar na reserva', () => {
+  it('"Guardar agora" abre a transferência para a caixinha, com o valor sugerido, e celebra', async () => {
+    renderApp('/guardar')
+    await userEvent.click(await screen.findByRole('button', { name: /^Guardar R\$\s278,38 agora/ }))
+    const dialog = await screen.findByRole('dialog', { name: 'Transferir entre contas' })
+    expect(within(dialog).getByLabelText('Valor')).toHaveValue('278,38')
+    const para = within(within(dialog).getByRole('group', { name: 'Vai para' }))
+    expect(para.getByRole('radio', { name: 'Caixinha' })).toBeChecked()
+    const de = within(within(dialog).getByRole('group', { name: 'Sai de' }))
+    expect(de.getByRole('radio', { name: 'Conta' })).toBeChecked()
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Transferir' }))
+    expect(createTransfer).toHaveBeenCalledWith({
+      contaOrigemId: 'conta',
+      contaDestinoId: 'poupanca',
+      valor: 27838,
+      data: '2026-11-26',
+      descricao: 'Reserva',
+    })
+    expect(await screen.findByRole('dialog', { name: 'Guardado!' })).toBeInTheDocument()
+  })
+
+  it('sem conta de guardar, oferece criar a caixinha', async () => {
+    store.accounts = store.accounts.filter(
+      (account) => (account as { id: string }).id !== 'poupanca',
+    )
+    renderApp('/guardar')
+    expect(await screen.findByRole('button', { name: 'Criar a caixinha' })).toBeInTheDocument()
   })
 })

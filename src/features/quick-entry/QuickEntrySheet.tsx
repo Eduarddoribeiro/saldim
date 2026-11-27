@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { ArrowLeftRight } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Link } from 'react-router'
@@ -31,7 +32,7 @@ import { DateChips } from './DateChips'
 import { useCreateRecurring } from '@/features/recurring/hooks'
 import { dayOf, nextOccurrence, nextOnOrAfter } from '@/lib/recurrence'
 import { ParcelasStepper } from './ParcelasStepper'
-import type { QuickEntryOptions } from './quick-entry-context'
+import { useQuickEntry, type QuickEntryOptions } from './quick-entry-context'
 import { quickEntrySchema, type QuickEntryInput, type QuickEntryValues } from './schema'
 import { rankByUsage, usageCounts } from './usage-ranking'
 
@@ -118,6 +119,7 @@ function LoadedForm({
   const registerSplit = useRegisterSplitPurchase()
   const createPerson = useCreatePerson()
   const createRecurring = useCreateRecurring()
+  const openEntry = useQuickEntry()
   // "Repete todo mês": depois de registar, cadastra o fixo (sem ir a Fixos)
   const [repeat, setRepeat] = useState(false)
   const { serverError, run } = useServerAction(() => onOpenChange(false))
@@ -325,8 +327,17 @@ function LoadedForm({
 
   return (
     <form onSubmit={onSubmit} noValidate className="grid gap-5">
-      <DialogHeader>
+      <DialogHeader className="flex-row items-center justify-between gap-3">
         <DialogTitle className="text-lg font-semibold">Novo lançamento</DialogTitle>
+        {/* Mover dinheiro entre contas suas (guardar na reserva) não é receita nem despesa */}
+        <button
+          type="button"
+          onClick={() => openEntry({ transfer: {} })}
+          className="inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-sm font-medium text-primary hover:bg-primary/10"
+        >
+          <ArrowLeftRight className="size-4" aria-hidden />
+          Transferir
+        </button>
       </DialogHeader>
 
       {serverError && <FormAlert>{serverError}</FormAlert>}

@@ -267,6 +267,28 @@ export type Database = {
           },
         ]
       }
+      dias_fechados: {
+        Row: {
+          created_at: string
+          dia: string
+          id: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          dia: string
+          id?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          dia?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       faturas: {
         Row: {
           account_id: string

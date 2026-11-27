@@ -1,4 +1,4 @@
-import { daysBetween, type IsoDate } from '@/lib/dates'
+import { addDays, daysBetween, type IsoDate } from '@/lib/dates'
 
 // "Como você fica no fim do mês que vem" (pedido de 2026-11-26): o dinheiro das contas hoje, mais o
 // que vai entrar e o que vão te pagar, menos as faturas e o que sai da conta, até ao último dia do
@@ -147,39 +147,44 @@ export function receivableEvents({
   return events
 }
 
-/**
- * Gasto do dia a dia por dia, pelos últimos 30 dias (funciona mesmo com pouco histórico): os seus
- * gastos que não são fixos (nem recorrentes cadastrados, nem gastos de valor fixo que se repetem) e
- * não são parcelas de compras parceladas, divididos por 30.
- */
-export function recentVariableDaily({
-  history,
-  installmentIds,
-  fixedKeys,
-  today,
-  key,
-}: {
-  history: readonly {
-    tipo: string
-    valor_centavos: number
-    data: IsoDate
-    descricao: string
-    pessoa_id: string | null
-    compra_id: string | null
-    recorrencia_id: string | null
-  }[]
+type HistoryRow = {
+  tipo: string
+  valor_centavos: number
+  data: IsoDate
+  descricao: string
+  pessoa_id: string | null
+  compra_id: string | null
+  recorrencia_id: string | null
+}
+
+export type VariableFilter = {
+  history: readonly HistoryRow[]
   /** Compras com mais de uma parcela */
   installmentIds: ReadonlySet<string>
   /** Chaves (descriptionKey) dos gastos fixos */
   fixedKeys: ReadonlySet<string>
-  today: IsoDate
   key: (descricao: string) => string
-}): number {
-  const total = history
-    .filter((row) => row.data <= today && daysBetween(row.data, today) < 30)
+}
+
+/**
+ * Quanto saiu no dia a dia entre `from` e `to` (inclusive): os seus gastos que não são fixos (nem
+ * recorrentes cadastrados, nem gastos de valor fixo que se repetem) e não são parcelas de compras
+ * parceladas.
+ */
+export function variableSpending(
+  { history, installmentIds, fixedKeys, key }: VariableFilter,
+  from: IsoDate,
+  to: IsoDate,
+): number {
+  return history
+    .filter((row) => row.data >= from && row.data <= to)
     .filter((row) => row.tipo === 'despesa' && !row.pessoa_id && !row.recorrencia_id)
     .filter((row) => !(row.compra_id && installmentIds.has(row.compra_id)))
     .filter((row) => !fixedKeys.has(key(row.descricao)))
     .reduce((sum, row) => sum + row.valor_centavos, 0)
-  return total / 30
+}
+
+/** Gasto do dia a dia por dia, pelos últimos 30 dias (funciona mesmo com pouco histórico). */
+export function recentVariableDaily({ today, ...filter }: VariableFilter & { today: IsoDate }) {
+  return variableSpending(filter, addDays(today, -29), today) / 30
 }

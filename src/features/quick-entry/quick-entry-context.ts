@@ -1,11 +1,14 @@
 import { createContext, useContext } from 'react'
 import type { Tipo } from '@/features/categories/schemas'
+import type { TransferPreset } from '@/features/transfers/TransferSheet'
 
 export type QuickEntryOptions = {
   /** Receita ou despesa ao abrir (por omissão, despesa) */
   tipo?: Tipo
   /** Abre já com um cartão escolhido (compra no cartão) */
   card?: boolean
+  /** Abre a transferência entre contas (ex.: guardar na reserva) em vez do lançamento */
+  transfer?: TransferPreset
 }
 
 /** Abre o lançamento rápido (o `+`); disponível em todas as páginas da app (AppShell). */

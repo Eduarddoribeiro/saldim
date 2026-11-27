@@ -1,4 +1,4 @@
-import { isCreditCard } from '@/features/accounts/account-options'
+import { isCreditCard, isSavings } from '@/features/accounts/account-options'
 import { useAccounts } from '@/features/accounts/hooks'
 import { useInvoiceData } from '@/features/invoices/hooks'
 import { summarizeInvoices } from '@/features/invoices/invoice-summary'
@@ -62,7 +62,7 @@ export function useMonthEndForecast(includeReceber: boolean) {
   const personName = (id: string) =>
     people.data?.find((person) => person.id === id)?.nome ?? 'Outra pessoa'
 
-  // Dinheiro nas contas hoje (sem os cartões), como o "Dinheiro disponível" do Início
+  // Dinheiro nas contas hoje: sem os cartões e sem a reserva (Poupança/Investimentos), que não é para gastar
   const balances = balancesByAccount(
     allAccounts,
     [
@@ -72,8 +72,9 @@ export function useMonthEndForecast(includeReceber: boolean) {
     ],
     { today },
   )
+  const savingsIds = new Set(allAccounts.filter(isSavings).map((account) => account.id))
   const disponivel = allAccounts
-    .filter((account) => !cardIds.has(account.id))
+    .filter((account) => !cardIds.has(account.id) && !savingsIds.has(account.id))
     .reduce((sum, account) => sum + (balances.get(account.id) ?? 0), 0)
 
   const events: ForecastEvent[] = []
@@ -82,7 +83,8 @@ export function useMonthEndForecast(includeReceber: boolean) {
   // previsto não deve ficar mais otimista do que a realidade (uma saída atrasada conta, por segurança)
   const pending = projected.filter((row) => !(row.atrasado && row.tipo === 'receita'))
   for (const movement of [...history.data!.filter((row) => row.data > today), ...pending]) {
-    if (cardIds.has(movement.account_id) || movement.data > until) continue
+    if (cardIds.has(movement.account_id) || savingsIds.has(movement.account_id)) continue
+    if (movement.data > until) continue
     if (movement.tipo !== 'receita' && movement.tipo !== 'despesa') continue
     const receita = movement.tipo === 'receita'
     events.push({

@@ -5,6 +5,7 @@ import {
   Landmark,
   PiggyBank,
   Repeat,
+  Star,
   Tags,
   Target,
   type LucideIcon,
@@ -67,6 +68,7 @@ export function SettingsPage() {
           description="O que entra e sai todo mês, quanto guardar e quem te deve."
         >
           <ul className="-mx-1 divide-y">
+            <SettingsLink to="/jornada" icon={Star} label="Sua jornada" />
             <SettingsLink to="/fixos" icon={Repeat} label="Fixos" />
             <SettingsLink to="/guardar" icon={PiggyBank} label="Guardar dinheiro" />
             <SettingsLink to="/orcamentos" icon={Target} label="Orçamentos" />

@@ -85,6 +85,47 @@ export async function createPayment(values: PaymentValues): Promise<void> {
   if (error) fail(error)
 }
 
+/** Transferência entre contas suas (sem fatura): mover dinheiro, guardar na reserva. */
+export type AccountTransfer = Pick<
+  Tables<'transferencias'>,
+  'id' | 'conta_origem_id' | 'conta_destino_id' | 'valor_centavos' | 'data' | 'descricao'
+>
+
+export type TransferValues = {
+  contaOrigemId: string
+  contaDestinoId: string
+  valor: number
+  data: string
+  descricao: string
+}
+
+/** As transferências entre contas (sem os pagamentos de faturas), das mais recentes às antigas. */
+export async function listAccountTransfers(): Promise<AccountTransfer[]> {
+  const { data, error } = await fetchAllPages((start, end) =>
+    supabase
+      .from('transferencias')
+      .select('id, conta_origem_id, conta_destino_id, valor_centavos, data, descricao')
+      .is('fatura_id', null)
+      .order('data', { ascending: false })
+      .order('id')
+      .range(start, end),
+  )
+  if (error) fail(error)
+  return data
+}
+
+/** Move dinheiro de uma conta sua para outra (não é receita nem despesa). */
+export async function createTransfer(values: TransferValues): Promise<void> {
+  const { error } = await supabase.from('transferencias').insert({
+    conta_origem_id: values.contaOrigemId,
+    conta_destino_id: values.contaDestinoId,
+    valor_centavos: values.valor,
+    data: values.data,
+    descricao: values.descricao,
+  })
+  if (error) fail(error)
+}
+
 /** Apaga um pagamento (a forma de corrigir um pagamento registado por engano). */
 export async function deletePayment(id: string): Promise<void> {
   const { error } = await supabase.from('transferencias').delete().eq('id', id)

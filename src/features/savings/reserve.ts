@@ -1,6 +1,5 @@
 import { addMonths, type IsoDate } from '@/lib/dates'
 import { monthSummary } from '@/lib/finance'
-import { RESERVE_MONTHS } from './simulate'
 
 type Movement = Parameters<typeof monthSummary>[0][number]
 
@@ -20,10 +19,4 @@ export function averageMonthlySpending(movements: Movement[], today: IsoDate): n
     .filter((total) => total > 0)
   if (totals.length === 0) return 0
   return Math.round(totals.reduce((sum, total) => sum + total, 0) / totals.length)
-}
-
-/** A reserva de emergência: meta (meses de gastos), quanto já tem e quanto falta. */
-export function emergencyReserve(monthlySpending: number, saved: number) {
-  const meta = monthlySpending * RESERVE_MONTHS
-  return { meta, guardado: saved, falta: Math.max(0, meta - saved) }
 }

@@ -59,7 +59,7 @@ export function ForecastCard() {
       </div>
 
       <dl className="grid gap-1.5 text-sm">
-        <Row label="Nas contas hoje" value={money(forecast.disponivel)} />
+        <Row label="Nas contas hoje (sem a reserva)" value={money(forecast.disponivel)} />
         <Row label="Vai entrar" value={`+ ${money(forecast.entradas)}`} />
         {hasReceber && (
           <Row

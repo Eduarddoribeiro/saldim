@@ -28,3 +28,8 @@ export const TIPO_CONTA_OPTIONS: Record<TipoConta, { label: string; icon: Lucide
 export function isCreditCard(account: { tipo: TipoConta }): boolean {
   return account.tipo === 'cartao_credito'
 }
+
+/** Contas onde o dinheiro fica guardado (a reserva): Poupança e Investimentos. */
+export function isSavings(account: { tipo: TipoConta }): boolean {
+  return account.tipo === 'poupanca' || account.tipo === 'investimento'
+}
