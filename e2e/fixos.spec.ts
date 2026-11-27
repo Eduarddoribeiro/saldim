@@ -27,15 +27,16 @@ test('fixos: do + ao Início, à página Fixos e a Guardar dinheiro', async ({ p
   await lancar('Receita', '3.000', 'Salário', 'Salário')
   await lancar('Despesa', '1.200', 'Moradia', 'Aluguel')
 
-  // Início: o mês fixo
+  // Início: os blocos. Mês fixo: entra 3.000, sai 1.200, sobra 1.800
   await page.goto('/')
-  const mes = page.getByRole('region', { name: 'Seu mês fixo' })
-  await expect(mes).toContainText(money('R$ 3.000,00'))
-  await expect(mes).toContainText(money('R$ 1.200,00'))
+  const mes = page.getByRole('link', { name: /^Mês fixo:/ })
   await expect(mes).toContainText(money('R$ 1.800,00'))
-  await expect(mes.getByRole('list', { name: 'De onde vem' })).toContainText('Salário')
-  await expect(mes.getByRole('list', { name: 'Onde vai' })).toContainText('Moradia')
+  await expect(mes).toContainText(money('Entra R$ 3.000,00'))
   // Fim do mês que vem: hoje 1.800 (3.000 − 1.200) + o salário − o aluguel do mês que vem = 3.600
+  const fimBloco = page.getByRole('link', { name: /^Fim de / })
+  await expect(fimBloco).toContainText(money('R$ 3.600,00'))
+  await expectNoHorizontalScroll(page)
+  await fimBloco.click()
   const fim = page.getByRole('region', { name: /^Como você fica no fim de / })
   await expect(fim).toContainText(money('R$ 3.600,00'))
   await fim.getByText(/^Ver dia a dia/).click()
@@ -45,7 +46,8 @@ test('fixos: do + ao Início, à página Fixos e a Guardar dinheiro', async ({ p
   await expectNoHorizontalScroll(page)
 
   // Fixos: os dois cadastrados, cada um no seu lado
-  await mes.getByRole('link', { name: 'Ver fixos' }).click()
+  await page.goto('/')
+  await page.getByRole('link', { name: /^Mês fixo:/ }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Fixos' })).toBeVisible()
   await expect(page.getByRole('list', { name: 'Sai todo mês' })).toContainText('Aluguel')
   await expect(page.getByRole('list', { name: 'Entra todo mês' })).toContainText('Salário')

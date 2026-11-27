@@ -1,9 +1,13 @@
 import {
   ArrowDownLeft,
+  ArrowLeftRight,
   ArrowUpRight,
   CreditCard,
   HandCoins,
+  PiggyBank,
   ReceiptText,
+  Repeat,
+  Star,
   type LucideIcon,
 } from 'lucide-react'
 import { Link } from 'react-router'
@@ -26,15 +30,16 @@ function Content({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
 }
 
 /**
- * Atalhos redondos logo abaixo do saldo: lançar (abre o formulário já no modo certo), pagar a fatura e
- * receber de quem deve. Os do cartão só aparecem com cartões.
+ * Atalhos redondos logo abaixo do saldo, em duas linhas de quatro (pedido de 2026-11-27: "mais botão
+ * e menos rolagem"): lançar (o formulário já no modo certo), transferir, guardar, pagar a fatura,
+ * receber de quem deve e os fixos. Os do cartão só aparecem com cartões (no lugar, a jornada).
  */
 export function QuickActions({ hasCards }: { hasCards: boolean }) {
   const openQuickEntry = useQuickEntry()
   return (
     <nav
       aria-label="Atalhos"
-      className="relative -mt-8 mb-4 grid auto-cols-fr grid-flow-col gap-1 rounded-2xl border bg-card p-3 shadow-sm"
+      className="relative -mt-8 mb-4 grid grid-cols-4 gap-x-1 gap-y-3 rounded-2xl border bg-card p-3 shadow-sm"
     >
       <button type="button" className={item} onClick={() => openQuickEntry({ tipo: 'despesa' })}>
         <Content icon={ArrowDownLeft} label="Despesa" />
@@ -47,6 +52,12 @@ export function QuickActions({ hasCards }: { hasCards: boolean }) {
           <Content icon={CreditCard} label="No cartão" />
         </button>
       )}
+      <button type="button" className={item} onClick={() => openQuickEntry({ transfer: {} })}>
+        <Content icon={ArrowLeftRight} label="Transferir" />
+      </button>
+      <Link to="/guardar" className={item}>
+        <Content icon={PiggyBank} label="Guardar" />
+      </Link>
       {hasCards && (
         <Link to="/faturas" className={item}>
           <Content icon={ReceiptText} label="Faturas" />
@@ -55,6 +66,14 @@ export function QuickActions({ hasCards }: { hasCards: boolean }) {
       <Link to="/a-receber" className={item}>
         <Content icon={HandCoins} label="Receber" />
       </Link>
+      <Link to="/fixos" className={item}>
+        <Content icon={Repeat} label="Fixos" />
+      </Link>
+      {!hasCards && (
+        <Link to="/jornada" className={item}>
+          <Content icon={Star} label="Jornada" />
+        </Link>
+      )}
     </nav>
   )
 }

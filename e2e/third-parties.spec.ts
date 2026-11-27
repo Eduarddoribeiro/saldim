@@ -48,16 +48,18 @@ test('compra da mãe: fora dos gastos, a receber no Início, pagamento recebido'
 
   // Início: não é gasto meu; a dívida inclui a parcela de hoje; a mãe deve 300,00
   await page.goto('/')
-  const tile = (label: string) => page.getByText(label, { exact: true }).locator('..')
+  // Números da faixa do topo (região "Resumo"): a barra de baixo também tem "Cartões"
+  const tile = (label: string) =>
+    page.getByRole('region', { name: 'Resumo' }).getByText(label, { exact: true }).locator('..')
   // Receitas/despesas do mês ficam na secção do mês (o nome também aparece no gráfico)
   const monthTile = (label: string) =>
     page.getByRole('region', { name: 'este mês' }).getByText(label, { exact: true }).locator('..')
   await expect(monthTile('Despesas')).toContainText(money('R$ 0,00'))
-  await expect(tile('Dívida nos cartões')).toContainText(money('R$ 100,00'))
-  await expect(tile('A receber')).toContainText(money('Mãe: R$ 300,00'))
+  await expect(tile('Cartões')).toContainText(money('R$ 100,00'))
+  await expect(page.getByRole('link', { name: /^A receber:/ })).toContainText(money('R$ 300,00'))
   // Líquido = 0,00 − 100,00 + 100,00: hoje, do que a mãe deve, só conta a parcela que já está na
   // dívida do cartão (D20); a compra não é minha, por isso o líquido não muda
-  await expect(tile('Saldo líquido')).toContainText(money('R$ 0,00'))
+  await expect(tile('Líquido')).toContainText(money('R$ 0,00'))
 
   // A mãe devolve 100,00 por Pix
   // O cartão inteiro de "A receber" é um link para a página de quem deve
@@ -89,9 +91,9 @@ test('compra da mãe: fora dos gastos, a receber no Início, pagamento recebido'
   await page.goto('/')
   await expect(tile('Dinheiro disponível')).toContainText(money('R$ 100,00'))
   await expect(monthTile('Receitas')).toContainText(money('R$ 0,00'))
-  await expect(tile('A receber')).toContainText(money('Mãe: R$ 200,00'))
+  await expect(page.getByRole('link', { name: /^A receber:/ })).toContainText(money('R$ 200,00'))
   // 100,00 − 100,00 + (100,00 − 100,00 devolvidos)
-  await expect(tile('Saldo líquido')).toContainText(money('R$ 0,00'))
+  await expect(tile('Líquido')).toContainText(money('R$ 0,00'))
 })
 
 test('compra dividida com a mãe: metade em A receber, as parcelas somam as do banco', async ({

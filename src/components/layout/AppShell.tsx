@@ -44,6 +44,8 @@ export function AppShell() {
             className={cn(
               'sticky top-0 z-30 flex h-14 items-center justify-between px-4',
               !viewerOnly && 'md:hidden',
+              // No Início, a faixa do saldo já tem a saudação, o olho e o tema: sem cabeçalho repetido
+              onHero && 'hidden',
               onHero ? 'bg-hero text-hero-foreground' : 'border-b bg-card/95 backdrop-blur',
             )}
           >

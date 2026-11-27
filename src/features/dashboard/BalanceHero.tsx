@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { PrivacyToggle } from '@/components/privacy/PrivacyToggle'
+import { ThemeToggle } from '@/components/theme/ThemeToggle'
 
 /**
  * Faixa do topo do Início, como nos apps de banco: saudação, o olho (esconder valores) e o número
@@ -9,7 +10,7 @@ export function BalanceHero({ greeting, children }: { greeting: string; children
   return (
     <section
       aria-label="Resumo"
-      className="-mx-4 -mt-6 bg-linear-to-b from-hero to-hero-2 px-4 pt-3 pb-12 text-hero-foreground md:mx-0 md:mt-0 md:rounded-3xl md:px-6 md:pt-4"
+      className="-mx-4 -mt-6 bg-linear-to-b from-hero to-hero-2 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-12 text-hero-foreground md:mx-0 md:mt-0 md:rounded-3xl md:px-6 md:pt-4"
     >
       <div className="flex items-center gap-3">
         <span
@@ -25,7 +26,9 @@ export function BalanceHero({ greeting, children }: { greeting: string; children
           <h1 className="sr-only">Início</h1>
           <p className="truncate font-medium">{greeting}</p>
         </div>
-        <PrivacyToggle className="-mr-2" />
+        <PrivacyToggle />
+        {/* No telemóvel, o Início não tem o cabeçalho da app: o tema fica aqui (cara de app) */}
+        <ThemeToggle className="-mr-2 hover:bg-white/10 hover:text-hero-foreground md:hidden" />
       </div>
       {children && <div className="mt-4">{children}</div>}
     </section>

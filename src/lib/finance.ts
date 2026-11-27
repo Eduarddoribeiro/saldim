@@ -180,13 +180,15 @@ export function totalBalance(
 }
 
 export type NetPosition = {
-  /** Σ saldos das contas de dinheiro (tudo menos cartões) */
+  /** Σ saldos das contas de dinheiro para gastar (sem cartões e sem as contas de guardar) */
   disponivel: number
+  /** Σ saldos das contas Poupança/Investimentos (a reserva): não é para gastar */
+  guardado: number
   /** O que se deve nos cartões: −Σ saldos dos cartões (negativo = crédito a favor) */
   dividaCartoes: number
   /** O que outras pessoas devem (T1, D20; negativo = é quem usa a app que lhes deve) */
   aReceber: number
-  /** disponivel − dividaCartoes + aReceber (sem a receber: = totalBalance) */
+  /** disponivel + guardado − dividaCartoes + aReceber (sem a receber: = totalBalance) */
   liquido: number
 }
 
@@ -204,18 +206,21 @@ export function netPosition(
 ): NetPosition {
   const balances = balancesByAccount(accounts, movements, options)
   let disponivel = 0
+  let guardado = 0
   let cartoes = 0
   for (const account of accounts) {
     const balance = balances.get(account.id) ?? 0
     if (account.tipo === 'cartao_credito') cartoes += balance
+    else if (account.tipo === 'poupanca' || account.tipo === 'investimento') guardado += balance
     else disponivel += balance
   }
   // `|| 0`: sem cartões, −0 apareceria como "-R$ 0,00"
   return {
     disponivel,
+    guardado,
     dividaCartoes: -cartoes || 0,
     aReceber,
-    liquido: disponivel + cartoes + aReceber,
+    liquido: disponivel + guardado + cartoes + aReceber,
   }
 }
 

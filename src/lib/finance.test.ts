@@ -145,9 +145,10 @@ describe('posição do Início: disponível, dívida nos cartões e líquido (D4
     ]),
   ]
 
-  it('o disponível é só dinheiro; a dívida é o que falta pagar das parcelas até hoje', () => {
+  it('o disponível é o dinheiro para gastar (sem a poupança); a dívida é o que falta pagar das parcelas até hoje', () => {
     expect(netPosition(contas, movimentos, { today })).toEqual({
-      disponivel: 100000 + 5000 - 2000 - 5000,
+      disponivel: 100000 - 2000 - 5000,
+      guardado: 5000,
       dividaCartoes: 10000 - 5000,
       aReceber: 0,
       liquido: 98000 - 5000,
@@ -157,9 +158,13 @@ describe('posição do Início: disponível, dívida nos cartões e líquido (D4
   it('o líquido é sempre igual ao saldo total (atual e previsto)', () => {
     for (const includeFuture of [false, true]) {
       const options = { today, includeFuture }
-      const { disponivel, dividaCartoes, liquido } = netPosition(contas, movimentos, options)
+      const { disponivel, guardado, dividaCartoes, liquido } = netPosition(
+        contas,
+        movimentos,
+        options,
+      )
       expect(liquido).toBe(totalBalance(contas, movimentos, options))
-      expect(liquido).toBe(disponivel - dividaCartoes)
+      expect(liquido).toBe(disponivel + guardado - dividaCartoes)
     }
   })
 
@@ -179,11 +184,28 @@ describe('posição do Início: disponível, dívida nos cartões e líquido (D4
     expect(netPosition(contas, credito, { today }).dividaCartoes).toBe(5000 - 700)
   })
 
-  it('sem cartões: dívida 0 e o líquido é o disponível', () => {
+  it('a reserva (Poupança/Investimentos) fica fora do disponível, mas conta no líquido', () => {
+    const comReserva = [...contas, { id: 'caixinha', saldo_inicial_centavos: 0, tipo: 'poupanca' }]
+    const guardar = transferMovements([
+      {
+        conta_origem_id: 'banco',
+        conta_destino_id: 'caixinha',
+        valor_centavos: 10000,
+        data: today,
+      },
+    ])
+    const antes = netPosition(comReserva, movimentos, { today })
+    const depois = netPosition(comReserva, [...movimentos, ...guardar], { today })
+    expect(depois.disponivel).toBe(antes.disponivel - 10000)
+    expect(depois.guardado).toBe(antes.guardado + 10000)
+    expect(depois.liquido).toBe(antes.liquido)
+  })
+
+  it('sem cartões: dívida 0 e o líquido é o disponível mais o guardado', () => {
     const semCartoes = contas.filter((conta) => conta.tipo !== 'cartao_credito')
     const posicao = netPosition(semCartoes, movimentos, { today })
     expect(posicao.dividaCartoes).toBe(0)
-    expect(posicao.liquido).toBe(posicao.disponivel)
+    expect(posicao.liquido).toBe(posicao.disponivel + posicao.guardado)
   })
 
   it('limite disponível = limite − tudo por pagar, incluindo parcelas futuras', () => {

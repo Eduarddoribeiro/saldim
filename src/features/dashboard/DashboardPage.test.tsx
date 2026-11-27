@@ -131,7 +131,13 @@ const tx = (overrides: Partial<Transaction>): Transaction => ({
 })
 
 const plain = (text: string | null | undefined) => (text ?? '').replace(/[\u00a0\u202f]/g, ' ')
-const tile = (label: RegExp) => plain(screen.getByText(label).closest('div')?.textContent)
+// Os números da faixa do topo (região "Resumo"): a barra de navegação também tem "Cartões"
+const tile = (label: RegExp) =>
+  plain(
+    within(screen.getByRole('region', { name: 'Resumo' }))
+      .getByText(label)
+      .closest('div')?.textContent,
+  )
 // Receitas, despesas e resultado ficam na secção do mês (o nome "Receitas" também está no gráfico)
 const monthTile = (label: string, month: string) =>
   plain(
@@ -223,10 +229,10 @@ describe('início (dashboard)', () => {
     renderApp('/')
     await screen.findByText('Dinheiro disponível')
     // 3051,00 − 300,00 (a parcela é uma despesa); o pagamento não muda o total
-    expect(tile(/^Saldo líquido$/)).toContain('R$ 2.751,00')
+    expect(tile(/^Líquido$/)).toContain('R$ 2.751,00')
     // O cartão está pago: o dinheiro disponível é o líquido e a dívida é zero
     expect(tile(/^Dinheiro disponível$/)).toContain('R$ 2.751,00')
-    expect(tile(/^Dívida nos cartões$/)).toContain('R$ 0,00')
+    expect(tile(/^Cartões$/)).toContain('R$ 0,00')
     // Despesas do mês: 2200,00 + 300,00 da parcela — o pagamento NÃO conta como despesa
     expect(monthTile('Despesas', 'este mês')).toContain('R$ 2.500,00')
     const contas = screen.getByRole('region', { name: 'Contas' })
@@ -263,11 +269,9 @@ describe('início (dashboard)', () => {
     expect(tile(/^Dinheiro disponível$/)).toContain('R$ 3.051,00')
     expect(tile(/^Dinheiro disponível$/)).toContain('Com os lançamentos futuros: R$ 2.851,00')
     // Dívida: só a parcela até hoje (D1a); as futuras aparecem à parte
-    expect(tile(/^Dívida nos cartões$/)).toContain('R$ 100,00')
-    expect(tile(/^Dívida nos cartões$/)).toContain('Com as parcelas futuras: R$ 300,00')
+    expect(tile(/^Cartões$/)).toContain('R$ 100,00')
     // Líquido = 3051,00 − 100,00; previsto = 2851,00 − 300,00
-    expect(tile(/^Saldo líquido$/)).toContain('R$ 2.951,00')
-    expect(tile(/^Saldo líquido$/)).toContain('Previsto: R$ 2.551,00')
+    expect(tile(/^Líquido$/)).toContain('R$ 2.951,00')
     // A parcela nas últimas transações mostra o total de parcelas da compra
     expect(
       within(screen.getByRole('region', { name: 'Últimas transações' })).getByText(/Parcela 1\/3/),
@@ -316,13 +320,23 @@ describe('início (dashboard)', () => {
     expect(within(dialog).getByRole('button', { name: 'Registrar pagamento' })).toBeInTheDocument()
   })
 
-  it('sem previsão, o saldo líquido explica-se numa linha; a receber leva à página de quem deve', async () => {
-    store.accounts.push(visa())
-    store.transactions = store.transactions.filter((t) => t.data <= '2026-10-14')
+  it('a reserva (Poupança) fica fora do dinheiro disponível e aparece em Guardado', async () => {
+    store.accounts.push(visa(), {
+      ...visa(),
+      id: 'caixinha',
+      nome: 'Caixinha',
+      tipo: 'poupanca',
+      saldo_inicial_centavos: 10000,
+      dia_fechamento: null,
+      dia_vencimento: null,
+      limite_centavos: null,
+      conta_pagamento_id: null,
+    })
     renderApp('/')
     await screen.findByText('Dinheiro disponível')
-    expect(tile(/^Saldo líquido$/)).toContain('Com os cartões pagos.')
-    expect(tile(/^Dívida nos cartões$/)).toContain('Compras até hoje por pagar.')
+    expect(tile(/^Dinheiro disponível$/)).toContain('R$ 3.051,00')
+    expect(tile(/^Guardado$/)).toContain('R$ 100,00')
+    expect(tile(/^Líquido$/)).toContain('R$ 3.151,00')
   })
 
   it('sem faturas a vencer nos próximos dias, não há aviso', async () => {
@@ -379,21 +393,20 @@ describe('início (dashboard)', () => {
       },
     ]
     renderApp('/')
-    await screen.findByText('A receber')
+    const aReceber = await screen.findByRole('link', { name: /^A receber:/ })
     // As despesas do mês não incluem a parcela da mãe (as mesmas 2200,00 de sempre)
     expect(monthTile('Despesas', 'este mês')).toContain('R$ 2.200,00')
     // O reembolso entra no banco: 3051,00 + 50,00
     expect(tile(/^Dinheiro disponível$/)).toContain('R$ 3.101,00')
     // A dívida do cartão inclui a parcela da mãe (é dívida real)
-    expect(tile(/^Dívida nos cartões$/)).toContain('R$ 100,00')
+    expect(tile(/^Cartões$/)).toContain('R$ 100,00')
     // Deve 300,00 − 50,00; já vencido 100,00 − 50,00
-    expect(tile(/^A receber$/)).toContain('R$ 250,00')
-    expect(tile(/^A receber$/)).toContain('Mãe: R$ 250,00')
-    expect(tile(/^A receber$/)).toContain('Já vencido: R$ 50,00')
+    expect(plain(aReceber.textContent)).toContain('R$ 250,00')
+    expect(plain(aReceber.textContent)).toContain('Já vencido: R$ 50,00')
+    expect(aReceber).toHaveAttribute('href', '/a-receber')
     // Líquido de hoje = 3101,00 − 100,00 + 50,00: do que a mãe deve, só a parcela até hoje (100,00)
     // menos o que devolveu, o mesmo corte da dívida do cartão (D20). Previsto: com as 3 parcelas
-    expect(tile(/^Saldo líquido$/)).toContain('R$ 3.051,00')
-    expect(tile(/^Saldo líquido$/)).toContain('Previsto: R$ 2.851,00')
+    expect(tile(/^Líquido$/)).toContain('R$ 3.051,00')
     // A parcela vem primeiro (em destaque), depois a pessoa
     const ultimas = screen.getByRole('region', { name: 'Últimas transações' })
     expect(plain(within(ultimas).getByText(/^Parcela 1\/3/).parentElement?.textContent)).toContain(
@@ -401,7 +414,7 @@ describe('início (dashboard)', () => {
     )
   })
 
-  it('próximas faturas: o próximo mês com a parte minha e da mãe, e leva a Cartões', async () => {
+  it('faturas do próximo mês num bloco: o total e a minha parte, e leva a Cartões', async () => {
     store.accounts.push(visa())
     store.people = [
       {
@@ -435,11 +448,11 @@ describe('início (dashboard)', () => {
       tx({ ...parcela, data: '2026-11-21', fatura_id: 'f3', valor_centavos: 5000 }),
     )
     renderApp('/')
-    const link = await screen.findByRole('link', { name: /^Próximas faturas:/ })
+    const link = await screen.findByRole('link', { name: /^Faturas de novembro:/ })
     expect(plain(link.getAttribute('aria-label'))).toBe(
-      'Próximas faturas: Novembro R$ 400,00, Seu R$ 300,00 · Mãe R$ 100,00. Ver os meses',
+      'Faturas de novembro: R$ 400,00. Ver os cartões',
     )
-    expect(plain(link.textContent)).toContain('Dezembro: R$ 50,00')
+    expect(plain(link.textContent)).toContain('Sua parte R$ 300,00')
     expect(link).toHaveAttribute('href', '/faturas')
   })
 
@@ -458,8 +471,8 @@ describe('início (dashboard)', () => {
     ]
     renderApp('/')
     // Pagou 350,00 de 300,00: 50,00 de crédito, e o limite fica 200,00 + 50,00
-    await screen.findByText('Crédito nos cartões')
-    expect(tile(/^Crédito nos cartões$/)).toContain('R$ 50,00')
+    await screen.findByText('Crédito cartões')
+    expect(tile(/^Crédito cartões$/)).toContain('R$ 50,00')
     const contas = screen.getByRole('region', { name: 'Contas' })
     expect(plain(within(contas).getByText('Visa').closest('li')?.textContent)).toContain(
       'Limite disponível: R$ 250,00',

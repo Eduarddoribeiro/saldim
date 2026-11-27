@@ -1,4 +1,4 @@
-import { ArrowDownRight, ArrowUpRight, ChevronRight, HandCoins, Scale } from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight, ChevronRight, Scale } from 'lucide-react'
 import { Link } from 'react-router'
 import { FormAlert } from '@/components/form/FormAlert'
 import { MonthPicker } from '@/components/month/MonthPicker'
@@ -9,12 +9,9 @@ import { useAccounts } from '@/features/accounts/hooks'
 import { usePurchases } from '@/features/card-purchases/hooks'
 import { useCategories } from '@/features/categories/hooks'
 import { DueInvoices } from '@/features/invoices/DueInvoices'
-import { NextInvoicesSummary } from '@/features/invoices/NextInvoicesSummary'
 import { useRecurringProjection } from '@/features/recurring/use-projection'
-import { ForecastCard } from '@/features/forecast/ForecastCard'
 import { JourneyChips } from '@/features/journey/JourneyChips'
 import { TodayCard } from '@/features/journey/TodayCard'
-import { FixedMonthCard } from '@/features/repeating/FixedMonthCard'
 import { SharedDebtBanner } from '@/features/sharing/SharedDebtBanner'
 import { usePeople } from '@/features/people/hooks'
 import { useReceivables } from '@/features/people/use-receivables'
@@ -54,6 +51,8 @@ import { BalanceEvolutionPanel, MonthlyComparisonPanel } from './DashboardCharts
 import { MonthStat } from './MonthStat'
 import { Panel } from './Panel'
 import { QuickActions } from './QuickActions'
+import { SummaryTiles } from './SummaryTiles'
+import { averageMonthlySpending } from '@/features/savings/reserve'
 
 /** Meses dos gráficos de evolução: o mês escolhido e os 5 anteriores. */
 const CHART_MONTHS = 6
@@ -202,28 +201,14 @@ export function DashboardPage() {
                   : 'Nas suas contas, sem os cartões, até hoje.'
               }
             />
-            {/* Os dois números que completam o retrato (D4a): o líquido e a dívida nos cartões */}
-            <div className="mt-4 grid grid-cols-2 gap-4 border-t border-white/15 pt-3">
+            {/* Os números que completam o retrato (D4a): líquido, dívida nos cartões e a reserva */}
+            <div className="mt-4 grid grid-cols-3 gap-3 border-t border-white/15 pt-3">
+              <HeroStat label="Líquido" value={formatMoney(position.liquido, currency)} />
               <HeroStat
-                label="Saldo líquido"
-                value={formatMoney(position.liquido, currency)}
-                hint={
-                  positionPrevista.liquido !== position.liquido
-                    ? `Previsto: ${formatMoney(positionPrevista.liquido, currency)}`
-                    : aReceber !== 0
-                      ? 'Com os cartões pagos e o que te devem.'
-                      : 'Com os cartões pagos.'
-                }
-              />
-              <HeroStat
-                label={position.dividaCartoes < 0 ? 'Crédito nos cartões' : 'Dívida nos cartões'}
+                label={position.dividaCartoes < 0 ? 'Crédito cartões' : 'Cartões'}
                 value={formatMoney(Math.abs(position.dividaCartoes), currency)}
-                hint={
-                  positionPrevista.dividaCartoes !== position.dividaCartoes
-                    ? `Com as parcelas futuras: ${formatMoney(positionPrevista.dividaCartoes, currency)}`
-                    : 'Compras até hoje por pagar.'
-                }
               />
+              <HeroStat label="Guardado" value={formatMoney(position.guardado, currency)} />
             </div>
           </>
         ) : (
@@ -253,44 +238,19 @@ export function DashboardPage() {
         />
       )}
 
-      <ForecastCard />
-
-      <FixedMonthCard />
-
-      {hasCards && <NextInvoicesSummary />}
-
-      {receivables.data.length > 0 && (
-        // A receber (T1) numa linha, como um cartão de banco: quem deve, quanto e um toque para ver
-        <Link
-          to="/a-receber"
-          aria-label={`A receber: ${formatMoney(aReceber, currency)}. Ver quem deve`}
-          className="mb-4 flex items-center gap-3 rounded-2xl border bg-card p-4 transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-        >
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <HandCoins className="size-5" aria-hidden />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs text-muted-foreground">A receber</p>
-            <p className="truncate text-lg font-semibold tracking-tight tabular-nums">
-              {formatMoney(aReceber, currency)}
-            </p>
-            <p className="truncate text-xs text-muted-foreground">
-              {receivables.data
-                .map(
-                  (row) =>
-                    `${peopleById.get(row.pessoaId) ?? 'Outra pessoa'}: ${formatMoney(row.total, currency)}`,
-                )
-                .join(' · ')}
-            </p>
-            {vencidoTotal > 0 && (
-              <p className="text-xs font-medium text-destructive">
-                Já vencido: {formatMoney(vencidoTotal, currency)}
-              </p>
-            )}
-          </div>
-          <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-        </Link>
-      )}
+      <SummaryTiles
+        guardado={position.guardado}
+        metaReserva={averageMonthlySpending(allMovements, today) * 3}
+        aReceber={aReceber}
+        aReceberSub={
+          vencidoTotal > 0
+            ? `Já vencido: ${formatMoney(vencidoTotal, currency)}`
+            : receivables.data
+                .map((row) => peopleById.get(row.pessoaId) ?? 'Outra pessoa')
+                .join(', ')
+        }
+        hasCards={hasCards}
+      />
 
       {/* "Este mês" num só cartão: o mês, o que entrou e saiu lado a lado e o resultado por baixo */}
       <section aria-labelledby="resumo-mes" className="rounded-2xl border bg-card p-4">
