@@ -84,7 +84,10 @@ describe('Guardar dinheiro', () => {
     const reserva = screen.getByRole('region', { name: 'Primeiro: reserva de emergência' })
     expect(plain(reserva.textContent)).toContain('Meta: R$ 4.350,00')
     expect(plain(reserva.textContent)).toContain('Já temR$ 1.000,00')
-    expect(plain(reserva.textContent)).toContain('(R$ 1.450,00, a média dos últimos meses)')
+    expect(plain(reserva.textContent)).toContain('R$ 1.450,00 por mês, pelo que você gastou')
+    expect(plain(reserva.textContent)).toContain(
+      'Quando tiver 1 mês de gastos (R$ 1.450,00), dá para dividir',
+    )
     expect(plain(reserva.textContent)).toContain('chega lá em uns 11 meses')
     // Marcos: R$ 100 e R$ 500 feitos
     const marcos = within(screen.getByRole('list', { name: 'Marcos da reserva' }))

@@ -127,14 +127,23 @@ export function ReserveCard({
       )}
       {spending > 0 && (
         <p className="text-xs text-muted-foreground">
-          A meta é {RESERVE_MONTHS} meses do que você gasta por mês ({money(spending)}, a média dos
-          últimos meses).{' '}
+          A meta é {RESERVE_MONTHS} meses dos seus gastos: {money(spending)} por mês, pelo que você
+          gastou nos últimos 30 dias (ou a média dos meses anteriores, se for maior).{' '}
           {saved >= meta
             ? 'Reserva completa: o que guardar agora pode ir para prazos maiores.'
             : months !== null && deposit > 0
               ? `Guardando ${money(deposit)} por mês, chega lá em uns ${months} ${months === 1 ? 'mês' : 'meses'}.`
               : ''}{' '}
           Só tire de lá em emergência: saúde, algo quebrado, uma renda que parou.
+        </p>
+      )}
+      {spending > 0 && saved < meta && (
+        <p className="rounded-xl bg-muted/60 p-3 text-xs text-muted-foreground">
+          <b className="font-medium text-foreground">A reserva já é um investimento:</b> rende 100%
+          do CDI e você saca quando precisar.{' '}
+          {saved >= spending
+            ? `Você já tem 1 mês de gastos guardado: dá para começar a dividir, uns 70% aqui e 30% num investimento de prazo maior (CDB de 2 anos, LCI/LCA, Tesouro IPCA+).`
+            : `Quando tiver 1 mês de gastos (${money(spending)}), dá para dividir: uns 70% aqui e 30% num investimento de prazo maior.`}
         </p>
       )}
 
