@@ -9,6 +9,7 @@ import { useAccounts } from '@/features/accounts/hooks'
 import { usePurchases } from '@/features/card-purchases/hooks'
 import { useCategories } from '@/features/categories/hooks'
 import { DueInvoices } from '@/features/invoices/DueInvoices'
+import { forBalance } from '@/features/recurring/projection'
 import { useRecurringProjection } from '@/features/recurring/use-projection'
 import { JourneyChips } from '@/features/journey/JourneyChips'
 import { TodayCard } from '@/features/journey/TodayCard'
@@ -65,7 +66,8 @@ export function DashboardPage() {
   const monthTransactions = useTransactions(month)
   const movements = useBalanceMovements()
   // Recorrentes que ainda faltam este mês: só entram no previsto (no dia, a app lança o real)
-  const projected = useRecurringProjection(lastDayOfMonth(todayIso().slice(0, 7)))
+  // (sem as entradas "só lembrar" atrasadas: podem já ter caído com outro nome)
+  const projected = forBalance(useRecurringProjection(lastDayOfMonth(todayIso().slice(0, 7))))
   const transfers = useTransfers()
   const purchases = usePurchases()
   const people = usePeople()

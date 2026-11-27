@@ -5,6 +5,7 @@ import { summarizeInvoices } from '@/features/invoices/invoice-summary'
 import { upcomingCardMonths } from '@/features/invoices/upcoming-months'
 import { usePeople } from '@/features/people/hooks'
 import { useReceivables } from '@/features/people/use-receivables'
+import { forBalance } from '@/features/recurring/projection'
 import {
   useProjectedCardCharges,
   useRecurringProjection,
@@ -79,9 +80,8 @@ export function useMonthEndForecast(includeReceber: boolean) {
 
   const events: ForecastEvent[] = []
   // Contas: lançamentos com data futura e recorrentes previstos (o que é no cartão vai na fatura)
-  // Uma entrada "só lembrar" cujo dia já passou não conta: pode já ter caído com outro nome, e o
-  // previsto não deve ficar mais otimista do que a realidade (uma saída atrasada conta, por segurança)
-  const pending = projected.filter((row) => !(row.atrasado && row.tipo === 'receita'))
+  // Sem as entradas "só lembrar" atrasadas (forBalance)
+  const pending = forBalance(projected)
   for (const movement of [...history.data!.filter((row) => row.data > today), ...pending]) {
     if (cardIds.has(movement.account_id) || savingsIds.has(movement.account_id)) continue
     if (movement.data > until) continue

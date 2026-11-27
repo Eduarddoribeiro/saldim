@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { projectedCardCharges, projectRecurring } from './projection'
+import { projectedCardCharges, projectRecurring, forBalance } from './projection'
 
 const rec = (over: Partial<Parameters<typeof projectRecurring>[0][number]> = {}) => ({
   id: 'netflix',
@@ -129,5 +129,16 @@ describe('projectRecurring: só lembrar', () => {
       { descricao: 'Claude', tipo: 'despesa', valor_centavos: 11873, data: '2026-10-28' },
     ])
     expect([igual.data, igual.valor_centavos, igual.atrasado]).toEqual(['2026-11-28', 11873, false])
+  })
+})
+
+describe('forBalance', () => {
+  it('tira as entradas "só lembrar" atrasadas; as saídas atrasadas continuam', () => {
+    const list = [
+      { atrasado: true, tipo: 'receita' as const, id: 'salario-novembro' },
+      { atrasado: false, tipo: 'receita' as const, id: 'salario-dezembro' },
+      { atrasado: true, tipo: 'despesa' as const, id: 'corte' },
+    ]
+    expect(forBalance(list).map((row) => row.id)).toEqual(['salario-dezembro', 'corte'])
   })
 })

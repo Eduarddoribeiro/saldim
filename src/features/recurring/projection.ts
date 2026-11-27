@@ -144,3 +144,14 @@ export function projectedCardCharges(
     return [{ ...occurrence, vencimento: invoiceDates(config, mes).vencimento }]
   })
 }
+
+/**
+ * Os previstos que contam para um saldo futuro: uma entrada "só lembrar" cujo dia já passou fica de
+ * fora (pode já ter caído com outro nome, e o previsto não deve ser mais otimista do que a
+ * realidade); uma saída atrasada continua a contar, por segurança.
+ */
+export function forBalance<T extends Pick<ProjectedOccurrence, 'atrasado' | 'tipo'>>(
+  occurrences: readonly T[],
+): T[] {
+  return occurrences.filter((occurrence) => !(occurrence.atrasado && occurrence.tipo === 'receita'))
+}
